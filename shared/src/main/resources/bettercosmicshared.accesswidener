@@ -1,0 +1,5 @@
+accessWidener	v2	named
+
+# Shared access-widener for the Cosmic Mods library (Mojang mappings).
+# Entries are added here as shared code is ported in and needs widened access.
+# NOTE: when porting from BetterPrisons (Yarn), every entry must be re-expressed in Mojang names.

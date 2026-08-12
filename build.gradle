@@ -1,0 +1,7 @@
+// Root project is an aggregator only — it contains no source or mod of its own.
+// The real modules are:
+//   :shared     — the shared client library (library mod "bettercosmicshared")
+//   :bettersky  — the BetterSky mod, which depends on and bundles :shared
+//
+// Common versions live in gradle.properties. Each module applies fabric-loom itself.
+// See ARCHITECTURE.md for the full design.

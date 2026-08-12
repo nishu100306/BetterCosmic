@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "bettercosmicshared",
+	"version": "${version}",
+	"name": "BetterCosmic Shared",
+	"description": "Shared client library for BetterSky and BetterPrisons (UI, HUD, render, config).",
+	"authors": [
+		"nishu06"
+	],
+	"license": "ARR",
+	"icon": "assets/bettercosmicshared/icon.png",
+	"environment": "client",
+	"accessWidener": "bettercosmicshared.accesswidener",
+	"entrypoints": {
+		"client": [
+			"dev.nishu.bettercosmic.shared.BetterCosmicShared"
+		]
+	},
+	"mixins": [
+		{
+			"config": "bettercosmicshared.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.17.3",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}

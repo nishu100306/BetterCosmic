@@ -1,0 +1,84 @@
+plugins {
+	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+	id 'maven-publish'
+}
+
+group = 'dev.nishu.bettercosmic'
+version = project.shared_version
+
+base {
+	archivesName = 'bettercosmicshared'
+}
+
+repositories {
+	// Add repositories to retrieve artifacts from in here (only for mod dependencies).
+}
+
+loom {
+	// The shared library is client-only and does NOT split environment source sets, so all of
+	// its code lives in `main` with access to client-only Minecraft classes. This also keeps the
+	// cross-module dependency simple: consumers pull `namedElements` (the main dev jar).
+	accessWidenerPath = file("src/main/resources/bettercosmicshared.accesswidener")
+
+	mods {
+		"bettercosmicshared" {
+			sourceSet sourceSets.main
+		}
+	}
+
+	// This is a library module — there is nothing to launch on its own, so don't generate
+	// IDE run configs for it. Run the mods (:bettersky / :betterprisons) instead.
+	runs {
+		client {
+			ideConfigGenerated false
+		}
+		server {
+			ideConfigGenerated false
+		}
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings loom.officialMojangMappings()
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+}
+
+processResources {
+	inputs.property "version", project.version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": project.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 21
+}
+
+java {
+	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
+}
+
+jar {
+	inputs.property "archivesName", project.base.archivesName
+
+	from("${rootProject.projectDir}/LICENSE") {
+		rename { "${it}_${inputs.properties.archivesName}" }
+	}
+}
+
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			artifactId = project.base.archivesName
+			from components.java
+		}
+	}
+	repositories {
+	}
+}

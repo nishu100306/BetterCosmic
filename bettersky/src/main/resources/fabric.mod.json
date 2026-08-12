@@ -1,0 +1,32 @@
+{
+	"schemaVersion": 1,
+	"id": "bettersky",
+	"version": "${version}",
+	"name": "BetterSky",
+	"description": "A client-side QOL mod for CosmicSky.",
+	"authors": [
+		"nishu06"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "ARR",
+	"icon": "assets/bettersky/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"dev.nishu.bettercosmic.sky.client.BetterSkyClient"
+		]
+	},
+	"mixins": [
+		"bettersky.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.17.3",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*",
+		"bettercosmicshared": "*"
+	}
+}

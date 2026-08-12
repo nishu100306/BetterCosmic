@@ -1,0 +1,5 @@
+accessWidener	v2	named
+
+# Access-widener for BetterPrisons (Mojang mappings).
+# STUB: entries are added here as BP code is ported in. When porting from the Yarn-based
+# BetterPrisons repo, every entry must be re-expressed in Mojang names.
