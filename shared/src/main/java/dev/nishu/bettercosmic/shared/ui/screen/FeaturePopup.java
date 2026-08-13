@@ -51,7 +51,7 @@ public final class FeaturePopup extends UiElement {
 	private int closeX, closeY;
 	private static final int CLOSE = 12;
 
-	public FeaturePopup(ConfigPanel panel, int screenW, int screenH) {
+	public FeaturePopup(ConfigPanel panel, int screenW, int screenH, OverlayLayer overlay) {
 		this.panel = panel;
 		this.screenW = screenW;
 		this.screenH = screenH;
@@ -62,7 +62,7 @@ public final class FeaturePopup extends UiElement {
 			items.add(gl);
 			cH += GroupLabel.HEIGHT;
 			for (Option<?> opt : group.options) {
-				items.add(new OptionRow(opt));
+				items.add(new OptionRow(opt, overlay, screenH));
 				cH += OptionRow.HEIGHT;
 			}
 		}

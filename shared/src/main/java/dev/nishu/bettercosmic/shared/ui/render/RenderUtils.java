@@ -90,6 +90,32 @@ public final class RenderUtils {
 		return font().lineHeight;
 	}
 
+	/** Filled triangle pointing left (apex at the left edge of the box). */
+	public static void triLeft(GuiGraphics g, int x, int y, int w, int h, int color) {
+		int cy = h / 2;
+		for (int i = 0; i < h; i++) {
+			int lead = (int) ((float) Math.abs(i - cy) / cy * w);
+			g.fill(x + lead, y + i, x + w, y + i + 1, color);
+		}
+	}
+
+	/** Filled triangle pointing right (apex at the right edge of the box). */
+	public static void triRight(GuiGraphics g, int x, int y, int w, int h, int color) {
+		int cy = h / 2;
+		for (int i = 0; i < h; i++) {
+			int end = (int) (x + w - ((float) Math.abs(i - cy) / cy) * w);
+			g.fill(x, y + i, end, y + i + 1, color);
+		}
+	}
+
+	/** Filled triangle pointing down (apex at the bottom-center of the box). */
+	public static void triDown(GuiGraphics g, int x, int y, int w, int h, int color) {
+		for (int i = 0; i < h; i++) {
+			int inset = (int) ((float) i / h * (w / 2f));
+			g.fill(x + inset, y + i, x + w - inset, y + i + 1, color);
+		}
+	}
+
 	/**
 	 * Clips subsequent drawing to the given rectangle until {@link #popScissor} is called. Nested
 	 * calls intersect (handled by {@code GuiGraphics}). Coordinates are GUI-space.

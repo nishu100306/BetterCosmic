@@ -27,6 +27,21 @@ public class SkyConfig extends BetterCosmicConfig {
 	 */
 	public boolean trinketChargesOverlay = true;
 
-	/** RGB color of the trinket-charges overlay number. */
+	/** Text scale of the trinket-charges overlay number. */
+	public double trinketChargesScale = 0.7;
+
+	/**
+	 * Where in the slot the trinket-charges number sits — one of the friendly labels
+	 * "Top-left", "Top-right", "Bottom-left", "Bottom-right", "Center".
+	 */
+	public String trinketChargesAnchor = "Bottom-left";
+
+	/**
+	 * Where the overlay number's color comes from: "Potion color" (from the trinket's potion) or
+	 * "Custom" (always {@link #trinketChargesColor}).
+	 */
+	public String trinketColorSource = "Potion color";
+
+	/** RGB color of the trinket-charges overlay number (used when the source is "Custom"). */
 	public int trinketChargesColor = 0xFFFFFF;
 }

@@ -43,13 +43,25 @@ public class BetterSkyClient implements ClientModInitializer {
 				Options.toggle("Charge overlay",
 						() -> config.trinketChargesOverlay,
 						v -> { config.trinketChargesOverlay = v; config.save(); })
-						.tooltip("Show remaining uses on potion trinkets.")
+						.tooltip("Show remaining uses on potion trinkets."),
+				Options.slider("Scale", 0.3, 1.5, 0.05,
+						() -> config.trinketChargesScale,
+						v -> { config.trinketChargesScale = v; config.save(); })
+						.tooltip("Text size of the charge number."),
+				Options.dropdown("Position",
+						List.of("Top-left", "Top-right", "Bottom-left", "Bottom-right", "Center"),
+						() -> config.trinketChargesAnchor,
+						v -> { config.trinketChargesAnchor = v; config.save(); })
 		));
 		OptionGroup colorGroup = new OptionGroup("Color", List.of(
+				Options.dropdown("Source", List.of("Potion color", "Custom"),
+						() -> config.trinketColorSource,
+						v -> { config.trinketColorSource = v; config.save(); })
+						.tooltip("Use the trinket's potion color, or your custom color."),
 				Options.color("Custom color",
 						() -> config.trinketChargesColor,
 						v -> { config.trinketChargesColor = v; config.save(); })
-						.tooltip("Used only when the trinket has no potion color.")
+						.tooltip("Used only when Source is Custom.")
 		));
 		ConfigRegistry.register(ConfigPanel.of("trinkets", "Trinkets",
 				"Potion trinket charge overlay", PanelIcon.FLASK, List.of(overlayGroup, colorGroup)));

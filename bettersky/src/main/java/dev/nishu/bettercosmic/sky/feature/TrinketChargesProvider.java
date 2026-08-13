@@ -63,13 +63,31 @@ public final class TrinketChargesProvider implements ItemOverlayProvider {
 		int maxUses = nbt.getIntOr("maxUses", Integer.MAX_VALUE);
 		int shown = Math.min(nameCount, maxUses);
 
-		// Vanilla potion color, derived from the trinket's potion effects. Falls back to the
-		// configured color only if the item somehow has no potion_contents component.
-		PotionContents potion = stack.get(DataComponents.POTION_CONTENTS);
-		int rgb = potion != null ? potion.getColor() : BetterSkyClient.config.trinketChargesColor;
+		// Color: either the vanilla potion color (default) or the user's custom color, per config.
+		// The potion source falls back to the custom color if the item has no potion_contents.
+		int rgb;
+		if ("Custom".equals(BetterSkyClient.config.trinketColorSource)) {
+			rgb = BetterSkyClient.config.trinketChargesColor;
+		} else {
+			PotionContents potion = stack.get(DataComponents.POTION_CONTENTS);
+			rgb = potion != null ? potion.getColor() : BetterSkyClient.config.trinketChargesColor;
+		}
 
 		int color = 0xFF000000 | (rgb & 0xFFFFFF);
-		return new SlotOverlay(String.valueOf(shown), color, 0.7f, true, Anchor.BOTTOM_LEFT);
+		float scale = (float) BetterSkyClient.config.trinketChargesScale;
+		Anchor anchor = anchorFromLabel(BetterSkyClient.config.trinketChargesAnchor);
+		return new SlotOverlay(String.valueOf(shown), color, scale, true, anchor);
+	}
+
+	/** Maps a friendly position label from config to a {@link Anchor} (defaults to bottom-left). */
+	private static Anchor anchorFromLabel(String label) {
+		return switch (label) {
+			case "Top-left" -> Anchor.TOP_LEFT;
+			case "Top-right" -> Anchor.TOP_RIGHT;
+			case "Bottom-right" -> Anchor.BOTTOM_RIGHT;
+			case "Center" -> Anchor.CENTER;
+			default -> Anchor.BOTTOM_LEFT;
+		};
 	}
 
 	/** @return the number inside the name's trailing "(...)", or {@code null} if none/unparseable. */

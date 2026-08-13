@@ -66,7 +66,7 @@ public final class ConfigScreen extends Screen {
 		if (panel == null || panel.placeholder || panel.groups.isEmpty()) {
 			return;
 		}
-		FeaturePopup popup = new FeaturePopup(panel, this.width, this.height);
+		FeaturePopup popup = new FeaturePopup(panel, this.width, this.height, overlay);
 		popup.setOnClose(() -> overlay.remove(popup));
 		overlay.add(popup);
 	}
