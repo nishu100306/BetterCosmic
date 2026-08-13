@@ -2,6 +2,7 @@ package dev.nishu.bettercosmic.shared;
 
 import dev.nishu.bettercosmic.shared.command.DevCommands;
 import dev.nishu.bettercosmic.shared.config.SharedConfig;
+import dev.nishu.bettercosmic.shared.ui.ConfigUi;
 import net.fabricmc.api.ClientModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,9 @@ public class BetterCosmicShared implements ClientModInitializer {
 
 		// Register the shared dev commands (/bdev toggle + gated /bitem, ...).
 		DevCommands.register();
+
+		// Register the config-UI keybind (default I) that opens the shared config screen.
+		ConfigUi.init();
 
 		LOGGER.info("BetterCosmic Shared library initialized (config dir: {}).",
 				SharedConfig.configDir());
