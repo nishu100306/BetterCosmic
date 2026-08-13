@@ -1,21 +1,21 @@
-package dev.nishu.bettercosmic.shared.ui.screen;
+package dev.nishu.bettercosmic.shared.ui.core;
 
-import dev.nishu.bettercosmic.shared.ui.core.UiElement;
 import net.minecraft.client.gui.GuiGraphics;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A single top-most render + input pass shared by the config screen. Transient, floating elements —
- * open dropdown lists, the color-picker popup — register here instead of drawing inline, so they
- * paint <em>above</em> every sibling row (fixing the classic "dropdown drawn under the next row"
- * problem) and get first refusal on input.
+ * A screen-level top-most render + input pass. The config screen uses it to host the open
+ * {@link dev.nishu.bettercosmic.shared.ui.screen.FeaturePopup} above the panel grid — the popup
+ * paints last and gets first refusal on input.
  *
- * <p>The host screen renders its normal tree, then calls {@link #render}; and on each input event it
- * offers the event to {@link #mouseClicked} (etc.) <em>before</em> the tree, dispatching to overlays
- * top-first. Overlays are ordinary {@link UiElement}s and enforce their own modality by consuming
- * events (e.g. a dropdown list closes and returns {@code true} on an outside click).
+ * <p>Floating children <em>inside</em> the popup (dropdown lists, the color picker) are not overlays
+ * here; the popup owns them via {@link ModalHost}. This layer therefore usually holds just the popup,
+ * but keeps its stack shape for any future screen-level overlay.
+ *
+ * <p>Only the topmost overlay receives the real mouse; lower ones get an off-screen mouse so nothing
+ * beneath the active overlay shows a hover state or tooltip.
  */
 public final class OverlayLayer {
 
@@ -44,11 +44,7 @@ public final class OverlayLayer {
 		return !overlays.isEmpty();
 	}
 
-	/**
-	 * Draws overlays bottom-to-top, after the host's normal tree. Only the topmost overlay receives
-	 * the real mouse position; lower overlays get an off-screen mouse so nothing beneath the active
-	 * one shows a hover state or tooltip (e.g. the popup while a dropdown list is open).
-	 */
+	/** Draws overlays bottom-to-top, after the host's normal tree; only the topmost gets the real mouse. */
 	public void render(GuiGraphics g, int mouseX, int mouseY, float dt) {
 		int last = overlays.size() - 1;
 		for (int i = 0; i < overlays.size(); i++) {

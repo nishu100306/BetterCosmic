@@ -1,5 +1,6 @@
 package dev.nishu.bettercosmic.shared.ui.screen;
 
+import dev.nishu.bettercosmic.shared.ui.core.OverlayLayer;
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigPanel;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigRegistry;
@@ -14,9 +15,9 @@ import org.lwjgl.glfw.GLFW;
 
 /**
  * Host screen for the config UI: a centered translucent window over the blurred world, with a
- * branded header, the paginated {@link PanelGrid}, and a footer {@link Pager} + Done button. Opening
- * a real panel is wired in Phase 2 (the {@link FeaturePopup}); for now a click is routed to
- * {@link #openPanel}, which no-ops until popups exist.
+ * branded header, the paginated {@link PanelGrid}, and a footer {@link Pager} + Done button. Clicking
+ * a real panel routes to {@link #openPanel}, which opens its {@link FeaturePopup} in the
+ * {@link OverlayLayer}.
  *
  * <p>Render passes run in order — window → grid → {@link OverlayLayer} → tooltip — so floating
  * overlays (dropdowns, color picker) always paint on top and take input first.
@@ -66,7 +67,7 @@ public final class ConfigScreen extends Screen {
 		if (panel == null || panel.placeholder || panel.groups.isEmpty()) {
 			return;
 		}
-		FeaturePopup popup = new FeaturePopup(panel, this.width, this.height, overlay);
+		FeaturePopup popup = new FeaturePopup(panel, this.width, this.height);
 		popup.setOnClose(() -> overlay.remove(popup));
 		overlay.add(popup);
 	}

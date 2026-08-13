@@ -1,5 +1,7 @@
 package dev.nishu.bettercosmic.shared.ui.screen;
 
+import dev.nishu.bettercosmic.shared.ui.core.ModalHost;
+import dev.nishu.bettercosmic.shared.ui.core.OverlayLayer;
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.core.UiElement;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigPanel;
@@ -7,7 +9,6 @@ import dev.nishu.bettercosmic.shared.ui.model.Option;
 import dev.nishu.bettercosmic.shared.ui.model.OptionGroup;
 import dev.nishu.bettercosmic.shared.ui.render.ColorUtils;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
-import dev.nishu.bettercosmic.shared.ui.widget.ColorPicker;
 import dev.nishu.bettercosmic.shared.ui.widget.GroupLabel;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -17,19 +18,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A centered, modal feature popup — "one BetterPrisons tab" — opened from a panel card. Dims the
- * whole screen, draws a translucent bordered box with an icon+title header and a {@code ✕}, then a
- * scissor-clipped, scrollable body of {@link GroupLabel}s and {@link OptionRow}s with a thin
- * scrollbar when the content overflows.
+ * A centered feature popup — "one BetterPrisons tab" — opened from a panel card. Dims the whole
+ * screen, draws a bordered box with an icon+title header and a {@code ✕}, then a scissor-clipped,
+ * scrollable body of {@link GroupLabel}s and {@link OptionRow}s with a thin scrollbar when the
+ * content overflows. Held by the screen's {@link OverlayLayer}; closes on {@code ✕}, click-outside,
+ * or {@code Esc}.
  *
- * <p>Registered into the {@link OverlayLayer}, so it paints above the grid and takes input first;
- * it closes on the {@code ✕}, a click outside the box, or {@code Esc}.
- *
- * <p>The color picker opens as an attached right-hand sidebar ({@link ColorPicker}) on this same
- * layer — not a separate overlay — so there's no z-order ambiguity. While it's open the popup body is
- * inert (rows get an off-screen mouse; input routes to the picker).
+ * <p>As a {@link ModalHost} it owns a single transient <em>modal</em> child on its own layer — the
+ * color picker (a right-hand sidebar) or an open dropdown list. While a modal is open the body is
+ * inert: rows get an off-screen mouse and all input routes to the modal.
  */
-public final class FeaturePopup extends UiElement implements ColorPickerHost {
+public final class FeaturePopup extends UiElement implements ModalHost {
 
 	private static final int POP_W = 300;
 	private static final int HEADER = 18;
@@ -55,10 +54,10 @@ public final class FeaturePopup extends UiElement implements ColorPickerHost {
 	private int closeX, closeY;
 	private static final int CLOSE = 12;
 
-	// color-picker sidebar (attached; on this layer). null when closed.
-	private ColorPicker activePicker;
+	// single active modal (color picker sidebar or open dropdown list). null when none.
+	private UiElement activeModal;
 
-	public FeaturePopup(ConfigPanel panel, int screenW, int screenH, OverlayLayer overlay) {
+	public FeaturePopup(ConfigPanel panel, int screenW, int screenH) {
 		this.panel = panel;
 		this.screenW = screenW;
 		this.screenH = screenH;
@@ -69,7 +68,7 @@ public final class FeaturePopup extends UiElement implements ColorPickerHost {
 			items.add(gl);
 			cH += GroupLabel.HEIGHT;
 			for (Option<?> opt : group.options) {
-				items.add(new OptionRow(opt, overlay, this, screenH));
+				items.add(new OptionRow(opt, this, screenH));
 				cH += OptionRow.HEIGHT;
 			}
 		}
@@ -113,11 +112,11 @@ public final class FeaturePopup extends UiElement implements ColorPickerHost {
 		boolean closeHover = hit(mouseX, mouseY, closeX, closeY, CLOSE, CLOSE);
 		drawCross(g, closeX, closeY, CLOSE, closeHover ? Theme.text : Theme.muted);
 
-		// While the picker sidebar is open the body is inert: feed rows an off-screen mouse so
-		// nothing behind the picker shows a hover state or tooltip.
-		boolean pickerOpen = activePicker != null;
-		int bmx = pickerOpen ? -1 : mouseX;
-		int bmy = pickerOpen ? -1 : mouseY;
+		// While a modal is open the body is inert: feed rows an off-screen mouse so nothing behind
+		// the modal shows a hover state or tooltip.
+		boolean modalOpen = activeModal != null;
+		int bmx = modalOpen ? -1 : mouseX;
+		int bmy = modalOpen ? -1 : mouseY;
 
 		// body (scissor-clipped, scrollable)
 		int itemW = POP_W - 2 * PAD_X - (scrollbar ? SCROLLBAR + 3 : 0);
@@ -145,14 +144,14 @@ public final class FeaturePopup extends UiElement implements ColorPickerHost {
 			RenderUtils.rect(g, trackX, thumbY, SCROLLBAR, thumbH, Theme.accent);
 		}
 
-		// tooltip (suppressed while the picker is open)
-		if (!pickerOpen) {
+		// tooltip (suppressed while a modal is open)
+		if (!modalOpen) {
 			renderTooltip(g, mouseX, mouseY);
 		}
 
-		// color-picker sidebar, drawn on this same layer beside the popup
-		if (pickerOpen) {
-			activePicker.render(g, mouseX, mouseY, dt);
+		// active modal (picker sidebar / dropdown list), drawn on this same layer, on top
+		if (modalOpen) {
+			activeModal.render(g, mouseX, mouseY, dt);
 		}
 	}
 
@@ -180,8 +179,8 @@ public final class FeaturePopup extends UiElement implements ColorPickerHost {
 
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
-		if (activePicker != null) {
-			activePicker.mouseClicked(mouseX, mouseY, button); // handles inside / OK / Cancel / away
+		if (activeModal != null) {
+			activeModal.mouseClicked(mouseX, mouseY, button); // handles inside / select / OK / Cancel / away
 			return true;
 		}
 		if (button == 0 && hit(mouseX, mouseY, closeX, closeY, CLOSE, CLOSE)) {
@@ -202,8 +201,8 @@ public final class FeaturePopup extends UiElement implements ColorPickerHost {
 
 	@Override
 	public boolean mouseReleased(double mouseX, double mouseY, int button) {
-		if (activePicker != null) {
-			activePicker.mouseReleased(mouseX, mouseY, button);
+		if (activeModal != null) {
+			activeModal.mouseReleased(mouseX, mouseY, button);
 			return true;
 		}
 		for (UiElement item : items) {
@@ -214,8 +213,8 @@ public final class FeaturePopup extends UiElement implements ColorPickerHost {
 
 	@Override
 	public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-		if (activePicker != null) {
-			activePicker.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+		if (activeModal != null) {
+			activeModal.mouseDragged(mouseX, mouseY, button, dragX, dragY);
 			return true;
 		}
 		for (UiElement item : items) {
@@ -228,8 +227,9 @@ public final class FeaturePopup extends UiElement implements ColorPickerHost {
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-		if (activePicker != null) {
-			return true; // ignore scroll while picking
+		if (activeModal != null) {
+			activeModal.mouseScrolled(mouseX, mouseY, scrollX, scrollY); // e.g. dropdown list closes
+			return true;
 		}
 		if (maxScroll > 0) {
 			scroll = Math.max(0, Math.min(maxScroll, scroll - (int) (scrollY * 14)));
@@ -239,8 +239,8 @@ public final class FeaturePopup extends UiElement implements ColorPickerHost {
 
 	@Override
 	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-		if (activePicker != null) {
-			activePicker.keyPressed(keyCode, scanCode, modifiers); // Esc cancels the picker
+		if (activeModal != null) {
+			activeModal.keyPressed(keyCode, scanCode, modifiers); // Esc cancels the modal
 			return true;
 		}
 		if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
@@ -257,8 +257,8 @@ public final class FeaturePopup extends UiElement implements ColorPickerHost {
 
 	@Override
 	public boolean charTyped(char chr, int modifiers) {
-		if (activePicker != null) {
-			activePicker.charTyped(chr, modifiers); // hex typing
+		if (activeModal != null) {
+			activeModal.charTyped(chr, modifiers); // hex typing
 			return true;
 		}
 		for (UiElement item : items) {
@@ -269,19 +269,31 @@ public final class FeaturePopup extends UiElement implements ColorPickerHost {
 		return true;
 	}
 
+	// ---- ModalHost ----
+
 	@Override
-	public void openColorPicker(Option<Integer> option) {
+	public void openModal(UiElement modal) {
+		activeModal = modal;
+	}
+
+	@Override
+	public void closeModal() {
+		activeModal = null;
+	}
+
+	@Override
+	public int[] sidebarPosition(int modalW, int modalH) {
 		int gap = 6;
 		int sx;
-		if (px + POP_W + gap + ColorPicker.WIDTH <= screenW - 2) {
-			sx = px + POP_W + gap;                 // sidebar on the right (preferred)
-		} else if (px - gap - ColorPicker.WIDTH >= 2) {
-			sx = px - gap - ColorPicker.WIDTH;     // no room right — sidebar on the left
+		if (px + POP_W + gap + modalW <= screenW - 2) {
+			sx = px + POP_W + gap;              // sidebar on the right (preferred)
+		} else if (px - gap - modalW >= 2) {
+			sx = px - gap - modalW;             // no room right — sidebar on the left
 		} else {
-			sx = (screenW - ColorPicker.WIDTH) / 2; // too cramped — center over the popup
+			sx = (screenW - modalW) / 2;        // too cramped — center over the popup
 		}
-		int sy = Math.max(2, Math.min(py, screenH - ColorPicker.HEIGHT - 2));
-		activePicker = new ColorPicker(option, sx, sy, () -> activePicker = null);
+		int sy = Math.max(2, Math.min(py, screenH - modalH - 2));
+		return new int[] { sx, sy };
 	}
 
 	private void close() {

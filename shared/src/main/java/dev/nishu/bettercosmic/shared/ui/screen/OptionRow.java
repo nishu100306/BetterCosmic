@@ -1,5 +1,6 @@
 package dev.nishu.bettercosmic.shared.ui.screen;
 
+import dev.nishu.bettercosmic.shared.ui.core.ModalHost;
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.core.UiElement;
 import dev.nishu.bettercosmic.shared.ui.model.Option;
@@ -17,9 +18,9 @@ import net.minecraft.network.chat.Component;
  * differs from its default — a small reset (revert) glyph just left of the control.
  *
  * <p>The control is the interactive widget for the option's {@link Option.Kind}: {@link Toggle},
- * {@link Slider}, {@link Dropdown}. Color and text kinds are still shown read-only here (their
- * widgets — the color swatch/picker and text field — arrive in Phase 4); the reset glyph and layout
- * already work for them. Input is forwarded to the hosted widget.
+ * {@link Slider}, {@link Dropdown}, {@link ColorSwatch}. TEXT (and LABEL/LINK/KEYBIND) are shown
+ * read-only for now; the reset glyph and layout already work for them. Input is forwarded to the
+ * hosted widget.
  */
 public final class OptionRow extends UiElement {
 
@@ -33,18 +34,18 @@ public final class OptionRow extends UiElement {
 	private boolean resetShown;
 	private int resetX, resetY;
 
-	public OptionRow(Option<?> option, OverlayLayer overlay, ColorPickerHost pickerHost, int screenH) {
+	public OptionRow(Option<?> option, ModalHost host, int screenH) {
 		this.option = option;
-		this.widget = buildWidget(overlay, pickerHost, screenH);
+		this.widget = buildWidget(host, screenH);
 	}
 
 	@SuppressWarnings("unchecked")
-	private UiElement buildWidget(OverlayLayer overlay, ColorPickerHost pickerHost, int screenH) {
+	private UiElement buildWidget(ModalHost host, int screenH) {
 		return switch (option.kind) {
 			case TOGGLE -> new Toggle((Option<Boolean>) option);
 			case SLIDER, INT_SLIDER -> new Slider(option);
-			case DROPDOWN -> new Dropdown((Option<String>) option, overlay, screenH);
-			case COLOR -> new ColorSwatch((Option<Integer>) option, pickerHost);
+			case DROPDOWN -> new Dropdown((Option<String>) option, host, screenH);
+			case COLOR -> new ColorSwatch((Option<Integer>) option, host);
 			default -> null; // TEXT read-only until it has a consumer; LABEL/LINK/KEYBIND have no widget
 		};
 	}

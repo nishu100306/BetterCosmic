@@ -20,13 +20,21 @@ New package tree, all under `:shared`:
 
 ```
 dev.nishu.bettercosmic.shared.ui
-  .render     RenderUtils, ColorUtils           — GuiGraphics drawing + color math
-  .core       UiElement (base), Theme, Tooltip   — base component, theme tokens, hover tooltips
-  .widget     Toggle, Slider, IntSlider, Dropdown, TextField,
-              ColorSwatch, ColorPickerPopup, KeybindButton, GroupLabel, LinkButton
-  .screen     ConfigScreen, PanelGrid, Pager, FeaturePopup, OverlayLayer
+  .render     RenderUtils, ColorUtils                 — GuiGraphics drawing + color math
+  .core       UiElement (base), Theme, OverlayLayer,  — base component, theme tokens, screen-level
+              ModalHost                                 overlay stack, popup-owned modal contract
+  .widget     Toggle, Slider, IntSlider, Dropdown, DropdownList, TextField,
+              ColorSwatch, ColorPicker, KeybindButton, GroupLabel, LinkButton
+  .screen     ConfigScreen, PanelGrid, Pager, FeaturePopup
   .model      ConfigPanel, OptionGroup, Option (+ Options builder factory), ConfigRegistry
 ```
+
+> **Architecture revision (post-P4).** `OverlayLayer` and the popup's modal contract (`ModalHost`)
+> live in `ui.core`, not `ui.screen`, so `ui.widget` depends only on `ui.core` (no `widget ↔ screen`
+> cycle). Floating children *inside* a popup — the open dropdown list and the color picker — are not
+> screen overlays; the `FeaturePopup` owns them as a single `ModalHost` modal (see §1 layering and
+> §4.8). `ColorPickerPopup` was renamed `ColorPicker` and is a popup-attached sidebar, not a modal
+> overlay.
 
 **Two-model split** (mechanism vs content, per `ARCHITECTURE.md`):
 - The framework (`ui.*`) is content-agnostic.
@@ -55,11 +63,13 @@ dev.nishu.bettercosmic.shared.ui
 `keyPressed/charTyped`, `isMouseOver`, `tooltip()`. The screen extends vanilla `Screen` for lifecycle
 and forwards events to the element tree.
 
-**Layering / overlays** — MC `GuiGraphics` draws in call order, so the screen renders in passes:
-`grid → popup body → OverlayLayer (open dropdown lists, the color-picker popup) → tooltip`. Open
-overlays register into `OverlayLayer` so they paint above sibling rows and receive clicks first
-(fixes the classic "dropdown drawn under the next row" problem, and matches BP's popup-on-top
-behavior).
+**Layering / modals** — MC `GuiGraphics` draws in call order, so rendering runs in passes. At the
+screen level: `grid → OverlayLayer (the open FeaturePopup) → tooltip`; only the topmost overlay gets
+the real mouse, so lower layers show no hover. *Inside* the popup: `body → tooltip → active modal`.
+The popup is a `ModalHost` with a single `activeModal` slot — an open dropdown list or the color
+picker register via `openModal`, paint above sibling rows, receive input first, and make the body
+inert while open (fixes the classic "dropdown drawn under the next row" problem and the "popup
+behind still hovers" problem, with one enforced-single-modal mechanism instead of two).
 
 ---
 
@@ -81,7 +91,7 @@ Every BP `ui/custom` element, and where it lands. **Port** = translate Yarn→Mo
 | `containers/SidebarContainer` (tab list) | `ui.screen.PanelGrid` + `Pager` | Replace | New nav: 6-up grid + pagination instead of a scrolling sidebar. |
 | `containers/CategoryContainer` (tab body) | `ui.screen.FeaturePopup` body | Replace | Same job (scrollable option list), now a centered popup. |
 | `containers/ScrollContainer` | scroll baked into `FeaturePopup` (+ reusable helper) | Port | Scissor-clipped content + thin scrollbar. |
-| `containers/ColorPickerPopup` | `ui.widget.ColorPickerPopup` | Port | Keep HSV square + hue bar + hex + drag; restyle compact, delete debug logging (see §4.8). |
+| `containers/ColorPickerPopup` | `ui.widget.ColorPicker` (popup modal sidebar) | Port | Keep HSV square + hue bar + hex + drag; restyle compact, delete debug logging; opened via `ModalHost`, not a screen overlay (see §4.8). |
 | `screens/CustomConfigScreen` (1688 lines) | `ui.screen.ConfigScreen` + `FeaturePopup` | Replace | Split host screen (grid) from feature popup; no hardcoded categories. |
 | `screens/EnhancedHudEditorScreen` | (future) HUD editor | Defer | BetterSky has no HUDs yet. |
 | `screens/WaypointsScreen`, energy-calc GUI | BetterPrisons content | Out of scope | Feature content, not framework. |
@@ -198,7 +208,9 @@ hover state, and reports a `tooltip`. All colors come from `Theme`.
     outside cancels. `ColorUtils.hsvToRgb/rgbToHsv/parseHex` port verbatim.
   - **Fix/modernize:** delete all `System.out.println` debug logging; replace GL11 scissor with
     `GuiGraphics.enableScissor`; live-preview the target option as you drag (call `Option.set` on
-    change, revert on Cancel); render in `OverlayLayer` so it's above everything.
+    change, revert on Cancel); open as the popup's `ModalHost` modal — a right-hand sidebar on the
+    popup's own layer (falls back to left, then center) — so it's above the body with no separate
+    overlay (renamed `ColorPickerPopup` → `ColorPicker`).
   - **Risk:** SV-square block rendering cost — keep the cache; at 120px/4px blocks that's ~900 fills,
     cheap and cached.
 - **Faithful?** Yes, and upgraded (live preview, cleaner scissor).

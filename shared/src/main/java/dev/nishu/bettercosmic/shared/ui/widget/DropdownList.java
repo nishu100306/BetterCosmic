@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * The open list of a {@link Dropdown}, rendered as a floating {@link UiElement} in the screen's
- * {@link dev.nishu.bettercosmic.shared.ui.screen.OverlayLayer} so it paints above every popup row and
+ * The open list of a {@link Dropdown}, rendered as the host popup's modal (see
+ * {@link dev.nishu.bettercosmic.shared.ui.core.ModalHost}) so it paints above every popup row and
  * takes input first. Opaque, with the current value marked by an accent tick. Selecting an item or
  * clicking away closes it.
  */
