@@ -1,0 +1,62 @@
+package dev.nishu.bettercosmic.shared.ui;
+
+import dev.nishu.bettercosmic.shared.config.SharedConfig;
+import dev.nishu.bettercosmic.shared.ui.core.Theme;
+import dev.nishu.bettercosmic.shared.ui.model.ConfigPanel;
+import dev.nishu.bettercosmic.shared.ui.model.Option;
+import dev.nishu.bettercosmic.shared.ui.model.OptionGroup;
+import dev.nishu.bettercosmic.shared.ui.model.Options;
+import dev.nishu.bettercosmic.shared.ui.model.PanelIcon;
+
+import java.util.List;
+
+/**
+ * The shared <b>General</b> config panel — dev mode, number formatting, and the compact UI theme —
+ * bound to {@link SharedConfig}. Lives in {@code :shared} so both mods expose the same panel; each
+ * mod registers it via {@link #create()}. Theme color options save and reload {@link Theme} so edits
+ * repaint the UI immediately.
+ */
+public final class GeneralPanel {
+
+	private GeneralPanel() {}
+
+	public static ConfigPanel create() {
+		SharedConfig c = SharedConfig.get();
+
+		OptionGroup general = new OptionGroup("General", List.of(
+			Options.toggle("Developer mode",
+				() -> c.developerMode,
+				v -> { c.developerMode = v; c.save(); })
+				.tooltip("Enables the shared dev commands (/bitem)."),
+			Options.toggle("Comma number format",
+				() -> c.useCommaFormatting,
+				v -> { c.useCommaFormatting = v; c.save(); })
+				.tooltip("1,234,567 instead of 1.2M.")
+		));
+
+		OptionGroup theme = new OptionGroup("Theme", List.of(
+			themeColor("Accent", () -> c.themeAccent, v -> c.themeAccent = v),
+			themeColor("Surface", () -> c.themeSurface, v -> c.themeSurface = v),
+			themeColor("Surface hover", () -> c.themeSurfaceHover, v -> c.themeSurfaceHover = v),
+			themeColor("Ground", () -> c.themeGround, v -> c.themeGround = v),
+			themeColor("Line", () -> c.themeLine, v -> c.themeLine = v),
+			themeColor("Text", () -> c.themeText, v -> c.themeText = v),
+			themeColor("Muted", () -> c.themeMuted, v -> c.themeMuted = v),
+			themeColor("Faint", () -> c.themeFaint, v -> c.themeFaint = v)
+		));
+
+		return ConfigPanel.of("general", "General", "Access, formatting & theme",
+			PanelIcon.GEAR, List.of(general, theme));
+	}
+
+	private static Option<Integer> themeColor(String label,
+											  java.util.function.Supplier<Integer> get,
+											  java.util.function.Consumer<Integer> set) {
+		SharedConfig c = SharedConfig.get();
+		return Options.color(label, get, v -> {
+			set.accept(v);
+			c.save();
+			Theme.load(); // live repaint
+		});
+	}
+}

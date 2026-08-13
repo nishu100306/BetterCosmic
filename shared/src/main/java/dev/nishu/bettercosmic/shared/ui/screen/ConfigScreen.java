@@ -48,6 +48,7 @@ public final class ConfigScreen extends Screen {
 	@Override
 	protected void init() {
 		Theme.load();
+		overlay.clear(); // drop any popup left open across a resize
 		x0 = (this.width - W) / 2;
 		y0 = (this.height - H) / 2;
 
@@ -62,12 +63,21 @@ public final class ConfigScreen extends Screen {
 	}
 
 	private void openPanel(ConfigPanel panel) {
-		// Phase 2 opens the FeaturePopup here. Until then, real-panel clicks are a no-op.
+		if (panel == null || panel.placeholder || panel.groups.isEmpty()) {
+			return;
+		}
+		FeaturePopup popup = new FeaturePopup(panel, this.width, this.height);
+		popup.setOnClose(() -> overlay.remove(popup));
+		overlay.add(popup);
 	}
 
 	@Override
 	public void render(GuiGraphics g, int mouseX, int mouseY, float dt) {
-		this.renderBackground(g, mouseX, mouseY, dt); // blurred world + dim
+		// Dim the world behind us. Deliberately NOT renderBackground(): that applies the GUI blur
+		// post-effect, which throws "Can only blur once per frame" when something (Iris/Sodium in the
+		// user's modpack) has already blurred this frame. renderTransparentBackground draws the
+		// vanilla translucent darkening gradient with no blur, so it's crash-proof everywhere.
+		this.renderTransparentBackground(g);
 
 		// window
 		RenderUtils.rect(g, x0, y0, W, H, Theme.surface);

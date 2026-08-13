@@ -77,7 +77,7 @@ public final class PanelCard extends UiElement {
 		} else {
 			int dot = 4;
 			RenderUtils.rect(g, textX, metaY + 2, dot, dot, Theme.accent);
-			RenderUtils.text(g, panel.settingsCount + " SETTINGS", textX + dot + 5, metaY, Theme.faint);
+			RenderUtils.text(g, panel.settingsCount() + " SETTINGS", textX + dot + 5, metaY, Theme.faint);
 		}
 	}
 
