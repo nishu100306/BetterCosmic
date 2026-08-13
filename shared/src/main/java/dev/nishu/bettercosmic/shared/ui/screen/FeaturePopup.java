@@ -62,7 +62,7 @@ public final class FeaturePopup extends UiElement {
 			items.add(gl);
 			cH += GroupLabel.HEIGHT;
 			for (Option<?> opt : group.options) {
-				items.add(new OptionRow(opt, overlay, screenH));
+				items.add(new OptionRow(opt, overlay, screenW, screenH));
 				cH += OptionRow.HEIGHT;
 			}
 		}

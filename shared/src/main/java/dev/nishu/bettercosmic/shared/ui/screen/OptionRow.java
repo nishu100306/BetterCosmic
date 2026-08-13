@@ -5,6 +5,7 @@ import dev.nishu.bettercosmic.shared.ui.core.UiElement;
 import dev.nishu.bettercosmic.shared.ui.model.Option;
 import dev.nishu.bettercosmic.shared.ui.render.ColorUtils;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
+import dev.nishu.bettercosmic.shared.ui.widget.ColorSwatch;
 import dev.nishu.bettercosmic.shared.ui.widget.Dropdown;
 import dev.nishu.bettercosmic.shared.ui.widget.Slider;
 import dev.nishu.bettercosmic.shared.ui.widget.Toggle;
@@ -32,18 +33,19 @@ public final class OptionRow extends UiElement {
 	private boolean resetShown;
 	private int resetX, resetY;
 
-	public OptionRow(Option<?> option, OverlayLayer overlay, int screenH) {
+	public OptionRow(Option<?> option, OverlayLayer overlay, int screenW, int screenH) {
 		this.option = option;
-		this.widget = buildWidget(overlay, screenH);
+		this.widget = buildWidget(overlay, screenW, screenH);
 	}
 
 	@SuppressWarnings("unchecked")
-	private UiElement buildWidget(OverlayLayer overlay, int screenH) {
+	private UiElement buildWidget(OverlayLayer overlay, int screenW, int screenH) {
 		return switch (option.kind) {
 			case TOGGLE -> new Toggle((Option<Boolean>) option);
 			case SLIDER, INT_SLIDER -> new Slider(option);
 			case DROPDOWN -> new Dropdown((Option<String>) option, overlay, screenH);
-			default -> null; // COLOR/TEXT read-only until Phase 4; LABEL/LINK/KEYBIND have no widget
+			case COLOR -> new ColorSwatch((Option<Integer>) option, overlay, screenW, screenH);
+			default -> null; // TEXT read-only until it has a consumer; LABEL/LINK/KEYBIND have no widget
 		};
 	}
 
@@ -52,6 +54,7 @@ public final class OptionRow extends UiElement {
 			case TOGGLE -> Toggle.WIDTH;
 			case SLIDER, INT_SLIDER -> Slider.WIDTH;
 			case DROPDOWN -> Dropdown.WIDTH;
+			case COLOR -> ColorSwatch.WIDTH;
 			default -> 0;
 		};
 	}
@@ -99,20 +102,9 @@ public final class OptionRow extends UiElement {
 		}
 	}
 
-	/** Draws the read-only control (color swatch+hex, or plain value); returns its left edge. */
+	/** Draws a read-only value (TEXT/KEYBIND/LINK) right-aligned; returns its left edge. */
 	private int renderReadOnly(GuiGraphics g, int textY) {
 		int rightX = x + w;
-		if (option.kind == Option.Kind.COLOR) {
-			String hex = option.displayValue();
-			int hexW = RenderUtils.textWidth(hex);
-			RenderUtils.text(g, hex, rightX - hexW, textY, Theme.muted);
-			int sw = 8;
-			int sx = rightX - hexW - 5 - sw;
-			int sy = y + (HEIGHT - sw) / 2;
-			RenderUtils.rect(g, sx, sy, sw, sw, 0xFF000000 | (option.colorValue() & 0xFFFFFF));
-			RenderUtils.outline(g, sx, sy, sw, sw, Theme.line);
-			return sx;
-		}
 		String value = option.displayValue();
 		int vw = RenderUtils.textWidth(value);
 		RenderUtils.text(g, value, rightX - vw, textY, Theme.muted);
