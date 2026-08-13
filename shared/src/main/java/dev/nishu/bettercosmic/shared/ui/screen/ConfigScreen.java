@@ -85,11 +85,17 @@ public final class ConfigScreen extends Screen {
 		RenderUtils.hLine(g, x0, y0 + H - FOOTER, W, Theme.line);
 		RenderUtils.outline(g, x0, y0, W, H, Theme.line);
 
-		renderHeader(g, mouseX, mouseY);
+		// While a popup is open it owns the cursor: feed the base layer an off-screen mouse so
+		// nothing behind the popup shows a hover state.
+		boolean blocked = overlay.isActive();
+		int bmx = blocked ? -1 : mouseX;
+		int bmy = blocked ? -1 : mouseY;
 
-		grid.render(g, mouseX, mouseY, dt);
+		renderHeader(g, bmx, bmy);
 
-		renderFooter(g, mouseX, mouseY);
+		grid.render(g, bmx, bmy, dt);
+
+		renderFooter(g, bmx, bmy);
 
 		overlay.render(g, mouseX, mouseY, dt);
 	}

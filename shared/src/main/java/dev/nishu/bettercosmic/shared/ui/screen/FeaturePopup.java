@@ -5,6 +5,7 @@ import dev.nishu.bettercosmic.shared.ui.core.UiElement;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigPanel;
 import dev.nishu.bettercosmic.shared.ui.model.Option;
 import dev.nishu.bettercosmic.shared.ui.model.OptionGroup;
+import dev.nishu.bettercosmic.shared.ui.render.ColorUtils;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
 import dev.nishu.bettercosmic.shared.ui.widget.GroupLabel;
 import net.minecraft.client.gui.GuiGraphics;
@@ -90,9 +91,9 @@ public final class FeaturePopup extends UiElement {
 		// full-screen scrim
 		g.fill(0, 0, screenW, screenH, 0x88050508);
 
-		// popup box
-		RenderUtils.rect(g, px, py, POP_W, popupH, Theme.surfaceHover);
-		RenderUtils.outline(g, px, py, POP_W, popupH, Theme.line);
+		// popup box — opaque so the grid never bleeds through
+		RenderUtils.rect(g, px, py, POP_W, popupH, ColorUtils.withAlpha(Theme.surfaceHover, 0xFF));
+		RenderUtils.outline(g, px, py, POP_W, popupH, ColorUtils.withAlpha(Theme.line, 0xFF));
 
 		// header
 		int hIconY = py + (HEADER - 11) / 2;
