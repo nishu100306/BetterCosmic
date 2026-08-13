@@ -39,9 +39,18 @@ public class SharedConfig extends BetterCosmicConfig {
 	/** Format large numbers with commas (1,234,567) instead of compact suffixes (1.2M). */
 	public boolean useCommaFormatting = false;
 
-	// The UI theme is a strong shared candidate; a couple of representative colors live here for
-	// now, with the full theme (borders, sidebar, tooltips, ...) landing here as the shared UI
-	// framework is ported over from BetterPrisons.
-	public int themeAccentColor = 0xFF4488;
-	public int themeBackgroundColor = 0xE0101010;
+	// ---- UI theme (compact token set, shared + persisted) ----
+	// The config UI derives its entire look from these eight ARGB tokens; see
+	// dev.nishu.bettercosmic.shared.ui.core.Theme, which copies them into static fields at load and
+	// re-reads them when a token is edited in the General panel (live repaint). On/off, selection,
+	// and focus states all derive from `themeAccent`, so there are deliberately no separate
+	// per-widget colors. Defaults are the approved cosmic-sky palette.
+	public int themeGround = 0xE6070810;       // screen dim / deepest ground
+	public int themeSurface = 0xB80E121C;       // panels, cards, popup bodies
+	public int themeSurfaceHover = 0xC8151B2A;  // hovered card / widget background
+	public int themeLine = 0x2996ACD2;          // 1px hairline borders
+	public int themeAccent = 0xFF57D4E6;        // on-states, selection, focus, slider fill
+	public int themeText = 0xFFE7ECF4;          // primary text
+	public int themeMuted = 0xFF8B95A9;         // secondary text / labels
+	public int themeFaint = 0xFF545D70;         // disabled / placeholders
 }
