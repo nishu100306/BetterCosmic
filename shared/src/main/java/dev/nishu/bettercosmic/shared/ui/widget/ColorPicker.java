@@ -9,18 +9,19 @@ import net.minecraft.client.gui.GuiGraphics;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * A compact HSV color picker, ported from BetterPrisons and modernized: a saturation-value square, a
- * thin hue bar, a live hex field, and OK/Cancel. Floats in the screen's {@code OverlayLayer} above
- * everything.
+ * A compact HSV color picker, ported from BetterPrisons and modernized. Rendered as a fixed-position
+ * panel (a right-hand sidebar of the {@link dev.nishu.bettercosmic.shared.ui.screen.FeaturePopup}) on
+ * the <em>same</em> layer as the popup — not a separate overlay — so there is no z-order ambiguity and
+ * the popup owns modality/hover suppression.
  *
- * <p>Kept from BP: the SV-square cache (regenerated only when hue changes) and hue-bar cache with
- * block rendering for perf, drag on both, and typed hex. Changed: all the {@code System.out} debug
- * logging is gone; the compact sky styling (120px square, 8px hue bar, 1px borders); and it
- * <b>live-previews</b> — every change writes the bound {@link Option} immediately (so editing a theme
- * color repaints the whole UI, including this picker), and <b>Cancel</b>/Esc/click-away reverts to
- * the color the picker opened with. The option's original alpha byte is preserved on every write.
+ * <p>Kept from BP: the SV-square cache (regenerated only when hue changes) + hue-bar cache with block
+ * rendering, drag on both, and typed live hex. Changed: the BP {@code System.out} debug logging is
+ * gone; compact sky styling (120px square, 8px hue bar, 1px borders); and it <b>live-previews</b> —
+ * every change writes the bound {@link Option} immediately (so editing a theme color repaints the UI
+ * live), while Cancel/Esc/click-away reverts to the opening color. The option's original alpha byte
+ * is preserved on every write.
  */
-public final class ColorPickerPopup extends UiElement {
+public final class ColorPicker extends UiElement {
 
 	private static final int PAD = 8;
 	private static final int SV = 120;
@@ -29,13 +30,17 @@ public final class ColorPickerPopup extends UiElement {
 	private static final int PREVIEW_H = 14;
 	private static final int FIELD_H = 14;
 	private static final int BTN_H = 14;
+	private static final int CONTENT_W = SV + 6 + HUE_W;
+
+	public static final int WIDTH = PAD + CONTENT_W + PAD;
+	public static final int HEIGHT = PAD + 12 + SV + 8 + PREVIEW_H + 8 + FIELD_H + 8 + BTN_H + PAD;
 
 	private final Option<Integer> option;
 	private final int originalColor;
 	private final int originalAlpha;
 	private final Runnable onClose;
 
-	private final int px, py, popupW, popupH;
+	private final int px, py;
 	private final int svX, svY, hueX, hueY, previewY, hexY, btnY;
 	private final int okX, cancelX, btnW;
 
@@ -44,28 +49,23 @@ public final class ColorPickerPopup extends UiElement {
 	private boolean editingHex;
 	private boolean draggingSV, draggingHue;
 
-	// caches (regenerate SV only on hue change; hue bar once)
 	private float cachedHue = -1;
 	private int[][] svCache;
 	private int[] hueCache;
 
-	public ColorPickerPopup(Option<Integer> option, int screenW, int screenH, Runnable onClose) {
+	public ColorPicker(Option<Integer> option, int px, int py, Runnable onClose) {
 		this.option = option;
 		this.originalColor = option.get();
 		this.originalAlpha = (originalColor >>> 24) & 0xFF;
 		this.onClose = onClose;
+		this.px = px;
+		this.py = py;
 
 		float[] hsv = ColorUtils.rgbToHsv(originalColor & 0xFFFFFF);
 		this.hue = hsv[0];
 		this.saturation = hsv[1];
 		this.value = hsv[2];
 		this.hexInput = ColorUtils.toHex(originalColor, false);
-
-		int contentW = SV + 6 + HUE_W;
-		this.popupW = PAD + contentW + PAD;
-		this.popupH = PAD + 12 + SV + 8 + PREVIEW_H + 8 + FIELD_H + 8 + BTN_H + PAD;
-		this.px = (screenW - popupW) / 2;
-		this.py = (screenH - popupH) / 2;
 
 		int contentX = px + PAD;
 		int contentY = py + PAD + 12;
@@ -76,21 +76,18 @@ public final class ColorPickerPopup extends UiElement {
 		this.previewY = contentY + SV + 8;
 		this.hexY = previewY + PREVIEW_H + 8;
 		this.btnY = hexY + FIELD_H + 8;
-		this.btnW = (contentW - 6) / 2;
+		this.btnW = (CONTENT_W - 6) / 2;
 		this.okX = contentX;
 		this.cancelX = contentX + btnW + 6;
 
-		bounds(px, py, popupW, popupH);
+		bounds(px, py, WIDTH, HEIGHT);
 	}
-
-	// ---- live preview / commit ----
 
 	private int composed() {
 		int rgb = ColorUtils.hsvToRgb(hue, saturation, value) & 0xFFFFFF;
 		return (originalAlpha << 24) | rgb;
 	}
 
-	/** Push the current HSV to the bound option (persists + any side effects, e.g. theme repaint). */
 	private void apply() {
 		option.set(composed());
 		if (!editingHex) {
@@ -100,27 +97,22 @@ public final class ColorPickerPopup extends UiElement {
 
 	@Override
 	public void render(GuiGraphics g, int mouseX, int mouseY, float dt) {
-		int contentW = SV + 6 + HUE_W;
-
-		RenderUtils.rect(g, px, py, popupW, popupH, ColorUtils.withAlpha(Theme.surfaceHover, 0xFF));
-		RenderUtils.outline(g, px, py, popupW, popupH, Theme.accent);
+		RenderUtils.rect(g, px, py, WIDTH, HEIGHT, ColorUtils.withAlpha(Theme.surfaceHover, 0xFF));
+		RenderUtils.outline(g, px, py, WIDTH, HEIGHT, Theme.accent);
 		RenderUtils.text(g, "Pick color", px + PAD, py + PAD, Theme.text);
 
 		renderSV(g);
 		renderHue(g);
 
-		// preview
-		RenderUtils.rect(g, svX, previewY, contentW, PREVIEW_H, 0xFF000000 | (composed() & 0xFFFFFF));
-		RenderUtils.outline(g, svX, previewY, contentW, PREVIEW_H, Theme.line);
+		RenderUtils.rect(g, svX, previewY, CONTENT_W, PREVIEW_H, 0xFF000000 | (composed() & 0xFFFFFF));
+		RenderUtils.outline(g, svX, previewY, CONTENT_W, PREVIEW_H, Theme.line);
 
-		// hex field
 		int fieldBg = editingHex ? Theme.surface : ColorUtils.withAlpha(Theme.ground, 0xFF);
-		RenderUtils.rect(g, svX, hexY, contentW, FIELD_H, fieldBg);
-		RenderUtils.outline(g, svX, hexY, contentW, FIELD_H, editingHex ? Theme.accent : Theme.line);
+		RenderUtils.rect(g, svX, hexY, CONTENT_W, FIELD_H, fieldBg);
+		RenderUtils.outline(g, svX, hexY, CONTENT_W, FIELD_H, editingHex ? Theme.accent : Theme.line);
 		boolean caretOn = editingHex && System.currentTimeMillis() % 1000 < 500;
 		RenderUtils.text(g, "#" + hexInput + (caretOn ? "_" : ""), svX + 4, hexY + 3, Theme.text);
 
-		// buttons
 		boolean okHover = hit(mouseX, mouseY, okX, btnY, btnW, BTN_H);
 		RenderUtils.rect(g, okX, btnY, btnW, BTN_H, okHover ? ColorUtils.withAlpha(Theme.accent, 0x55) : Theme.surface);
 		RenderUtils.outline(g, okX, btnY, btnW, BTN_H, okHover ? Theme.accent : Theme.line);
@@ -174,8 +166,6 @@ public final class ColorPickerPopup extends UiElement {
 		RenderUtils.rect(g, hueX - 2, selY - 1, HUE_W + 4, 2, 0xFFFFFFFF);
 	}
 
-	// ---- input ----
-
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		if (button != 0) {
@@ -191,7 +181,7 @@ public final class ColorPickerPopup extends UiElement {
 			updateHue(mouseY);
 			return true;
 		}
-		editingHex = hit(mouseX, mouseY, svX, hexY, SV + 6 + HUE_W, FIELD_H);
+		editingHex = hit(mouseX, mouseY, svX, hexY, CONTENT_W, FIELD_H);
 		if (editingHex) {
 			return true;
 		}
@@ -204,7 +194,7 @@ public final class ColorPickerPopup extends UiElement {
 			onClose.run();
 			return true;
 		}
-		return true; // modal
+		return true;
 	}
 
 	@Override
@@ -233,9 +223,8 @@ public final class ColorPickerPopup extends UiElement {
 			&& (Character.isDigit(chr) || (chr >= 'a' && chr <= 'f') || (chr >= 'A' && chr <= 'F'))) {
 			hexInput += Character.toUpperCase(chr);
 			commitHex();
-			return true;
 		}
-		return true; // modal
+		return true;
 	}
 
 	@Override
@@ -255,7 +244,7 @@ public final class ColorPickerPopup extends UiElement {
 			onClose.run();
 			return true;
 		}
-		return true; // modal
+		return true;
 	}
 
 	private void updateSV(double mouseX, double mouseY) {

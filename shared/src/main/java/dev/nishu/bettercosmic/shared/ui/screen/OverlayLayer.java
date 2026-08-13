@@ -44,12 +44,20 @@ public final class OverlayLayer {
 		return !overlays.isEmpty();
 	}
 
-	/** Draws overlays bottom-to-top, after the host's normal tree. */
+	/**
+	 * Draws overlays bottom-to-top, after the host's normal tree. Only the topmost overlay receives
+	 * the real mouse position; lower overlays get an off-screen mouse so nothing beneath the active
+	 * one shows a hover state or tooltip (e.g. the popup while a dropdown list is open).
+	 */
 	public void render(GuiGraphics g, int mouseX, int mouseY, float dt) {
-		for (UiElement overlay : overlays) {
-			if (overlay.visible) {
-				overlay.render(g, mouseX, mouseY, dt);
+		int last = overlays.size() - 1;
+		for (int i = 0; i < overlays.size(); i++) {
+			UiElement overlay = overlays.get(i);
+			if (!overlay.visible) {
+				continue;
 			}
+			boolean top = i == last;
+			overlay.render(g, top ? mouseX : -1, top ? mouseY : -1, dt);
 		}
 	}
 

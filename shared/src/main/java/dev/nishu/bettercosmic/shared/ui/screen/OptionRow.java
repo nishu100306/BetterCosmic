@@ -33,18 +33,18 @@ public final class OptionRow extends UiElement {
 	private boolean resetShown;
 	private int resetX, resetY;
 
-	public OptionRow(Option<?> option, OverlayLayer overlay, int screenW, int screenH) {
+	public OptionRow(Option<?> option, OverlayLayer overlay, ColorPickerHost pickerHost, int screenH) {
 		this.option = option;
-		this.widget = buildWidget(overlay, screenW, screenH);
+		this.widget = buildWidget(overlay, pickerHost, screenH);
 	}
 
 	@SuppressWarnings("unchecked")
-	private UiElement buildWidget(OverlayLayer overlay, int screenW, int screenH) {
+	private UiElement buildWidget(OverlayLayer overlay, ColorPickerHost pickerHost, int screenH) {
 		return switch (option.kind) {
 			case TOGGLE -> new Toggle((Option<Boolean>) option);
 			case SLIDER, INT_SLIDER -> new Slider(option);
 			case DROPDOWN -> new Dropdown((Option<String>) option, overlay, screenH);
-			case COLOR -> new ColorSwatch((Option<Integer>) option, overlay, screenW, screenH);
+			case COLOR -> new ColorSwatch((Option<Integer>) option, pickerHost);
 			default -> null; // TEXT read-only until it has a consumer; LABEL/LINK/KEYBIND have no widget
 		};
 	}

@@ -7,6 +7,7 @@ import dev.nishu.bettercosmic.shared.ui.model.Option;
 import dev.nishu.bettercosmic.shared.ui.model.OptionGroup;
 import dev.nishu.bettercosmic.shared.ui.render.ColorUtils;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
+import dev.nishu.bettercosmic.shared.ui.widget.ColorPicker;
 import dev.nishu.bettercosmic.shared.ui.widget.GroupLabel;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -22,10 +23,13 @@ import java.util.List;
  * scrollbar when the content overflows.
  *
  * <p>Registered into the {@link OverlayLayer}, so it paints above the grid and takes input first;
- * it closes on the {@code ✕}, a click outside the box, or {@code Esc}. Phase 3 swaps each row's
- * read-only control for an interactive widget — the popup's layout, scrolling, and chrome are final.
+ * it closes on the {@code ✕}, a click outside the box, or {@code Esc}.
+ *
+ * <p>The color picker opens as an attached right-hand sidebar ({@link ColorPicker}) on this same
+ * layer — not a separate overlay — so there's no z-order ambiguity. While it's open the popup body is
+ * inert (rows get an off-screen mouse; input routes to the picker).
  */
-public final class FeaturePopup extends UiElement {
+public final class FeaturePopup extends UiElement implements ColorPickerHost {
 
 	private static final int POP_W = 300;
 	private static final int HEADER = 18;
@@ -51,6 +55,9 @@ public final class FeaturePopup extends UiElement {
 	private int closeX, closeY;
 	private static final int CLOSE = 12;
 
+	// color-picker sidebar (attached; on this layer). null when closed.
+	private ColorPicker activePicker;
+
 	public FeaturePopup(ConfigPanel panel, int screenW, int screenH, OverlayLayer overlay) {
 		this.panel = panel;
 		this.screenW = screenW;
@@ -62,7 +69,7 @@ public final class FeaturePopup extends UiElement {
 			items.add(gl);
 			cH += GroupLabel.HEIGHT;
 			for (Option<?> opt : group.options) {
-				items.add(new OptionRow(opt, overlay, screenW, screenH));
+				items.add(new OptionRow(opt, overlay, this, screenH));
 				cH += OptionRow.HEIGHT;
 			}
 		}
@@ -106,6 +113,12 @@ public final class FeaturePopup extends UiElement {
 		boolean closeHover = hit(mouseX, mouseY, closeX, closeY, CLOSE, CLOSE);
 		drawCross(g, closeX, closeY, CLOSE, closeHover ? Theme.text : Theme.muted);
 
+		// While the picker sidebar is open the body is inert: feed rows an off-screen mouse so
+		// nothing behind the picker shows a hover state or tooltip.
+		boolean pickerOpen = activePicker != null;
+		int bmx = pickerOpen ? -1 : mouseX;
+		int bmy = pickerOpen ? -1 : mouseY;
+
 		// body (scissor-clipped, scrollable)
 		int itemW = POP_W - 2 * PAD_X - (scrollbar ? SCROLLBAR + 3 : 0);
 		RenderUtils.pushScissor(g, px, bodyTop, POP_W, bodyVisibleH);
@@ -114,7 +127,7 @@ public final class FeaturePopup extends UiElement {
 			int ih = heightOf(item);
 			item.bounds(px + PAD_X, yy, itemW, ih);
 			if (yy + ih > bodyTop && yy < bodyTop + bodyVisibleH) {
-				item.render(g, mouseX, mouseY, dt);
+				item.render(g, bmx, bmy, dt);
 			} else {
 				item.hovered = false; // don't leave a scrolled-off row "hovered" (phantom tooltip)
 			}
@@ -132,8 +145,15 @@ public final class FeaturePopup extends UiElement {
 			RenderUtils.rect(g, trackX, thumbY, SCROLLBAR, thumbH, Theme.accent);
 		}
 
-		// tooltip (drawn last, above everything)
-		renderTooltip(g, mouseX, mouseY);
+		// tooltip (suppressed while the picker is open)
+		if (!pickerOpen) {
+			renderTooltip(g, mouseX, mouseY);
+		}
+
+		// color-picker sidebar, drawn on this same layer beside the popup
+		if (pickerOpen) {
+			activePicker.render(g, mouseX, mouseY, dt);
+		}
 	}
 
 	private void renderTooltip(GuiGraphics g, int mouseX, int mouseY) {
@@ -160,6 +180,10 @@ public final class FeaturePopup extends UiElement {
 
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		if (activePicker != null) {
+			activePicker.mouseClicked(mouseX, mouseY, button); // handles inside / OK / Cancel / away
+			return true;
+		}
 		if (button == 0 && hit(mouseX, mouseY, closeX, closeY, CLOSE, CLOSE)) {
 			close();
 			return true;
@@ -168,7 +192,6 @@ public final class FeaturePopup extends UiElement {
 			close(); // click outside the box closes
 			return true;
 		}
-		// forward to visible rows (interactive in Phase 3)
 		for (UiElement item : items) {
 			if (item.mouseClicked(mouseX, mouseY, button)) {
 				return true;
@@ -179,6 +202,10 @@ public final class FeaturePopup extends UiElement {
 
 	@Override
 	public boolean mouseReleased(double mouseX, double mouseY, int button) {
+		if (activePicker != null) {
+			activePicker.mouseReleased(mouseX, mouseY, button);
+			return true;
+		}
 		for (UiElement item : items) {
 			item.mouseReleased(mouseX, mouseY, button);
 		}
@@ -187,6 +214,10 @@ public final class FeaturePopup extends UiElement {
 
 	@Override
 	public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+		if (activePicker != null) {
+			activePicker.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+			return true;
+		}
 		for (UiElement item : items) {
 			if (item.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
 				return true;
@@ -197,6 +228,9 @@ public final class FeaturePopup extends UiElement {
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+		if (activePicker != null) {
+			return true; // ignore scroll while picking
+		}
 		if (maxScroll > 0) {
 			scroll = Math.max(0, Math.min(maxScroll, scroll - (int) (scrollY * 14)));
 		}
@@ -205,6 +239,10 @@ public final class FeaturePopup extends UiElement {
 
 	@Override
 	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+		if (activePicker != null) {
+			activePicker.keyPressed(keyCode, scanCode, modifiers); // Esc cancels the picker
+			return true;
+		}
 		if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
 			close();
 			return true;
@@ -219,12 +257,31 @@ public final class FeaturePopup extends UiElement {
 
 	@Override
 	public boolean charTyped(char chr, int modifiers) {
+		if (activePicker != null) {
+			activePicker.charTyped(chr, modifiers); // hex typing
+			return true;
+		}
 		for (UiElement item : items) {
 			if (item.charTyped(chr, modifiers)) {
 				return true;
 			}
 		}
 		return true;
+	}
+
+	@Override
+	public void openColorPicker(Option<Integer> option) {
+		int gap = 6;
+		int sx;
+		if (px + POP_W + gap + ColorPicker.WIDTH <= screenW - 2) {
+			sx = px + POP_W + gap;                 // sidebar on the right (preferred)
+		} else if (px - gap - ColorPicker.WIDTH >= 2) {
+			sx = px - gap - ColorPicker.WIDTH;     // no room right — sidebar on the left
+		} else {
+			sx = (screenW - ColorPicker.WIDTH) / 2; // too cramped — center over the popup
+		}
+		int sy = Math.max(2, Math.min(py, screenH - ColorPicker.HEIGHT - 2));
+		activePicker = new ColorPicker(option, sx, sy, () -> activePicker = null);
 	}
 
 	private void close() {

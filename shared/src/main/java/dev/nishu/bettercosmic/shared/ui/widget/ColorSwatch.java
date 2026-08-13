@@ -3,15 +3,16 @@ package dev.nishu.bettercosmic.shared.ui.widget;
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.core.UiElement;
 import dev.nishu.bettercosmic.shared.ui.model.Option;
+import dev.nishu.bettercosmic.shared.ui.render.ColorUtils;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
-import dev.nishu.bettercosmic.shared.ui.screen.OverlayLayer;
+import dev.nishu.bettercosmic.shared.ui.screen.ColorPickerHost;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**
  * The row control for a {@link Option.Kind#COLOR} option: a small filled swatch plus the {@code
- * #RRGGBB} value. Clicking anywhere on it opens a {@link ColorPickerPopup} in the shared
- * {@link OverlayLayer}. The swatch tracks the option's live value, so the picker's live preview shows
- * here too.
+ * #RRGGBB} value. Clicking asks the {@link ColorPickerHost} (the popup) to open its {@link ColorPicker}
+ * sidebar for this option. The swatch reads the option's live value, so the picker's live preview
+ * shows here too.
  */
 public final class ColorSwatch extends UiElement {
 
@@ -19,17 +20,11 @@ public final class ColorSwatch extends UiElement {
 	private static final int SW = 10;
 
 	private final Option<Integer> option;
-	private final OverlayLayer overlay;
-	private final int screenW;
-	private final int screenH;
+	private final ColorPickerHost host;
 
-	private ColorPickerPopup openPicker;
-
-	public ColorSwatch(Option<Integer> option, OverlayLayer overlay, int screenW, int screenH) {
+	public ColorSwatch(Option<Integer> option, ColorPickerHost host) {
 		this.option = option;
-		this.overlay = overlay;
-		this.screenW = screenW;
-		this.screenH = screenH;
+		this.host = host;
 	}
 
 	@Override
@@ -37,7 +32,7 @@ public final class ColorSwatch extends UiElement {
 		hovered = isMouseOver(mouseX, mouseY);
 
 		int rightX = x + w;
-		String hex = "#" + dev.nishu.bettercosmic.shared.ui.render.ColorUtils.toHex(option.get(), false);
+		String hex = "#" + ColorUtils.toHex(option.get(), false);
 		int hexW = RenderUtils.textWidth(hex);
 		int textY = y + (h - RenderUtils.lineHeight()) / 2 + 1;
 		RenderUtils.text(g, hex, rightX - hexW, textY, hovered ? Theme.text : Theme.muted);
@@ -50,18 +45,10 @@ public final class ColorSwatch extends UiElement {
 
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
-		if (button == 0 && isMouseOver(mouseX, mouseY) && openPicker == null) {
-			openPicker = new ColorPickerPopup(option, screenW, screenH, this::close);
-			overlay.add(openPicker);
+		if (button == 0 && isMouseOver(mouseX, mouseY)) {
+			host.openColorPicker(option);
 			return true;
 		}
 		return false;
-	}
-
-	private void close() {
-		if (openPicker != null) {
-			overlay.remove(openPicker);
-			openPicker = null;
-		}
 	}
 }
