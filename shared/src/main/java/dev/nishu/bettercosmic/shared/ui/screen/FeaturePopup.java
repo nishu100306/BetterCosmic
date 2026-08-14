@@ -30,11 +30,11 @@ import java.util.List;
  */
 public final class FeaturePopup extends UiElement implements ModalHost {
 
-	private static final int POP_W = 300;
+	private static final int POP_W = 320; // wider than P4, but still leaves room for the picker sidebar at GUI scale 3
 	private static final int HEADER = 18;
-	private static final int PAD_X = 11;
-	private static final int INNER_TOP = 4;
-	private static final int PAD_BOTTOM = 9;
+	private static final int PAD_X = 12;
+	private static final int INNER_TOP = 5;
+	private static final int PAD_BOTTOM = 10;
 	private static final int SCROLLBAR = 3;
 
 	private final ConfigPanel panel;
@@ -52,7 +52,7 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 
 	// ✕ hit-rect, captured at render
 	private int closeX, closeY;
-	private static final int CLOSE = 12;
+	private static final int CLOSE = 8;
 
 	// single active modal (color picker sidebar or open dropdown list). null when none.
 	private UiElement activeModal;
@@ -74,7 +74,7 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 		}
 		this.contentH = cH;
 
-		int bodyMax = Math.max(60, screenH - 90);
+		int bodyMax = Math.max(60, screenH - 56);
 		this.bodyVisibleH = Math.min(contentH, bodyMax);
 		this.maxScroll = Math.max(0, contentH - bodyVisibleH);
 		this.scrollbar = maxScroll > 0;
@@ -156,11 +156,13 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 	}
 
 	private void renderTooltip(GuiGraphics g, int mouseX, int mouseY) {
+		UiElement hoveredItem = null;
 		Component tip = null;
 		for (UiElement item : items) {
 			Component t = item.tooltip();
 			if (t != null) {
 				tip = t;
+				hoveredItem = item;
 				break;
 			}
 		}
@@ -170,9 +172,14 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 		String s = tip.getString();
 		int tw = RenderUtils.textWidth(s) + 8;
 		int th = RenderUtils.lineHeight() + 6;
-		int tx = Math.min(mouseX + 10, screenW - tw - 2);
-		int ty = Math.max(2, mouseY - th - 2);
-		RenderUtils.rect(g, tx, ty, tw, th, Theme.ground);
+		int tx = Math.max(2, Math.min(mouseX + 10, screenW - tw - 2));
+		// Anchor to the hovered row (above it, or below if there's no room) so the tooltip never
+		// covers the row it describes.
+		int ty = hoveredItem.y - th - 2;
+		if (ty < 2) {
+			ty = hoveredItem.y + hoveredItem.h + 2;
+		}
+		RenderUtils.rect(g, tx, ty, tw, th, ColorUtils.withAlpha(Theme.ground, 0xFF));
 		RenderUtils.outline(g, tx, ty, tw, th, Theme.accent);
 		RenderUtils.text(g, s, tx + 4, ty + 4, Theme.text);
 	}

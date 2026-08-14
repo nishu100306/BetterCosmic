@@ -4,7 +4,6 @@ import dev.nishu.bettercosmic.shared.ui.core.ModalHost;
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.core.UiElement;
 import dev.nishu.bettercosmic.shared.ui.model.Option;
-import dev.nishu.bettercosmic.shared.ui.render.ColorUtils;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
 import dev.nishu.bettercosmic.shared.ui.widget.ColorSwatch;
 import dev.nishu.bettercosmic.shared.ui.widget.Dropdown;
@@ -25,7 +24,7 @@ import net.minecraft.network.chat.Component;
 public final class OptionRow extends UiElement {
 
 	public static final int HEIGHT = 22;
-	private static final int RESET = 7;
+	private static final int RESET = 9;
 	private static final int GAP = 5;
 
 	private final Option<?> option;
@@ -71,8 +70,7 @@ public final class OptionRow extends UiElement {
 	public void render(GuiGraphics g, int mouseX, int mouseY, float dt) {
 		hovered = isMouseOver(mouseX, mouseY);
 
-		RenderUtils.hLine(g, x, y, w, ColorUtils.withAlpha(Theme.line, 0x14)); // divider
-
+		// No per-row divider — the only separators are the group-heading underlines (GroupLabel).
 		int textY = y + (HEIGHT - RenderUtils.lineHeight()) / 2 + 1;
 
 		if (option.kind == Option.Kind.LABEL) {
@@ -136,10 +134,24 @@ public final class OptionRow extends UiElement {
 		return hovered && option.tooltip != null ? Component.literal(option.tooltip) : null;
 	}
 
+	/** A small counter-clockwise circular arrow — the "reset to default" / refresh glyph. */
 	private static void drawReset(GuiGraphics g, int x, int y, int size, int color) {
-		int mid = y + size / 2;
-		g.fill(x + 2, mid, x + size, mid + 1, color);          // shaft
-		RenderUtils.triLeft(g, x, y + (size - 5) / 2, 4, 5, color); // arrowhead
+		int cx = x + size / 2;
+		int cy = y + size / 2;
+		double r = size / 2.0 - 0.5;
+		// ~3/4 ring, leaving a gap at the top-right where the arrowhead sits
+		for (int deg = 55; deg <= 340; deg += 11) {
+			double a = Math.toRadians(deg);
+			int gx = cx + (int) Math.round(Math.cos(a) * r);
+			int gy = cy - (int) Math.round(Math.sin(a) * r);
+			g.fill(gx, gy, gx + 1, gy + 1, color);
+		}
+		// arrowhead at the ring's top opening (deg≈55), pointing up-left to imply CCW rotation
+		double a = Math.toRadians(55);
+		int hx = cx + (int) Math.round(Math.cos(a) * r);
+		int hy = cy - (int) Math.round(Math.sin(a) * r);
+		g.fill(hx - 1, hy, hx + 2, hy + 1, color);      // horizontal barb
+		g.fill(hx, hy, hx + 1, hy + 3, color);          // vertical barb
 	}
 
 	private static boolean hit(double mx, double my, int x, int y, int w, int h) {

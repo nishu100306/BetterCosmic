@@ -26,7 +26,7 @@ public final class ColorPicker extends UiElement {
 	private static final int PAD = 8;
 	private static final int SV = 120;
 	private static final int HUE_W = 8;
-	private static final int PIXEL = 4; // block size for cached gradient rendering
+	private static final int PIXEL = 2; // block size for cached gradient rendering (smaller = smoother)
 	private static final int PREVIEW_H = 14;
 	private static final int FIELD_H = 14;
 	private static final int BTN_H = 14;
@@ -113,9 +113,11 @@ public final class ColorPicker extends UiElement {
 		boolean caretOn = editingHex && System.currentTimeMillis() % 1000 < 500;
 		RenderUtils.text(g, "#" + hexInput + (caretOn ? "_" : ""), svX + 4, hexY + 3, Theme.text);
 
+		// OK is the primary action: same surface/surfaceHover fill as every other button, marked
+		// primary by a persistent accent border (matching the accent-border hover language elsewhere).
 		boolean okHover = hit(mouseX, mouseY, okX, btnY, btnW, BTN_H);
-		RenderUtils.rect(g, okX, btnY, btnW, BTN_H, okHover ? ColorUtils.withAlpha(Theme.accent, 0x55) : Theme.surface);
-		RenderUtils.outline(g, okX, btnY, btnW, BTN_H, okHover ? Theme.accent : Theme.line);
+		RenderUtils.rect(g, okX, btnY, btnW, BTN_H, okHover ? Theme.surfaceHover : Theme.surface);
+		RenderUtils.outline(g, okX, btnY, btnW, BTN_H, Theme.accent);
 		RenderUtils.textCentered(g, "OK", okX + btnW / 2, btnY + 3, Theme.text);
 
 		boolean cxHover = hit(mouseX, mouseY, cancelX, btnY, btnW, BTN_H);

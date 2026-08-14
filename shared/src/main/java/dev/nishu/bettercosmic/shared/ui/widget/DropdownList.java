@@ -82,7 +82,6 @@ public final class DropdownList extends UiElement {
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-		onClose.run(); // close and let the popup handle the scroll
-		return false;
+		return true; // stay open; swallow the scroll (don't page the popup behind us)
 	}
 }
