@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import dev.nishu.bettercosmic.shared.ui.core.ModalHost;
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.core.UiElement;
+import dev.nishu.bettercosmic.shared.ui.core.UiSounds;
 import dev.nishu.bettercosmic.shared.ui.model.Option;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
 import net.minecraft.client.gui.GuiGraphics;
@@ -58,6 +59,7 @@ public final class KeybindButton extends UiElement {
 		}
 		if (button == 0 && isMouseOver(mouseX, mouseY)) {
 			listening = true;
+			UiSounds.click();
 			host.openModal(this); // capture all input until a key/button is pressed
 			return true;
 		}

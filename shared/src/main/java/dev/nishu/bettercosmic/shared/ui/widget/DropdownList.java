@@ -64,6 +64,7 @@ public final class DropdownList extends UiElement {
 		if (button == 0 && isMouseOver(mouseX, mouseY)) {
 			int i = (int) ((mouseY - y) / ITEM_H);
 			if (i >= 0 && i < choices.size()) {
+				dev.nishu.bettercosmic.shared.ui.core.UiSounds.click();
 				onSelect.accept(choices.get(i));
 			}
 		}

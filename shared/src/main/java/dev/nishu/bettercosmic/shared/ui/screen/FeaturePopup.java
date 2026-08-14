@@ -68,6 +68,8 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 	// single active modal (color picker sidebar or open dropdown list). null when none.
 	private UiElement activeModal;
 
+	private final long openTime = System.currentTimeMillis(); // for the scrim fade-in
+
 	public FeaturePopup(ConfigPanel panel, int screenW, int screenH) {
 		this.panel = panel;
 		this.screenW = screenW;
@@ -108,8 +110,9 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 
 	@Override
 	public void render(GuiGraphics g, int mouseX, int mouseY, float dt) {
-		// full-screen scrim
-		g.fill(0, 0, screenW, screenH, 0x88050508);
+		// full-screen scrim, fading in over ~120ms as the popup opens
+		float appear = Math.min(1f, (System.currentTimeMillis() - openTime) / 120f);
+		g.fill(0, 0, screenW, screenH, ((int) (0x88 * appear) << 24) | 0x050508);
 
 		// popup box — opaque so the grid never bleeds through
 		RenderUtils.rect(g, px, py, POP_W, popupH, ColorUtils.withAlpha(Theme.surfaceHover, 0xFF));

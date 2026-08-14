@@ -2,6 +2,7 @@ package dev.nishu.bettercosmic.shared.ui.screen;
 
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.core.UiElement;
+import dev.nishu.bettercosmic.shared.ui.core.UiSounds;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigPanel;
 import dev.nishu.bettercosmic.shared.ui.model.PanelIcon;
 import dev.nishu.bettercosmic.shared.ui.render.ColorUtils;
@@ -84,6 +85,7 @@ public final class PanelCard extends UiElement {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		if (button == 0 && enabled && isMouseOver(mouseX, mouseY)) {
+			UiSounds.click();
 			onOpen.accept(panel);
 			return true;
 		}

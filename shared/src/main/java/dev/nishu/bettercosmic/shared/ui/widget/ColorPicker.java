@@ -26,7 +26,6 @@ public final class ColorPicker extends UiElement {
 	private static final int PAD = 8;
 	private static final int SV = 120;
 	private static final int HUE_W = 8;
-	private static final int PIXEL = 2; // block size for cached gradient rendering (smaller = smoother)
 	private static final int PREVIEW_H = 14;
 	private static final int FIELD_H = 14;
 	private static final int BTN_H = 14;
@@ -48,10 +47,6 @@ public final class ColorPicker extends UiElement {
 	private String hexInput;
 	private boolean editingHex;
 	private boolean draggingSV, draggingHue;
-
-	private float cachedHue = -1;
-	private int[][] svCache;
-	private int[] hueCache;
 
 	public ColorPicker(Option<Integer> option, int px, int py, Runnable onClose) {
 		this.option = option;
@@ -127,22 +122,14 @@ public final class ColorPicker extends UiElement {
 	}
 
 	private void renderSV(GuiGraphics g) {
-		int n = SV / PIXEL;
-		if (svCache == null || Math.abs(cachedHue - hue) > 0.1f) {
-			cachedHue = hue;
-			svCache = new int[n][n];
-			for (int row = 0; row < n; row++) {
-				float v = 1.0f - (float) row / n;
-				for (int col = 0; col < n; col++) {
-					svCache[row][col] = ColorUtils.hsvToRgb(hue, (float) col / n, v);
-				}
-			}
+		// Pixel-perfect SV square: 1px white→hue columns (saturation), then a vertical
+		// transparent→black gradient overlay (value = base * v via alpha blend). ~121 draws, no cache.
+		int hueColor = ColorUtils.hsvToRgb(hue, 1, 1);
+		for (int col = 0; col < SV; col++) {
+			float s = SV <= 1 ? 0 : col / (float) (SV - 1);
+			g.fill(svX + col, svY, svX + col + 1, svY + SV, ColorUtils.blend(0xFFFFFFFF, hueColor, s));
 		}
-		for (int row = 0; row < n; row++) {
-			for (int col = 0; col < n; col++) {
-				RenderUtils.rect(g, svX + col * PIXEL, svY + row * PIXEL, PIXEL, PIXEL, svCache[row][col]);
-			}
-		}
+		g.fillGradient(svX, svY, svX + SV, svY + SV, 0x00000000, 0xFF000000);
 		RenderUtils.outline(g, svX, svY, SV, SV, Theme.line);
 
 		int selX = svX + (int) (saturation * SV);
@@ -152,15 +139,14 @@ public final class ColorPicker extends UiElement {
 	}
 
 	private void renderHue(GuiGraphics g) {
-		int n = SV / PIXEL;
-		if (hueCache == null) {
-			hueCache = new int[n];
-			for (int row = 0; row < n; row++) {
-				hueCache[row] = ColorUtils.hsvToRgb((float) row / n * 360, 1, 1);
-			}
-		}
-		for (int row = 0; row < n; row++) {
-			RenderUtils.rect(g, hueX, hueY + row * PIXEL, HUE_W, PIXEL, hueCache[row]);
+		// Pixel-perfect hue bar: 6 vertical gradient segments between the primary hues.
+		int segments = 6;
+		for (int i = 0; i < segments; i++) {
+			int y0 = hueY + i * SV / segments;
+			int y1 = hueY + (i + 1) * SV / segments;
+			int cTop = ColorUtils.hsvToRgb(i * 60f, 1, 1);
+			int cBot = ColorUtils.hsvToRgb((i + 1) * 60f, 1, 1);
+			g.fillGradient(hueX, y0, hueX + HUE_W, y1, cTop, cBot);
 		}
 		RenderUtils.outline(g, hueX, hueY, HUE_W, SV, Theme.line);
 
@@ -188,10 +174,12 @@ public final class ColorPicker extends UiElement {
 			return true;
 		}
 		if (hit(mouseX, mouseY, okX, btnY, btnW, BTN_H)) {
+			dev.nishu.bettercosmic.shared.ui.core.UiSounds.click();
 			onClose.run(); // OK: keep (value already live)
 			return true;
 		}
 		if (hit(mouseX, mouseY, cancelX, btnY, btnW, BTN_H)) {
+			dev.nishu.bettercosmic.shared.ui.core.UiSounds.click();
 			option.set(originalColor); // Cancel: revert
 			onClose.run();
 			return true;

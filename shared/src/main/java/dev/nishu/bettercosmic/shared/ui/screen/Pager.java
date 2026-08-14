@@ -78,10 +78,12 @@ public final class Pager {
 			return false;
 		}
 		if (page > 0 && inBtn(mx, my, prevX)) {
+			dev.nishu.bettercosmic.shared.ui.core.UiSounds.click();
 			onPrev.run();
 			return true;
 		}
 		if (page < pageCount - 1 && inBtn(mx, my, nextX)) {
+			dev.nishu.bettercosmic.shared.ui.core.UiSounds.click();
 			onNext.run();
 			return true;
 		}

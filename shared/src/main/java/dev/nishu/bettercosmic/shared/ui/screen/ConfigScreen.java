@@ -2,6 +2,7 @@ package dev.nishu.bettercosmic.shared.ui.screen;
 
 import dev.nishu.bettercosmic.shared.ui.core.OverlayLayer;
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
+import dev.nishu.bettercosmic.shared.ui.core.UiSounds;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigPanel;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigRegistry;
 import dev.nishu.bettercosmic.shared.ui.model.Option;
@@ -163,6 +164,7 @@ public final class ConfigScreen extends Screen {
 		}
 		// "Reset all" — arm on first click, reset on the confirming second click.
 		if (button == 0 && hit(mx, my, resetX, y0 + 6, resetW, 14)) {
+			UiSounds.click();
 			if (resetArmed) {
 				resetAll();
 				resetArmed = false;
@@ -179,6 +181,7 @@ public final class ConfigScreen extends Screen {
 			return true;
 		}
 		if (button == 0 && hit(mx, my, doneX, y0 + H - FOOTER / 2 - 8, doneW, 16)) {
+			UiSounds.click();
 			onClose();
 			return true;
 		}

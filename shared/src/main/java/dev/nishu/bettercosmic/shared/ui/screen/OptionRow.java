@@ -120,6 +120,7 @@ public final class OptionRow extends UiElement {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		if (resetShown && button == 0 && hit(mouseX, mouseY, resetX, resetY, RESET, RESET)) {
+			dev.nishu.bettercosmic.shared.ui.core.UiSounds.click();
 			option.reset();
 			return true;
 		}

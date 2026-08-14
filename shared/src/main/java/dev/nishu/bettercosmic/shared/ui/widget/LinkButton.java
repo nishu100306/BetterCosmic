@@ -49,6 +49,7 @@ public final class LinkButton extends UiElement {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		if (button == 0 && isMouseOver(mouseX, mouseY)) {
+			dev.nishu.bettercosmic.shared.ui.core.UiSounds.click();
 			Minecraft mc = Minecraft.getInstance();
 			ConfirmLinkScreen.confirmLinkNow(mc.screen, URI.create(option.url));
 			return true;

@@ -3,6 +3,7 @@ package dev.nishu.bettercosmic.shared.ui.widget;
 import dev.nishu.bettercosmic.shared.ui.core.ModalHost;
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.core.UiElement;
+import dev.nishu.bettercosmic.shared.ui.core.UiSounds;
 import dev.nishu.bettercosmic.shared.ui.model.Option;
 import dev.nishu.bettercosmic.shared.ui.render.ColorUtils;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
@@ -46,6 +47,7 @@ public final class ColorSwatch extends UiElement {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		if (button == 0 && isMouseOver(mouseX, mouseY)) {
+			UiSounds.click();
 			int[] pos = host.sidebarPosition(ColorPicker.WIDTH, ColorPicker.HEIGHT);
 			host.openModal(new ColorPicker(option, pos[0], pos[1], host::closeModal));
 			return true;
