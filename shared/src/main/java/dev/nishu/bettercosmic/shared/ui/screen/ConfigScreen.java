@@ -4,6 +4,8 @@ import dev.nishu.bettercosmic.shared.ui.core.OverlayLayer;
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigPanel;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigRegistry;
+import dev.nishu.bettercosmic.shared.ui.model.Option;
+import dev.nishu.bettercosmic.shared.ui.model.OptionGroup;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -39,6 +41,7 @@ public final class ConfigScreen extends Screen {
 
 	private int x0, y0;
 	private int resetX, resetW, doneX, doneW; // header/footer button hit-rects (y derived)
+	private boolean resetArmed; // "Reset all" needs a confirming second click
 
 	public ConfigScreen(Screen parent, String subtitle) {
 		super(Component.literal("BetterCosmic"));
@@ -70,6 +73,20 @@ public final class ConfigScreen extends Screen {
 		FeaturePopup popup = new FeaturePopup(panel, this.width, this.height);
 		popup.setOnClose(() -> overlay.remove(popup));
 		overlay.add(popup);
+	}
+
+	/** Restores every editable option across all registered panels to its default (theme repaints live). */
+	private void resetAll() {
+		for (ConfigPanel panel : ConfigRegistry.panels()) {
+			for (OptionGroup group : panel.groups) {
+				for (Option<?> option : group.options) {
+					if (option.kind != Option.Kind.LINK && option.kind != Option.Kind.LABEL) {
+						option.reset();
+					}
+				}
+			}
+		}
+		Theme.load();
 	}
 
 	@Override
@@ -115,9 +132,11 @@ public final class ConfigScreen extends Screen {
 			RenderUtils.text(g, subtitle.toUpperCase(), subX, textY, Theme.muted);
 		}
 
-		// "Reset all" (faint → text on hover). No options to reset yet (wired in Phase 6).
+		// "Reset all" — two-click arm: first click shows "Confirm?", second resets everything.
 		boolean rHover = hit(mouseX, mouseY, resetX, y0 + 6, resetW, 14);
-		RenderUtils.text(g, "Reset all", resetX + 6, textY, rHover ? Theme.text : Theme.faint);
+		String label = resetArmed ? "Confirm?" : "Reset all";
+		int color = resetArmed ? Theme.accent : (rHover ? Theme.text : Theme.faint);
+		RenderUtils.text(g, label, resetX + 6, textY, color);
 	}
 
 	private void renderFooter(GuiGraphics g, int mouseX, int mouseY) {
@@ -142,6 +161,17 @@ public final class ConfigScreen extends Screen {
 		if (overlay.mouseClicked(mx, my, button)) {
 			return true;
 		}
+		// "Reset all" — arm on first click, reset on the confirming second click.
+		if (button == 0 && hit(mx, my, resetX, y0 + 6, resetW, 14)) {
+			if (resetArmed) {
+				resetAll();
+				resetArmed = false;
+			} else {
+				resetArmed = true;
+			}
+			return true;
+		}
+		resetArmed = false; // any other click disarms
 		if (grid.mouseClicked(mx, my, button)) {
 			return true;
 		}
