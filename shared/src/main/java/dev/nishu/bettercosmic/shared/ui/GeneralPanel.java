@@ -23,6 +23,11 @@ public final class GeneralPanel {
 	public static ConfigPanel create() {
 		SharedConfig c = SharedConfig.get();
 
+		OptionGroup access = new OptionGroup("Access", List.of(
+			Options.keybind("Open config", ConfigUi.openKeyMapping())
+				.tooltip("Key that opens this menu. Esc while listening unbinds it.")
+		));
+
 		OptionGroup general = new OptionGroup("General", List.of(
 			Options.toggle("Developer mode",
 				() -> c.developerMode,
@@ -45,8 +50,13 @@ public final class GeneralPanel {
 			themeColor("Faint", () -> c.themeFaint, v -> c.themeFaint = v)
 		));
 
+		OptionGroup links = new OptionGroup("Links", List.of(
+			// Placeholder link (opens behind the vanilla confirm) — swap for the real Discord/Modrinth.
+			Options.link("Fabric", "https://fabricmc.net/")
+		));
+
 		return ConfigPanel.of("general", "General", "Access, formatting & theme",
-			PanelIcon.GEAR, List.of(general, theme));
+			PanelIcon.GEAR, List.of(access, general, theme, links));
 	}
 
 	private static Option<Integer> themeColor(String label,

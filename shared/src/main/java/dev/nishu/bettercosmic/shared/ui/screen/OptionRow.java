@@ -7,8 +7,11 @@ import dev.nishu.bettercosmic.shared.ui.model.Option;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
 import dev.nishu.bettercosmic.shared.ui.widget.ColorSwatch;
 import dev.nishu.bettercosmic.shared.ui.widget.Dropdown;
+import dev.nishu.bettercosmic.shared.ui.widget.KeybindButton;
+import dev.nishu.bettercosmic.shared.ui.widget.LinkButton;
 import dev.nishu.bettercosmic.shared.ui.widget.Slider;
 import dev.nishu.bettercosmic.shared.ui.widget.Toggle;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 
@@ -45,7 +48,9 @@ public final class OptionRow extends UiElement {
 			case SLIDER, INT_SLIDER -> new Slider(option);
 			case DROPDOWN -> new Dropdown((Option<String>) option, host, screenH);
 			case COLOR -> new ColorSwatch((Option<Integer>) option, host);
-			default -> null; // TEXT read-only until it has a consumer; LABEL/LINK/KEYBIND have no widget
+			case KEYBIND -> new KeybindButton((Option<InputConstants.Key>) option, host);
+			case LINK -> new LinkButton(option);
+			default -> null; // TEXT read-only until it has a consumer; LABEL has no widget
 		};
 	}
 
@@ -55,6 +60,8 @@ public final class OptionRow extends UiElement {
 			case SLIDER, INT_SLIDER -> Slider.WIDTH;
 			case DROPDOWN -> Dropdown.WIDTH;
 			case COLOR -> ColorSwatch.WIDTH;
+			case KEYBIND -> KeybindButton.WIDTH;
+			case LINK -> LinkButton.WIDTH;
 			default -> 0;
 		};
 	}

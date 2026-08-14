@@ -1,5 +1,9 @@
 package dev.nishu.bettercosmic.shared.ui.model;
 
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -47,7 +51,24 @@ public final class Options {
 		return new Option<>(Option.Kind.COLOR, label, get, set, get.get(), 0, 0, 0, null, null);
 	}
 
-	/** A URL link row (opens behind a confirm — see Phase 5). No binding. */
+	/**
+	 * A client key binding row. The bound key is edited via capture in the UI; the setter applies the
+	 * new key ({@code null}/UNKNOWN unbinds), refreshes the key map, and persists to MC options. Reset
+	 * restores the binding's default key. Value type is {@link InputConstants.Key}.
+	 */
+	public static Option<InputConstants.Key> keybind(String label, KeyMapping mapping) {
+		return new Option<>(Option.Kind.KEYBIND, label,
+			() -> null, // current key isn't read directly; display/isDefault use the mapping
+			key -> {
+				mapping.setKey(key);
+				KeyMapping.resetMapping();
+				Minecraft.getInstance().options.save();
+			},
+			mapping.getDefaultKey(),
+			0, 0, 0, null, null, mapping);
+	}
+
+	/** A URL link row (opens behind a vanilla confirm — see {@code LinkButton}). No binding. */
 	public static Option<String> link(String label, String url) {
 		return new Option<>(Option.Kind.LINK, label, () -> url, v -> {}, url, 0, 0, 0, null, url);
 	}

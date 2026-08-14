@@ -1,6 +1,7 @@
 package dev.nishu.bettercosmic.shared.ui.model;
 
 import dev.nishu.bettercosmic.shared.ui.render.ColorUtils;
+import net.minecraft.client.KeyMapping;
 
 import java.util.List;
 import java.util.Objects;
@@ -37,11 +38,17 @@ public final class Option<T> {
 	public final double min;
 	public final double max;
 	public final double step;
-	public final List<String> choices; // DROPDOWN
-	public final String url;            // LINK
+	public final List<String> choices;   // DROPDOWN
+	public final String url;             // LINK
+	public final KeyMapping keyMapping;  // KEYBIND — the client key binding this option edits
 
 	Option(Kind kind, String label, Supplier<T> getter, Consumer<T> setter, T defaultValue,
 		   double min, double max, double step, List<String> choices, String url) {
+		this(kind, label, getter, setter, defaultValue, min, max, step, choices, url, null);
+	}
+
+	Option(Kind kind, String label, Supplier<T> getter, Consumer<T> setter, T defaultValue,
+		   double min, double max, double step, List<String> choices, String url, KeyMapping keyMapping) {
 		this.kind = kind;
 		this.label = label;
 		this.getter = getter;
@@ -52,6 +59,7 @@ public final class Option<T> {
 		this.step = step;
 		this.choices = choices;
 		this.url = url;
+		this.keyMapping = keyMapping;
 	}
 
 	/** Attaches a hover tooltip; returns this for chaining. */
@@ -68,12 +76,18 @@ public final class Option<T> {
 		setter.accept(value);
 	}
 
-	/** Restores the option's default value (used by the per-row reset glyph). */
+	/**
+	 * Restores the option's default value (used by the per-row reset glyph). For a keybind this is the
+	 * key binding's default key — the setter (see {@link Options#keybind}) applies and persists it.
+	 */
 	public void reset() {
 		set(defaultValue);
 	}
 
 	public boolean isDefault() {
+		if (kind == Kind.KEYBIND) {
+			return keyMapping.isDefault();
+		}
 		return Objects.equals(get(), defaultValue);
 	}
 
@@ -84,6 +98,9 @@ public final class Option<T> {
 
 	/** Compact, human-readable current value for a read-only row / value readouts. */
 	public String displayValue() {
+		if (kind == Kind.KEYBIND) {
+			return keyMapping.isUnbound() ? "Unbound" : keyMapping.getTranslatedKeyMessage().getString();
+		}
 		Object v = get();
 		return switch (kind) {
 			case TOGGLE -> ((Boolean) v) ? "On" : "Off";
@@ -91,7 +108,7 @@ public final class Option<T> {
 			case INT_SLIDER -> String.valueOf(v);
 			case SLIDER -> trim(((Number) v).doubleValue());
 			case DROPDOWN, TEXT -> String.valueOf(v);
-			case KEYBIND -> String.valueOf(v);
+			case KEYBIND -> ""; // handled above
 			case LINK -> "Open";
 			case LABEL -> "";
 		};

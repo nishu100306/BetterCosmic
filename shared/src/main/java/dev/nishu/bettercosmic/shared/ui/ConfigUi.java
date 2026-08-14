@@ -30,6 +30,11 @@ public final class ConfigUi {
 		subtitle = s == null ? "" : s;
 	}
 
+	/** The "Open config" key binding, for a keybind option in the General panel. Non-null after {@link #init}. */
+	public static KeyMapping openKeyMapping() {
+		return openKey;
+	}
+
 	/** Registers the keybind and its poll loop. Call once from a shared client init. */
 	public static void init() {
 		openKey = KeyBindingHelper.registerKeyBinding(
