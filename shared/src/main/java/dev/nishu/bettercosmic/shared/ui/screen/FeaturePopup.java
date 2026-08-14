@@ -30,7 +30,15 @@ import java.util.List;
  */
 public final class FeaturePopup extends UiElement implements ModalHost {
 
-	private static final int POP_W = 320; // wider than P4, but still leaves room for the picker sidebar at GUI scale 3
+	// Feature-popup geometry.
+	// Height: a fixed fraction of the screen ("full size") so every panel gets the same generous box
+	// regardless of option count — short panels simply leave empty space below. Adjust POPUP_HEIGHT_FRACTION.
+	// Width: POP_W_BASE is the right-edge reference (where the color-picker sidebar attaches); extra
+	// width is added on the LEFT only (POP_W_EXTRA_LEFT), so the right edge — and sidebar room — is unchanged.
+	private static final float POPUP_HEIGHT_FRACTION = 0.85f;
+	private static final int POP_W_BASE = 320;
+	private static final int POP_W_EXTRA_LEFT = 28;
+	private static final int POP_W = POP_W_BASE + POP_W_EXTRA_LEFT;
 	private static final int HEADER = 18;
 	private static final int PAD_X = 12;
 	private static final int INNER_TOP = 5;
@@ -74,13 +82,16 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 		}
 		this.contentH = cH;
 
-		int bodyMax = Math.max(60, screenH - 56);
-		this.bodyVisibleH = Math.min(contentH, bodyMax);
+		// Fixed "full size": height is a fraction of the screen; the body fills what's left after the
+		// header/padding. Content top-aligns and scrolls only if it ever exceeds the (large) body.
+		this.popupH = Math.round(screenH * POPUP_HEIGHT_FRACTION);
+		this.bodyVisibleH = Math.max(0, popupH - HEADER - INNER_TOP - PAD_BOTTOM);
 		this.maxScroll = Math.max(0, contentH - bodyVisibleH);
 		this.scrollbar = maxScroll > 0;
 
-		this.popupH = HEADER + INNER_TOP + bodyVisibleH + PAD_BOTTOM;
-		this.px = (screenW - POP_W) / 2;
+		// Right edge stays where a base-width centered popup's would be; the extra width extends left.
+		int rightEdge = (screenW + POP_W_BASE) / 2;
+		this.px = rightEdge - POP_W;
 		this.py = (screenH - popupH) / 2;
 		this.bodyTop = py + HEADER + INNER_TOP;
 
