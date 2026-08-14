@@ -292,31 +292,21 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 	@Override
 	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
 		if (activeModal != null) {
-			activeModal.keyPressed(keyCode, scanCode, modifiers); // Esc cancels the modal
+			activeModal.keyPressed(keyCode, scanCode, modifiers); // Esc cancels the modal, keybind captures
 			return true;
 		}
 		if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
 			close();
 			return true;
 		}
-		for (UiElement item : items) {
-			if (item.keyPressed(keyCode, scanCode, modifiers)) {
-				return true;
-			}
-		}
-		return true; // modal
+		return true; // rows have no keyboard focus; the popup swallows keys
 	}
 
 	@Override
 	public boolean charTyped(char chr, int modifiers) {
 		if (activeModal != null) {
-			activeModal.charTyped(chr, modifiers); // hex typing
+			activeModal.charTyped(chr, modifiers); // hex typing while the picker is open
 			return true;
-		}
-		for (UiElement item : items) {
-			if (item.charTyped(chr, modifiers)) {
-				return true;
-			}
 		}
 		return true;
 	}

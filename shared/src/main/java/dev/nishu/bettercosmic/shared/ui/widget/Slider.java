@@ -6,13 +6,12 @@ import dev.nishu.bettercosmic.shared.ui.model.Option;
 import dev.nishu.bettercosmic.shared.ui.render.ColorUtils;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
 import net.minecraft.client.gui.GuiGraphics;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * A thin horizontal slider with a square handle and a right-aligned mono value readout. Serves both
  * {@link Option.Kind#SLIDER} (double) and {@link Option.Kind#INT_SLIDER} (integer) — the only
- * difference is snapping/casting on {@link #setValue}. Drag the handle, click the track to jump, or
- * use Left/Right to step. Writes its bound {@link Option} live.
+ * difference is snapping/casting on {@link #setValue}. Drag the handle or click the track to jump.
+ * Writes its bound {@link Option} live.
  */
 public final class Slider extends UiElement {
 
@@ -113,20 +112,6 @@ public final class Slider extends UiElement {
 	@Override
 	public boolean mouseReleased(double mouseX, double mouseY, int button) {
 		dragging = false;
-		return false;
-	}
-
-	@Override
-	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-		double stepAmount = option.step > 0 ? option.step : (option.max - option.min) / 20.0;
-		if (keyCode == GLFW.GLFW_KEY_LEFT) {
-			setValue(value() - stepAmount);
-			return true;
-		}
-		if (keyCode == GLFW.GLFW_KEY_RIGHT) {
-			setValue(value() + stepAmount);
-			return true;
-		}
 		return false;
 	}
 }
