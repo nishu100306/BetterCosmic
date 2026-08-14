@@ -27,9 +27,9 @@ import java.util.List;
  * <p>As a {@link ModalHost} it owns a single transient <em>modal</em> child on its own layer — the
  * color picker (a right-hand sidebar) or an open dropdown list. While a modal is open the body shows
  * no hover, and input goes to the modal first. A modal that declines an outside click (the color
- * picker) is dismissed only by its own controls, the {@code ✕} (which then closes only the modal), or
- * by clicking a different option — clicking empty space leaves it open; self-dismissing modals (the
- * dropdown) close on any outside click as usual.
+ * picker) is dismissed by its own controls, by clicking a different option, or by the {@code ✕}
+ * (which closes the whole popup, and the modal with it) — clicking empty space leaves it open;
+ * self-dismissing modals (the dropdown) close on any outside click as usual.
  */
 public final class FeaturePopup extends UiElement implements ModalHost {
 
@@ -205,9 +205,10 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 				return true; // the modal handled it (inside interaction, OK/Cancel, or self-dismiss)
 			}
 			// The modal declined — the click landed outside it and it doesn't self-dismiss (the color
-			// picker). It closes only via the ✕ or by selecting a different option; empty space keeps it.
+			// picker). The ✕ closes the whole popup (and the modal with it); selecting a different
+			// option closes just the modal; empty space keeps it open.
 			if (button == 0 && hit(mouseX, mouseY, closeX, closeY, CLOSE, CLOSE)) {
-				closeModal(); // ✕ closes the modal only, not the popup
+				close(); // ✕ closes the popup — the owned modal closes with it
 				return true;
 			}
 			UiElement row = interactiveItemAt(mouseX, mouseY);
