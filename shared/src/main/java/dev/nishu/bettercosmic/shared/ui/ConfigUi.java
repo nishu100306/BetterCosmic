@@ -30,16 +30,23 @@ public final class ConfigUi {
 		subtitle = s == null ? "" : s;
 	}
 
-	/** The "Open config" key binding, for a keybind option in the General panel. Non-null after {@link #init}. */
+	/**
+	 * The "Open config" key binding, registering it on first access. Client-mod entrypoints aren't
+	 * invoked in dependency order (Fabric gathers their exceptions and continues), so a mod's panel
+	 * that references this keybind (the General panel) may run before {@link #init}; lazy registration
+	 * makes that order-independent. Registration is idempotent — whichever runs first wins.
+	 */
 	public static KeyMapping openKeyMapping() {
+		if (openKey == null) {
+			openKey = KeyBindingHelper.registerKeyBinding(
+				new KeyMapping(KEY_OPEN, GLFW.GLFW_KEY_I, KeyMapping.Category.MISC));
+		}
 		return openKey;
 	}
 
-	/** Registers the keybind and its poll loop. Call once from a shared client init. */
+	/** Registers the keybind (if not already) and its poll loop. Call once from a shared client init. */
 	public static void init() {
-		openKey = KeyBindingHelper.registerKeyBinding(
-			new KeyMapping(KEY_OPEN, GLFW.GLFW_KEY_I, KeyMapping.Category.MISC));
-
+		openKeyMapping(); // ensure the keybind is registered
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (openKey.consumeClick()) {
 				if (client.screen == null) {
