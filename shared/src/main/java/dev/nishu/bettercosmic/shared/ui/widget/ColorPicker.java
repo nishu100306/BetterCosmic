@@ -113,11 +113,11 @@ public final class ColorPicker extends UiElement {
 		boolean caretOn = editingHex && System.currentTimeMillis() % 1000 < 500;
 		RenderUtils.text(g, "#" + hexInput + (caretOn ? "_" : ""), svX + 4, hexY + 3, Theme.text);
 
-		// OK is the primary action: same surface/surfaceHover fill as every other button, marked
-		// primary by a persistent accent border (matching the accent-border hover language elsewhere).
+		// Buttons highlight only on hover (accent border), like Done/Cancel/pager. OK reads as the
+		// primary action via its always-white label rather than a persistent border.
 		boolean okHover = hit(mouseX, mouseY, okX, btnY, btnW, BTN_H);
 		RenderUtils.rect(g, okX, btnY, btnW, BTN_H, okHover ? Theme.surfaceHover : Theme.surface);
-		RenderUtils.outline(g, okX, btnY, btnW, BTN_H, Theme.accent);
+		RenderUtils.outline(g, okX, btnY, btnW, BTN_H, okHover ? Theme.accent : Theme.line);
 		RenderUtils.textCentered(g, "OK", okX + btnW / 2, btnY + 3, Theme.text);
 
 		boolean cxHover = hit(mouseX, mouseY, cancelX, btnY, btnW, BTN_H);
