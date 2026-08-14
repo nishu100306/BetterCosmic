@@ -171,7 +171,7 @@ public final class ColorPicker extends UiElement {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		if (button != 0) {
-			return true;
+			return isMouseOver(mouseX, mouseY);
 		}
 		if (hit(mouseX, mouseY, svX, svY, SV, SV)) {
 			draggingSV = true;
@@ -188,15 +188,18 @@ public final class ColorPicker extends UiElement {
 			return true;
 		}
 		if (hit(mouseX, mouseY, okX, btnY, btnW, BTN_H)) {
-			onClose.run(); // value already live
+			onClose.run(); // OK: keep (value already live)
 			return true;
 		}
-		if (hit(mouseX, mouseY, cancelX, btnY, btnW, BTN_H) || !isMouseOver(mouseX, mouseY)) {
-			option.set(originalColor); // revert
+		if (hit(mouseX, mouseY, cancelX, btnY, btnW, BTN_H)) {
+			option.set(originalColor); // Cancel: revert
 			onClose.run();
 			return true;
 		}
-		return true;
+		// Clicking elsewhere in the picker keeps it open; clicking outside it is left UNHANDLED so the
+		// host popup decides (close via ✕ / option-switch, or stay open on empty space) — the picker
+		// never self-dismisses on an outside click.
+		return isMouseOver(mouseX, mouseY);
 	}
 
 	@Override

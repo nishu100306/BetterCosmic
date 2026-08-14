@@ -25,8 +25,11 @@ import java.util.List;
  * or {@code Esc}.
  *
  * <p>As a {@link ModalHost} it owns a single transient <em>modal</em> child on its own layer — the
- * color picker (a right-hand sidebar) or an open dropdown list. While a modal is open the body is
- * inert: rows get an off-screen mouse and all input routes to the modal.
+ * color picker (a right-hand sidebar) or an open dropdown list. While a modal is open the body shows
+ * no hover, and input goes to the modal first. A modal that declines an outside click (the color
+ * picker) is dismissed only by its own controls, the {@code ✕} (which then closes only the modal), or
+ * by clicking a different option — clicking empty space leaves it open; self-dismissing modals (the
+ * dropdown) close on any outside click as usual.
  */
 public final class FeaturePopup extends UiElement implements ModalHost {
 
@@ -198,15 +201,29 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		if (activeModal != null) {
-			activeModal.mouseClicked(mouseX, mouseY, button); // handles inside / select / OK / Cancel / away
-			return true;
+			if (activeModal.mouseClicked(mouseX, mouseY, button)) {
+				return true; // the modal handled it (inside interaction, OK/Cancel, or self-dismiss)
+			}
+			// The modal declined — the click landed outside it and it doesn't self-dismiss (the color
+			// picker). It closes only via the ✕ or by selecting a different option; empty space keeps it.
+			if (button == 0 && hit(mouseX, mouseY, closeX, closeY, CLOSE, CLOSE)) {
+				closeModal(); // ✕ closes the modal only, not the popup
+				return true;
+			}
+			UiElement row = interactiveItemAt(mouseX, mouseY);
+			if (row != null) {
+				closeModal();                             // switching options closes the modal (value kept)
+				row.mouseClicked(mouseX, mouseY, button); // ...and activates the option clicked
+				return true;
+			}
+			return true; // clicking empty space leaves the modal open
 		}
 		if (button == 0 && hit(mouseX, mouseY, closeX, closeY, CLOSE, CLOSE)) {
 			close();
 			return true;
 		}
 		if (!isMouseOver(mouseX, mouseY)) {
-			close(); // click outside the box closes
+			close(); // click outside the box closes the popup
 			return true;
 		}
 		for (UiElement item : items) {
@@ -214,7 +231,20 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 				return true;
 			}
 		}
-		return true; // modal: swallow everything else
+		return true; // swallow everything else
+	}
+
+	/** The interactive option row under ({@code mx},{@code my}) within the body viewport, or null. */
+	private UiElement interactiveItemAt(double mx, double my) {
+		if (my < bodyTop || my >= bodyTop + bodyVisibleH) {
+			return null;
+		}
+		for (UiElement item : items) {
+			if (item instanceof OptionRow && item.isMouseOver(mx, my)) {
+				return item;
+			}
+		}
+		return null;
 	}
 
 	@Override
