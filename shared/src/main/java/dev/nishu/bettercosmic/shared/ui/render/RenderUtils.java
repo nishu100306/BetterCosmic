@@ -80,6 +80,11 @@ public final class RenderUtils {
 		g.drawString(font(), s, centerX - font().width(s) / 2, y, color, true);
 	}
 
+	/** Point-in-rectangle test, shared by widgets/screens for their sub-rect hit areas. */
+	public static boolean hit(double mx, double my, int x, int y, int w, int h) {
+		return mx >= x && mx < x + w && my >= y && my < y + h;
+	}
+
 	/** Width of {@code s} in the shared font. */
 	public static int textWidth(String s) {
 		return font().width(s);

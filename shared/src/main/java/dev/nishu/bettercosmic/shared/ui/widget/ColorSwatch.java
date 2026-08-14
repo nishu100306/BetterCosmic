@@ -4,28 +4,29 @@ import dev.nishu.bettercosmic.shared.ui.core.ModalHost;
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.core.UiElement;
 import dev.nishu.bettercosmic.shared.ui.core.UiSounds;
-import dev.nishu.bettercosmic.shared.ui.model.Option;
+import dev.nishu.bettercosmic.shared.ui.model.ColorOption;
 import dev.nishu.bettercosmic.shared.ui.render.ColorUtils;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**
- * The row control for a {@link Option.Kind#COLOR} option: a small filled swatch plus the {@code
- * #RRGGBB} value. Clicking opens a {@link ColorPicker} as the host popup's modal, placed as a
- * sidebar via {@link ModalHost#sidebarPosition}. The swatch reads the option's live value, so the
- * picker's live preview shows here too.
+ * The row control for a {@link ColorOption}: a small filled swatch plus the {@code #RRGGBB} value.
+ * Clicking opens a {@link ColorPicker} as the host popup's modal, placed as a sidebar via
+ * {@link ModalHost#sidebarPosition}. The swatch reads the option's live value, so the picker's live
+ * preview shows here too.
  */
 public final class ColorSwatch extends UiElement {
 
 	public static final int WIDTH = 62;
 	private static final int SW = 10;
 
-	private final Option<Integer> option;
+	private final ColorOption option;
 	private final ModalHost host;
 
-	public ColorSwatch(Option<Integer> option, ModalHost host) {
+	public ColorSwatch(ColorOption option, ModalHost host) {
 		this.option = option;
 		this.host = host;
+		this.w = WIDTH;
 	}
 
 	@Override

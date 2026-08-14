@@ -3,7 +3,7 @@ package dev.nishu.bettercosmic.shared.ui.widget;
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.core.UiElement;
 import dev.nishu.bettercosmic.shared.ui.core.UiSounds;
-import dev.nishu.bettercosmic.shared.ui.model.Option;
+import dev.nishu.bettercosmic.shared.ui.model.ToggleOption;
 import dev.nishu.bettercosmic.shared.ui.render.ColorUtils;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
 import net.minecraft.client.gui.GuiGraphics;
@@ -19,11 +19,12 @@ public final class Toggle extends UiElement {
 	private static final int TRACK_H = 12;
 	private static final int KNOB = 8;
 
-	private final Option<Boolean> option;
+	private final ToggleOption option;
 	private float anim = -1f; // knob position 0..1; -1 = snap to current value on first render
 
-	public Toggle(Option<Boolean> option) {
+	public Toggle(ToggleOption option) {
 		this.option = option;
+		this.w = WIDTH;
 	}
 
 	@Override

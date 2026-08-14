@@ -5,7 +5,7 @@ import dev.nishu.bettercosmic.shared.ui.core.ModalHost;
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.core.UiElement;
 import dev.nishu.bettercosmic.shared.ui.core.UiSounds;
-import dev.nishu.bettercosmic.shared.ui.model.Option;
+import dev.nishu.bettercosmic.shared.ui.model.KeybindOption;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
 import net.minecraft.client.gui.GuiGraphics;
 import org.lwjgl.glfw.GLFW;
@@ -21,13 +21,14 @@ public final class KeybindButton extends UiElement {
 	public static final int WIDTH = 104;
 	private static final int BOX_H = 14;
 
-	private final Option<InputConstants.Key> option;
+	private final KeybindOption option;
 	private final ModalHost host;
 	private boolean listening;
 
-	public KeybindButton(Option<InputConstants.Key> option, ModalHost host) {
+	public KeybindButton(KeybindOption option, ModalHost host) {
 		this.option = option;
 		this.host = host;
+		this.w = WIDTH;
 	}
 
 	@Override
@@ -52,7 +53,7 @@ public final class KeybindButton extends UiElement {
 		if (listening) {
 			// Clicking the box binds that mouse button; clicking off it cancels without changing.
 			if (isMouseOver(mouseX, mouseY)) {
-				option.set(InputConstants.Type.MOUSE.getOrCreate(button));
+				option.bind(InputConstants.Type.MOUSE.getOrCreate(button));
 			}
 			stop();
 			return true;
@@ -72,9 +73,9 @@ public final class KeybindButton extends UiElement {
 			return false;
 		}
 		if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-			option.set(InputConstants.UNKNOWN); // Esc unbinds
+			option.bind(InputConstants.UNKNOWN); // Esc unbinds
 		} else {
-			option.set(InputConstants.Type.KEYSYM.getOrCreate(keyCode));
+			option.bind(InputConstants.Type.KEYSYM.getOrCreate(keyCode));
 		}
 		stop();
 		return true;

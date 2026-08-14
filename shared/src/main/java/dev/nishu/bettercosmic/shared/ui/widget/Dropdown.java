@@ -3,7 +3,7 @@ package dev.nishu.bettercosmic.shared.ui.widget;
 import dev.nishu.bettercosmic.shared.ui.core.ModalHost;
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.core.UiElement;
-import dev.nishu.bettercosmic.shared.ui.model.Option;
+import dev.nishu.bettercosmic.shared.ui.model.DropdownOption;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -18,16 +18,17 @@ public final class Dropdown extends UiElement {
 	public static final int WIDTH = 104;
 	private static final int BOX_H = 14;
 
-	private final Option<String> option;
+	private final DropdownOption option;
 	private final ModalHost host;
 	private final int screenH;
 
 	private DropdownList openList;
 
-	public Dropdown(Option<String> option, ModalHost host, int screenH) {
+	public Dropdown(DropdownOption option, ModalHost host, int screenH) {
 		this.option = option;
 		this.host = host;
 		this.screenH = screenH;
+		this.w = WIDTH;
 	}
 
 	public boolean isOpen() {

@@ -22,6 +22,11 @@ public final class GroupLabel extends UiElement {
 	}
 
 	@Override
+	public int preferredHeight() {
+		return HEIGHT;
+	}
+
+	@Override
 	public void render(GuiGraphics g, int mouseX, int mouseY, float dt) {
 		RenderUtils.text(g, text, x, y + 4, Theme.faint);
 		RenderUtils.hLine(g, x, y + HEIGHT - 1, w, Theme.line);

@@ -2,7 +2,7 @@ package dev.nishu.bettercosmic.shared.ui.widget;
 
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.core.UiElement;
-import dev.nishu.bettercosmic.shared.ui.model.Option;
+import dev.nishu.bettercosmic.shared.ui.model.ColorOption;
 import dev.nishu.bettercosmic.shared.ui.render.ColorUtils;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
 import net.minecraft.client.gui.GuiGraphics;
@@ -14,12 +14,12 @@ import org.lwjgl.glfw.GLFW;
  * the <em>same</em> layer as the popup — not a separate overlay — so there is no z-order ambiguity and
  * the popup owns modality/hover suppression.
  *
- * <p>Kept from BP: the SV-square cache (regenerated only when hue changes) + hue-bar cache with block
- * rendering, drag on both, and typed live hex. Changed: the BP {@code System.out} debug logging is
- * gone; compact sky styling (120px square, 8px hue bar, 1px borders); and it <b>live-previews</b> —
- * every change writes the bound {@link Option} immediately (so editing a theme color repaints the UI
- * live), while Cancel/Esc/click-away reverts to the opening color. The option's original alpha byte
- * is preserved on every write.
+ * <p>Kept from BP: the HSV-square + hue-bar + drag + typed live hex. Changed: the {@code System.out}
+ * debug logging is gone; compact sky styling (120px square, 8px hue bar, 1px borders); the gradients
+ * render pixel-perfect (white→hue columns + a transparent→black overlay; 6 hue segments); and it
+ * <b>live-previews</b> — every change writes the bound {@link ColorOption} immediately (so editing a
+ * theme color repaints the UI live), while Cancel/Esc revert to the opening color. The option's
+ * original alpha byte is preserved on every write.
  */
 public final class ColorPicker extends UiElement {
 
@@ -34,7 +34,7 @@ public final class ColorPicker extends UiElement {
 	public static final int WIDTH = PAD + CONTENT_W + PAD;
 	public static final int HEIGHT = PAD + 12 + SV + 8 + PREVIEW_H + 8 + FIELD_H + 8 + BTN_H + PAD;
 
-	private final Option<Integer> option;
+	private final ColorOption option;
 	private final int originalColor;
 	private final int originalAlpha;
 	private final Runnable onClose;
@@ -48,7 +48,7 @@ public final class ColorPicker extends UiElement {
 	private boolean editingHex;
 	private boolean draggingSV, draggingHue;
 
-	public ColorPicker(Option<Integer> option, int px, int py, Runnable onClose) {
+	public ColorPicker(ColorOption option, int px, int py, Runnable onClose) {
 		this.option = option;
 		this.originalColor = option.get();
 		this.originalAlpha = (originalColor >>> 24) & 0xFF;
@@ -110,12 +110,12 @@ public final class ColorPicker extends UiElement {
 
 		// Buttons highlight only on hover (accent border), like Done/Cancel/pager. OK reads as the
 		// primary action via its always-white label rather than a persistent border.
-		boolean okHover = hit(mouseX, mouseY, okX, btnY, btnW, BTN_H);
+		boolean okHover = RenderUtils.hit(mouseX, mouseY, okX, btnY, btnW, BTN_H);
 		RenderUtils.rect(g, okX, btnY, btnW, BTN_H, okHover ? Theme.surfaceHover : Theme.surface);
 		RenderUtils.outline(g, okX, btnY, btnW, BTN_H, okHover ? Theme.accent : Theme.line);
 		RenderUtils.textCentered(g, "OK", okX + btnW / 2, btnY + 3, Theme.text);
 
-		boolean cxHover = hit(mouseX, mouseY, cancelX, btnY, btnW, BTN_H);
+		boolean cxHover = RenderUtils.hit(mouseX, mouseY, cancelX, btnY, btnW, BTN_H);
 		RenderUtils.rect(g, cancelX, btnY, btnW, BTN_H, cxHover ? Theme.surfaceHover : Theme.surface);
 		RenderUtils.outline(g, cancelX, btnY, btnW, BTN_H, cxHover ? Theme.accent : Theme.line);
 		RenderUtils.textCentered(g, "Cancel", cancelX + btnW / 2, btnY + 3, cxHover ? Theme.text : Theme.muted);
@@ -159,26 +159,26 @@ public final class ColorPicker extends UiElement {
 		if (button != 0) {
 			return isMouseOver(mouseX, mouseY);
 		}
-		if (hit(mouseX, mouseY, svX, svY, SV, SV)) {
+		if (RenderUtils.hit(mouseX, mouseY, svX, svY, SV, SV)) {
 			draggingSV = true;
 			updateSV(mouseX, mouseY);
 			return true;
 		}
-		if (hit(mouseX, mouseY, hueX, hueY, HUE_W, SV)) {
+		if (RenderUtils.hit(mouseX, mouseY, hueX, hueY, HUE_W, SV)) {
 			draggingHue = true;
 			updateHue(mouseY);
 			return true;
 		}
-		editingHex = hit(mouseX, mouseY, svX, hexY, CONTENT_W, FIELD_H);
+		editingHex = RenderUtils.hit(mouseX, mouseY, svX, hexY, CONTENT_W, FIELD_H);
 		if (editingHex) {
 			return true;
 		}
-		if (hit(mouseX, mouseY, okX, btnY, btnW, BTN_H)) {
+		if (RenderUtils.hit(mouseX, mouseY, okX, btnY, btnW, BTN_H)) {
 			dev.nishu.bettercosmic.shared.ui.core.UiSounds.click();
 			onClose.run(); // OK: keep (value already live)
 			return true;
 		}
-		if (hit(mouseX, mouseY, cancelX, btnY, btnW, BTN_H)) {
+		if (RenderUtils.hit(mouseX, mouseY, cancelX, btnY, btnW, BTN_H)) {
 			dev.nishu.bettercosmic.shared.ui.core.UiSounds.click();
 			option.set(originalColor); // Cancel: revert
 			onClose.run();
@@ -264,9 +264,5 @@ public final class ColorPicker extends UiElement {
 
 	private static float clamp01(float v) {
 		return Math.max(0, Math.min(1, v));
-	}
-
-	private static boolean hit(double mx, double my, int x, int y, int w, int h) {
-		return mx >= x && mx < x + w && my >= y && my < y + h;
 	}
 }

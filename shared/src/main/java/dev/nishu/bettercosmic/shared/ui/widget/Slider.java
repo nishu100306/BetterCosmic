@@ -2,16 +2,15 @@ package dev.nishu.bettercosmic.shared.ui.widget;
 
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.core.UiElement;
-import dev.nishu.bettercosmic.shared.ui.model.Option;
+import dev.nishu.bettercosmic.shared.ui.model.SliderOption;
 import dev.nishu.bettercosmic.shared.ui.render.ColorUtils;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**
- * A thin horizontal slider with a square handle and a right-aligned mono value readout. Serves both
- * {@link Option.Kind#SLIDER} (double) and {@link Option.Kind#INT_SLIDER} (integer) — the only
- * difference is snapping/casting on {@link #setValue}. Drag the handle or click the track to jump.
- * Writes its bound {@link Option} live.
+ * A thin horizontal slider with a square handle and a right-aligned mono value readout, bound to a
+ * {@link SliderOption} (its {@code integer} flag only affects snapping). Drag the handle or click the
+ * track to jump. Writes the option live.
  */
 public final class Slider extends UiElement {
 
@@ -20,29 +19,22 @@ public final class Slider extends UiElement {
 	private static final int HANDLE = 6;
 	private static final int VALUE_GAP = 6;
 
-	private final Option<?> option;
-	private final boolean intMode;
+	private final SliderOption option;
 
 	private int trackLeft, trackW; // captured at render for hit-testing
 	private boolean dragging;
 
-	public Slider(Option<?> option) {
+	public Slider(SliderOption option) {
 		this.option = option;
-		this.intMode = option.kind == Option.Kind.INT_SLIDER;
+		this.w = WIDTH;
 	}
 
 	private double value() {
-		return ((Number) option.get()).doubleValue();
+		return option.get();
 	}
 
-	@SuppressWarnings("unchecked")
 	private void setValue(double v) {
-		double snapped = snap(v);
-		if (intMode) {
-			((Option<Integer>) option).set((int) Math.round(snapped));
-		} else {
-			((Option<Double>) option).set(snapped);
-		}
+		option.set(snap(v));
 	}
 
 	private double snap(double v) {

@@ -58,6 +58,14 @@ public abstract class UiElement {
 			&& mouseY >= y && mouseY < y + h;
 	}
 
+	/**
+	 * The height this element wants when laid out in a vertical list (e.g. the feature-popup body).
+	 * Overridden by list items that have a fixed row height; defaults to the current {@link #h}.
+	 */
+	public int preferredHeight() {
+		return h;
+	}
+
 	/** Tooltip to show while hovered, or {@code null} for none. */
 	public Component tooltip() {
 		return null;

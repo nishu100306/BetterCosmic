@@ -59,9 +59,9 @@ public final class GeneralPanel {
 			PanelIcon.GEAR, List.of(access, general, theme, links));
 	}
 
-	private static Option<Integer> themeColor(String label,
-											  java.util.function.Supplier<Integer> get,
-											  java.util.function.Consumer<Integer> set) {
+	private static Option themeColor(String label,
+									 java.util.function.Supplier<Integer> get,
+									 java.util.function.Consumer<Integer> set) {
 		SharedConfig c = SharedConfig.get();
 		return Options.color(label, get, v -> {
 			set.accept(v);

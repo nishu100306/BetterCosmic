@@ -80,7 +80,7 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 			GroupLabel gl = new GroupLabel(group.label);
 			items.add(gl);
 			cH += GroupLabel.HEIGHT;
-			for (Option<?> opt : group.options) {
+			for (Option opt : group.options) {
 				items.add(new OptionRow(opt, this, screenH));
 				cH += OptionRow.HEIGHT;
 			}
@@ -126,7 +126,7 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 
 		closeX = px + POP_W - PAD_X - CLOSE;
 		closeY = py + (HEADER - CLOSE) / 2;
-		boolean closeHover = hit(mouseX, mouseY, closeX, closeY, CLOSE, CLOSE);
+		boolean closeHover = RenderUtils.hit(mouseX, mouseY, closeX, closeY, CLOSE, CLOSE);
 		drawCross(g, closeX, closeY, CLOSE, closeHover ? Theme.text : Theme.muted);
 
 		// While a modal is open the body is inert: feed rows an off-screen mouse so nothing behind
@@ -140,7 +140,7 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 		RenderUtils.pushScissor(g, px, bodyTop, POP_W, bodyVisibleH);
 		int yy = bodyTop - scroll;
 		for (UiElement item : items) {
-			int ih = heightOf(item);
+			int ih = item.preferredHeight();
 			item.bounds(px + PAD_X, yy, itemW, ih);
 			if (yy + ih > bodyTop && yy < bodyTop + bodyVisibleH) {
 				item.render(g, bmx, bmy, dt);
@@ -210,7 +210,7 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 			// The modal declined — the click landed outside it and it doesn't self-dismiss (the color
 			// picker). The ✕ closes the whole popup (and the modal with it); selecting a different
 			// option closes just the modal; empty space keeps it open.
-			if (button == 0 && hit(mouseX, mouseY, closeX, closeY, CLOSE, CLOSE)) {
+			if (button == 0 && RenderUtils.hit(mouseX, mouseY, closeX, closeY, CLOSE, CLOSE)) {
 				close(); // ✕ closes the popup — the owned modal closes with it
 				return true;
 			}
@@ -222,7 +222,7 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 			}
 			return true; // clicking empty space leaves the modal open
 		}
-		if (button == 0 && hit(mouseX, mouseY, closeX, closeY, CLOSE, CLOSE)) {
+		if (button == 0 && RenderUtils.hit(mouseX, mouseY, closeX, closeY, CLOSE, CLOSE)) {
 			close();
 			return true;
 		}
@@ -342,18 +342,10 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 		onClose.run();
 	}
 
-	private static int heightOf(UiElement item) {
-		return item instanceof GroupLabel ? GroupLabel.HEIGHT : OptionRow.HEIGHT;
-	}
-
 	private static void drawCross(GuiGraphics g, int x, int y, int size, int color) {
 		for (int i = 0; i < size; i++) {
 			g.fill(x + i, y + i, x + i + 1, y + i + 1, color);
 			g.fill(x + (size - 1 - i), y + i, x + (size - 1 - i) + 1, y + i + 1, color);
 		}
-	}
-
-	private static boolean hit(double mx, double my, int x, int y, int w, int h) {
-		return mx >= x && mx < x + w && my >= y && my < y + h;
 	}
 }

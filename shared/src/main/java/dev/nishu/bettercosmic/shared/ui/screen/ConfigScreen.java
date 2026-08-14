@@ -80,8 +80,8 @@ public final class ConfigScreen extends Screen {
 	private void resetAll() {
 		for (ConfigPanel panel : ConfigRegistry.panels()) {
 			for (OptionGroup group : panel.groups) {
-				for (Option<?> option : group.options) {
-					if (option.kind != Option.Kind.LINK && option.kind != Option.Kind.LABEL) {
+				for (Option option : group.options) {
+					if (option.editable()) {
 						option.reset();
 					}
 				}
@@ -134,7 +134,7 @@ public final class ConfigScreen extends Screen {
 		}
 
 		// "Reset all" — two-click arm: first click shows "Confirm?", second resets everything.
-		boolean rHover = hit(mouseX, mouseY, resetX, y0 + 6, resetW, 14);
+		boolean rHover = RenderUtils.hit(mouseX, mouseY, resetX, y0 + 6, resetW, 14);
 		String label = resetArmed ? "Confirm?" : "Reset all";
 		int color = resetArmed ? Theme.accent : (rHover ? Theme.text : Theme.faint);
 		RenderUtils.text(g, label, resetX + 6, textY, color);
@@ -146,7 +146,7 @@ public final class ConfigScreen extends Screen {
 		pager.render(g, x0 + PAD, cy, mouseX, mouseY);
 
 		int doneY = cy - 8;
-		boolean dHover = hit(mouseX, mouseY, doneX, doneY, doneW, 16);
+		boolean dHover = RenderUtils.hit(mouseX, mouseY, doneX, doneY, doneW, 16);
 		RenderUtils.panel(g, doneX, doneY, doneW, 16, Theme.surface, dHover ? Theme.accent : Theme.line);
 		RenderUtils.textCentered(g, "Done", doneX + doneW / 2, doneY + 4, dHover ? Theme.text : Theme.muted);
 	}
@@ -163,7 +163,7 @@ public final class ConfigScreen extends Screen {
 			return true;
 		}
 		// "Reset all" — arm on first click, reset on the confirming second click.
-		if (button == 0 && hit(mx, my, resetX, y0 + 6, resetW, 14)) {
+		if (button == 0 && RenderUtils.hit(mx, my, resetX, y0 + 6, resetW, 14)) {
 			UiSounds.click();
 			if (resetArmed) {
 				resetAll();
@@ -180,7 +180,7 @@ public final class ConfigScreen extends Screen {
 		if (pager.mouseClicked(mx, my, button)) {
 			return true;
 		}
-		if (button == 0 && hit(mx, my, doneX, y0 + H - FOOTER / 2 - 8, doneW, 16)) {
+		if (button == 0 && RenderUtils.hit(mx, my, doneX, y0 + H - FOOTER / 2 - 8, doneW, 16)) {
 			UiSounds.click();
 			onClose();
 			return true;
@@ -257,10 +257,6 @@ public final class ConfigScreen extends Screen {
 	}
 
 	// ---- helpers ----
-
-	private static boolean hit(double mx, double my, int x, int y, int w, int h) {
-		return mx >= x && mx < x + w && my >= y && my < y + h;
-	}
 
 	private static void diamond(GuiGraphics g, int cx, int cy, int r, int color) {
 		for (int i = -r; i <= r; i++) {

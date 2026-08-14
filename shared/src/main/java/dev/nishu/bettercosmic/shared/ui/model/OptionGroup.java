@@ -9,10 +9,10 @@ import java.util.List;
 public final class OptionGroup {
 
 	public final String label;
-	public final List<Option<?>> options;
+	public final List<Option> options;
 
-	public OptionGroup(String label, List<Option<?>> options) {
+	public OptionGroup(String label, List<? extends Option> options) {
 		this.label = label;
-		this.options = List.copyOf(options);
+		this.options = List.copyOf(options); // widens a single-subtype list (e.g. all ColorOption) to List<Option>
 	}
 }

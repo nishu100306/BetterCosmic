@@ -2,7 +2,7 @@ package dev.nishu.bettercosmic.shared.ui.widget;
 
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.core.UiElement;
-import dev.nishu.bettercosmic.shared.ui.model.Option;
+import dev.nishu.bettercosmic.shared.ui.model.LinkOption;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -20,10 +20,11 @@ public final class LinkButton extends UiElement {
 	public static final int WIDTH = 34;
 	private static final String LABEL = "Open";
 
-	private final Option<?> option;
+	private final LinkOption option;
 
-	public LinkButton(Option<?> option) {
+	public LinkButton(LinkOption option) {
 		this.option = option;
+		this.w = WIDTH;
 	}
 
 	private int textX() {
