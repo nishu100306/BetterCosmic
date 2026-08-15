@@ -12,11 +12,11 @@ public final class ColorOption extends Option {
 	private final Consumer<Integer> setter;
 	private final int defaultValue;
 
-	ColorOption(String label, Supplier<Integer> getter, Consumer<Integer> setter) {
+	ColorOption(String label, int defaultValue, Supplier<Integer> getter, Consumer<Integer> setter) {
 		super(label);
 		this.getter = getter;
 		this.setter = setter;
-		this.defaultValue = getter.get();
+		this.defaultValue = defaultValue;
 	}
 
 	public int get() {

@@ -39,26 +39,27 @@ public class BetterSkyClient implements ClientModInitializer {
 		// The placeholders are roadmap chips shown as "Coming soon" cards.
 		ConfigUi.setSubtitle("Sky");
 
+		SkyConfig def = new SkyConfig(); // code defaults (so reset restores these, not the persisted values)
 		OptionGroup overlayGroup = new OptionGroup("Overlay", List.of(
-				Options.toggle("Charge overlay",
+				Options.toggle("Charge overlay", def.trinketChargesOverlay,
 						() -> config.trinketChargesOverlay,
 						v -> { config.trinketChargesOverlay = v; config.save(); })
 						.tooltip("Show remaining uses on potion trinkets."),
-				Options.slider("Scale", 0.3, 1.5, 0.05,
+				Options.slider("Scale", def.trinketChargesScale, 0.3, 1.5, 0.05,
 						() -> config.trinketChargesScale,
 						v -> { config.trinketChargesScale = v; config.save(); })
 						.tooltip("Text size of the charge number."),
-				Options.dropdown("Position",
+				Options.dropdown("Position", def.trinketChargesAnchor,
 						List.of("Top-left", "Top-right", "Bottom-left", "Bottom-right", "Center"),
 						() -> config.trinketChargesAnchor,
 						v -> { config.trinketChargesAnchor = v; config.save(); })
 		));
 		OptionGroup colorGroup = new OptionGroup("Color", List.of(
-				Options.dropdown("Source", List.of("Potion color", "Custom"),
+				Options.dropdown("Source", def.trinketColorSource, List.of("Potion color", "Custom"),
 						() -> config.trinketColorSource,
 						v -> { config.trinketColorSource = v; config.save(); })
 						.tooltip("Use the trinket's potion color, or your custom color."),
-				Options.color("Custom color",
+				Options.color("Custom color", def.trinketChargesColor,
 						() -> config.trinketChargesColor,
 						v -> { config.trinketChargesColor = v; config.save(); })
 						.tooltip("Used only when Source is Custom.")

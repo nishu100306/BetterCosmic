@@ -13,12 +13,13 @@ public final class DropdownOption extends Option {
 	private final String defaultValue;
 	public final List<String> choices;
 
-	DropdownOption(String label, List<String> choices, Supplier<String> getter, Consumer<String> setter) {
+	DropdownOption(String label, String defaultValue, List<String> choices,
+				   Supplier<String> getter, Consumer<String> setter) {
 		super(label);
 		this.choices = List.copyOf(choices);
 		this.getter = getter;
 		this.setter = setter;
-		this.defaultValue = getter.get();
+		this.defaultValue = defaultValue;
 	}
 
 	public String get() {

@@ -10,11 +10,11 @@ public final class ToggleOption extends Option {
 	private final Consumer<Boolean> setter;
 	private final boolean defaultValue;
 
-	ToggleOption(String label, Supplier<Boolean> getter, Consumer<Boolean> setter) {
+	ToggleOption(String label, boolean defaultValue, Supplier<Boolean> getter, Consumer<Boolean> setter) {
 		super(label);
 		this.getter = getter;
 		this.setter = setter;
-		this.defaultValue = getter.get();
+		this.defaultValue = defaultValue;
 	}
 
 	public boolean get() {

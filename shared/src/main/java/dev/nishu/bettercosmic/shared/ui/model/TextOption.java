@@ -14,11 +14,11 @@ public final class TextOption extends Option {
 	private final Consumer<String> setter;
 	private final String defaultValue;
 
-	TextOption(String label, Supplier<String> getter, Consumer<String> setter) {
+	TextOption(String label, String defaultValue, Supplier<String> getter, Consumer<String> setter) {
 		super(label);
 		this.getter = getter;
 		this.setter = setter;
-		this.defaultValue = getter.get();
+		this.defaultValue = defaultValue;
 	}
 
 	public String get() {

@@ -22,6 +22,7 @@ public final class GeneralPanel {
 
 	public static ConfigPanel create() {
 		SharedConfig c = SharedConfig.get();
+		SharedConfig d = new SharedConfig(); // code defaults (so reset restores these, not persisted values)
 
 		OptionGroup access = new OptionGroup("Access", List.of(
 			Options.keybind("Open config", ConfigUi.openKeyMapping())
@@ -29,25 +30,25 @@ public final class GeneralPanel {
 		));
 
 		OptionGroup general = new OptionGroup("General", List.of(
-			Options.toggle("Developer mode",
+			Options.toggle("Developer mode", d.developerMode,
 				() -> c.developerMode,
 				v -> { c.developerMode = v; c.save(); })
 				.tooltip("Enables the shared dev commands (/bitem)."),
-			Options.toggle("Comma number format",
+			Options.toggle("Comma number format", d.useCommaFormatting,
 				() -> c.useCommaFormatting,
 				v -> { c.useCommaFormatting = v; c.save(); })
 				.tooltip("1,234,567 instead of 1.2M.")
 		));
 
 		OptionGroup theme = new OptionGroup("Theme", List.of(
-			themeColor("Accent", () -> c.themeAccent, v -> c.themeAccent = v),
-			themeColor("Surface", () -> c.themeSurface, v -> c.themeSurface = v),
-			themeColor("Surface hover", () -> c.themeSurfaceHover, v -> c.themeSurfaceHover = v),
-			themeColor("Ground", () -> c.themeGround, v -> c.themeGround = v),
-			themeColor("Line", () -> c.themeLine, v -> c.themeLine = v),
-			themeColor("Text", () -> c.themeText, v -> c.themeText = v),
-			themeColor("Muted", () -> c.themeMuted, v -> c.themeMuted = v),
-			themeColor("Faint", () -> c.themeFaint, v -> c.themeFaint = v)
+			themeColor("Accent", d.themeAccent, () -> c.themeAccent, v -> c.themeAccent = v),
+			themeColor("Surface", d.themeSurface, () -> c.themeSurface, v -> c.themeSurface = v),
+			themeColor("Surface hover", d.themeSurfaceHover, () -> c.themeSurfaceHover, v -> c.themeSurfaceHover = v),
+			themeColor("Ground", d.themeGround, () -> c.themeGround, v -> c.themeGround = v),
+			themeColor("Line", d.themeLine, () -> c.themeLine, v -> c.themeLine = v),
+			themeColor("Text", d.themeText, () -> c.themeText, v -> c.themeText = v),
+			themeColor("Muted", d.themeMuted, () -> c.themeMuted, v -> c.themeMuted = v),
+			themeColor("Faint", d.themeFaint, () -> c.themeFaint, v -> c.themeFaint = v)
 		));
 
 		OptionGroup links = new OptionGroup("Links", List.of(
@@ -59,11 +60,11 @@ public final class GeneralPanel {
 			PanelIcon.GEAR, List.of(access, general, theme, links));
 	}
 
-	private static Option themeColor(String label,
+	private static Option themeColor(String label, int def,
 									 java.util.function.Supplier<Integer> get,
 									 java.util.function.Consumer<Integer> set) {
 		SharedConfig c = SharedConfig.get();
-		return Options.color(label, get, v -> {
+		return Options.color(label, def, get, v -> {
 			set.accept(v);
 			c.save();
 			Theme.load(); // live repaint

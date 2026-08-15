@@ -18,7 +18,7 @@ public final class SliderOption extends Option {
 	public final double step;
 	public final boolean integer;
 
-	SliderOption(String label, double min, double max, double step, boolean integer,
+	SliderOption(String label, double defaultValue, double min, double max, double step, boolean integer,
 				 DoubleSupplier getter, DoubleConsumer setter) {
 		super(label);
 		this.min = min;
@@ -27,7 +27,7 @@ public final class SliderOption extends Option {
 		this.integer = integer;
 		this.getter = getter;
 		this.setter = setter;
-		this.defaultValue = getter.getAsDouble();
+		this.defaultValue = defaultValue;
 	}
 
 	public double get() {
