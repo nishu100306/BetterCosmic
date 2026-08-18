@@ -14,14 +14,52 @@ public enum PanelIcon {
 	/** Gear — general/settings. */
 	GEAR,
 	/** Padlock — locked "coming soon" placeholders. */
-	LOCK;
+	LOCK,
+	/** Eye — inventory/overlay views (EasyView). */
+	EYE,
+	/** Pouch — satchels. */
+	SATCHEL;
 
 	public void draw(GuiGraphics g, int x, int y, int size, int color) {
 		switch (this) {
 			case FLASK -> flask(g, x, y, size, color);
 			case GEAR -> gear(g, x, y, size, color);
 			case LOCK -> lock(g, x, y, size, color);
+			case EYE -> eye(g, x, y, size, color);
+			case SATCHEL -> satchel(g, x, y, size, color);
 		}
+	}
+
+	private static void eye(GuiGraphics g, int x, int y, int s, int color) {
+		int cy = y + s / 2;
+		int left = x + 1;
+		int right = x + s - 1;
+		// almond outline: taller in the middle, tapering to the corners
+		int span = right - left;
+		for (int i = 0; i <= span; i++) {
+			float f = span == 0 ? 0 : i / (float) span;
+			int half = Math.round((float) Math.sin(f * Math.PI) * (s * 0.28f));
+			int xx = left + i;
+			g.fill(xx, cy - half, xx + 1, cy - half + 1, color);       // top lid
+			g.fill(xx, cy + half - 1, xx + 1, cy + half, color);       // bottom lid
+		}
+		g.fill(x + s / 2 - 2, cy - 2, x + s / 2 + 2, cy + 2, color);   // pupil
+	}
+
+	private static void satchel(GuiGraphics g, int x, int y, int s, int color) {
+		int top = y + Math.round(s * 0.32f);
+		int bottom = y + s - 1;
+		int span = bottom - top;
+		for (int i = 0; i < span; i++) {                               // widening body (trapezoid)
+			float f = span == 0 ? 0 : i / (float) span;
+			int half = Math.round((s * 0.24f) + f * (s * 0.18f));
+			int cx = x + s / 2;
+			int yy = top + i;
+			g.fill(cx - half, yy, cx + half, yy + 1, color);
+		}
+		int cx = x + s / 2;
+		g.fill(cx - Math.round(s * 0.22f), y + Math.round(s * 0.2f),   // flap
+				cx + Math.round(s * 0.22f), top + 1, color);
 	}
 
 	private static void flask(GuiGraphics g, int x, int y, int s, int color) {

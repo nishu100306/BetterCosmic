@@ -2,8 +2,11 @@ package dev.nishu.bettercosmic.prisons.client;
 
 import dev.nishu.bettercosmic.prisons.BetterPrisons;
 import dev.nishu.bettercosmic.prisons.config.PrisonsConfig;
+import dev.nishu.bettercosmic.prisons.easyview.EasyViewPanel;
+import dev.nishu.bettercosmic.prisons.easyview.EasyViewProvider;
 import dev.nishu.bettercosmic.shared.config.BetterCosmicConfig;
 import dev.nishu.bettercosmic.shared.config.SharedConfig;
+import dev.nishu.bettercosmic.shared.easyview.EasyView;
 import dev.nishu.bettercosmic.shared.hud.HudRenderer;
 import dev.nishu.bettercosmic.shared.notification.ToastRenderer;
 import dev.nishu.bettercosmic.shared.ui.ConfigUi;
@@ -42,8 +45,11 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		ToastRenderer.setCornerSupplier(() -> config.toastCorner);
 		ToastRenderer.register();
 
-		// Draw registered HUDs (none yet — populated as HUDs are ported in Phase C).
+		// Draw registered HUDs (populated as HUDs are ported in Phase C).
 		HudRenderer.register();
+
+		// EasyView inventory/hotbar overlays (drawn by the shared EasyView mixins).
+		EasyView.register(new EasyViewProvider());
 
 		registerPanels();
 
@@ -84,5 +90,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 
 		ConfigRegistry.register(ConfigPanel.of("prisons-misc", "Misc",
 				"General BetterPrisons features", PanelIcon.GEAR, List.of(qol, search)));
+
+		ConfigRegistry.register(EasyViewPanel.create());
 	}
 }
