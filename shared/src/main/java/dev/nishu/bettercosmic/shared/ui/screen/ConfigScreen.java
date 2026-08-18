@@ -1,5 +1,7 @@
 package dev.nishu.bettercosmic.shared.ui.screen;
 
+import dev.nishu.bettercosmic.shared.hud.HudEditorScreen;
+import dev.nishu.bettercosmic.shared.hud.HudRegistry;
 import dev.nishu.bettercosmic.shared.ui.core.OverlayLayer;
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.core.UiSounds;
@@ -42,6 +44,7 @@ public final class ConfigScreen extends Screen {
 
 	private int x0, y0;
 	private int resetX, resetW, doneX, doneW; // header/footer button hit-rects (y derived)
+	private int hudX, hudW; // footer "HUD editor" button (only shown when HUDs are registered)
 	private boolean resetArmed; // "Reset all" needs a confirming second click
 
 	public ConfigScreen(Screen parent, String subtitle) {
@@ -65,6 +68,10 @@ public final class ConfigScreen extends Screen {
 		resetX = x0 + W - PAD - resetW;
 		doneW = RenderUtils.textWidth("Done") + 16;
 		doneX = x0 + W - PAD - doneW;
+
+		// "HUD editor" sits just left of Done, and only when a mod has registered HUDs.
+		hudW = RenderUtils.textWidth("HUD editor") + 16;
+		hudX = doneX - 6 - hudW;
 	}
 
 	private void openPanel(ConfigPanel panel) {
@@ -149,6 +156,12 @@ public final class ConfigScreen extends Screen {
 		boolean dHover = RenderUtils.hit(mouseX, mouseY, doneX, doneY, doneW, 16);
 		RenderUtils.panel(g, doneX, doneY, doneW, 16, Theme.surface, dHover ? Theme.accent : Theme.line);
 		RenderUtils.textCentered(g, "Done", doneX + doneW / 2, doneY + 4, dHover ? Theme.text : Theme.muted);
+
+		if (!HudRegistry.isEmpty()) {
+			boolean hHover = RenderUtils.hit(mouseX, mouseY, hudX, doneY, hudW, 16);
+			RenderUtils.panel(g, hudX, doneY, hudW, 16, Theme.surface, hHover ? Theme.accent : Theme.line);
+			RenderUtils.textCentered(g, "HUD editor", hudX + hudW / 2, doneY + 4, hHover ? Theme.text : Theme.muted);
+		}
 	}
 
 	// Input arrives as 1.21.11 event objects; we unpack to primitives and forward to the element
@@ -183,6 +196,14 @@ public final class ConfigScreen extends Screen {
 		if (button == 0 && RenderUtils.hit(mx, my, doneX, y0 + H - FOOTER / 2 - 8, doneW, 16)) {
 			UiSounds.click();
 			onClose();
+			return true;
+		}
+		if (button == 0 && !HudRegistry.isEmpty()
+				&& RenderUtils.hit(mx, my, hudX, y0 + H - FOOTER / 2 - 8, hudW, 16)) {
+			UiSounds.click();
+			if (this.minecraft != null) {
+				this.minecraft.setScreen(new HudEditorScreen(this));
+			}
 			return true;
 		}
 		return super.mouseClicked(event, doubleClick);
