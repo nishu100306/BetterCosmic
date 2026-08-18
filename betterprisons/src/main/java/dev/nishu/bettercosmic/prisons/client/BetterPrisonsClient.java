@@ -1,6 +1,9 @@
 package dev.nishu.bettercosmic.prisons.client;
 
 import dev.nishu.bettercosmic.prisons.BetterPrisons;
+import dev.nishu.bettercosmic.prisons.chestsearch.ChestSearchTintProvider;
+import dev.nishu.bettercosmic.prisons.chestsearch.ClueScrollProvider;
+import dev.nishu.bettercosmic.prisons.chestsearch.SearchPanel;
 import dev.nishu.bettercosmic.prisons.config.PrisonsConfig;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewPanel;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewProvider;
@@ -32,6 +35,7 @@ import dev.nishu.bettercosmic.shared.ui.model.Options;
 import dev.nishu.bettercosmic.shared.ui.model.PanelIcon;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 
@@ -96,6 +100,13 @@ public class BetterPrisonsClient implements ClientModInitializer {
 
 		// EasyView inventory/hotbar overlays (drawn by the shared EasyView mixins).
 		EasyView.register(new EasyViewProvider());
+		// Clue scroll step number (overlay) + chest-search match highlight (tint).
+		EasyView.register(new ClueScrollProvider());
+		EasyView.registerTint(new ChestSearchTintProvider());
+
+		// Item tooltips: flag unmapped clue-scroll steps.
+		ItemTooltipCallback.EVENT.register((stack, tooltipContext, tooltipType, lines) ->
+				ClueScrollProvider.appendTooltip(stack, lines));
 
 		registerPanels();
 
@@ -224,5 +235,6 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		ConfigRegistry.register(StatsHudPanel.create());
 		ConfigRegistry.register(CooldownHudPanel.create());
 		ConfigRegistry.register(EnchantHudPanel.create());
+		ConfigRegistry.register(SearchPanel.create());
 	}
 }

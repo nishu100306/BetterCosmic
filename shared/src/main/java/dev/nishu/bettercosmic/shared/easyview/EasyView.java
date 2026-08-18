@@ -124,7 +124,20 @@ public final class EasyView {
 		pose.pushMatrix();
 		pose.translate(px, py);
 		pose.scale(scale, scale);
-		graphics.drawString(font, component, 0, 0, overlay.color(), true);
+		if (overlay.outline()) {
+			// Black 1px outline in all 8 directions, then the colored glyph on top (no drop shadow).
+			int outlineColor = 0xFF000000;
+			for (int dx = -1; dx <= 1; dx++) {
+				for (int dy = -1; dy <= 1; dy++) {
+					if (dx != 0 || dy != 0) {
+						graphics.drawString(font, component, dx, dy, outlineColor, false);
+					}
+				}
+			}
+			graphics.drawString(font, component, 0, 0, overlay.color(), false);
+		} else {
+			graphics.drawString(font, component, 0, 0, overlay.color(), true);
+		}
 		pose.popMatrix();
 	}
 }
