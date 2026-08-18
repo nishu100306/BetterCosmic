@@ -26,12 +26,40 @@ import java.util.List;
 public final class EasyView {
 
 	private static final List<ItemOverlayProvider> PROVIDERS = new ArrayList<>();
+	private static final List<SlotTintProvider> TINTS = new ArrayList<>();
 
 	private EasyView() {}
 
 	/** Registers a provider. Multiple providers can draw to different corners of the same slot. */
 	public static void register(ItemOverlayProvider provider) {
 		PROVIDERS.add(provider);
+	}
+
+	/** Registers a slot-background tint provider (e.g. a search-match highlight). */
+	public static void registerTint(SlotTintProvider provider) {
+		TINTS.add(provider);
+	}
+
+	/**
+	 * Fills the slot at ({@code slotX},{@code slotY}) with each registered tint provider's color (a
+	 * translucent highlight over the item). Call this from the same render context as the item, right
+	 * after it is drawn and before {@link #renderSlotOverlays} so text overlays stay on top.
+	 */
+	public static void renderSlotTints(GuiGraphics graphics, int slotX, int slotY, ItemStack stack) {
+		if (TINTS.isEmpty() || stack.isEmpty()) {
+			return;
+		}
+		for (SlotTintProvider provider : TINTS) {
+			int tint;
+			try {
+				tint = provider.tint(stack);
+			} catch (Exception e) {
+				tint = 0; // a misbehaving provider must never break slot rendering
+			}
+			if (tint != 0) {
+				graphics.fill(slotX, slotY, slotX + 16, slotY + 16, tint);
+			}
+		}
 	}
 
 	/**

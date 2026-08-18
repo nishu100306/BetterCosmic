@@ -23,6 +23,7 @@ public abstract class AbstractContainerScreenMixin {
 			int leftPos, int topPos, CallbackInfo ci) {
 		ItemStack stack = slot.getItem();
 		if (!stack.isEmpty()) {
+			EasyView.renderSlotTints(guiGraphics, slot.x, slot.y, stack);
 			EasyView.renderSlotOverlays(guiGraphics, slot.x, slot.y, stack);
 		}
 	}

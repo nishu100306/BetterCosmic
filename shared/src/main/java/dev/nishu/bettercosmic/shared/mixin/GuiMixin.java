@@ -22,6 +22,7 @@ public abstract class GuiMixin {
 	private void bettercosmicshared$easyViewHotbarOverlay(GuiGraphics guiGraphics, int x, int y,
 			DeltaTracker deltaTracker, Player player, ItemStack itemStack, int seed, CallbackInfo ci) {
 		if (!itemStack.isEmpty()) {
+			EasyView.renderSlotTints(guiGraphics, x, y, itemStack);
 			EasyView.renderSlotOverlays(guiGraphics, x, y, itemStack);
 		}
 	}
