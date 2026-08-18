@@ -18,7 +18,9 @@ public enum PanelIcon {
 	/** Eye — inventory/overlay views (EasyView). */
 	EYE,
 	/** Pouch — satchels. */
-	SATCHEL;
+	SATCHEL,
+	/** Bar chart — stats/tracking. */
+	CHART;
 
 	public void draw(GuiGraphics g, int x, int y, int size, int color) {
 		switch (this) {
@@ -27,6 +29,19 @@ public enum PanelIcon {
 			case LOCK -> lock(g, x, y, size, color);
 			case EYE -> eye(g, x, y, size, color);
 			case SATCHEL -> satchel(g, x, y, size, color);
+			case CHART -> chart(g, x, y, size, color);
+		}
+	}
+
+	private static void chart(GuiGraphics g, int x, int y, int s, int color) {
+		int base = y + s - 1;
+		int barW = Math.max(2, s / 5);
+		int gap = Math.max(1, (s - barW * 3) / 4);
+		int[] heights = {Math.round(s * 0.45f), Math.round(s * 0.75f), Math.round(s * 0.6f)};
+		int bx = x + gap;
+		for (int h : heights) {
+			g.fill(bx, base - h, bx + barW, base, color);
+			bx += barW + gap;
 		}
 	}
 

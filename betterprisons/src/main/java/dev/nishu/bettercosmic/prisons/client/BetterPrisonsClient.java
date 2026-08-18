@@ -6,6 +6,9 @@ import dev.nishu.bettercosmic.prisons.easyview.EasyViewPanel;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewProvider;
 import dev.nishu.bettercosmic.prisons.hud.SatchelHud;
 import dev.nishu.bettercosmic.prisons.hud.SatchelHudPanel;
+import dev.nishu.bettercosmic.prisons.hud.StatsHud;
+import dev.nishu.bettercosmic.prisons.hud.StatsHudPanel;
+import dev.nishu.bettercosmic.prisons.input.PrisonKeybinds;
 import dev.nishu.bettercosmic.shared.config.BetterCosmicConfig;
 import dev.nishu.bettercosmic.shared.config.SharedConfig;
 import dev.nishu.bettercosmic.shared.easyview.EasyView;
@@ -40,6 +43,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 
 	// ---- Feature systems (populated as they are ported in Phase C) ----
 	public static SatchelHud satchelHud;
+	public static StatsHud statsHud;
 
 	@Override
 	public void onInitializeClient() {
@@ -56,6 +60,9 @@ public class BetterPrisonsClient implements ClientModInitializer {
 
 		// Draw + tick registered HUDs, respecting F1.
 		HudRenderer.register();
+
+		// Key bindings (reset/pause Stats HUD, ...).
+		PrisonKeybinds.register();
 
 		// EasyView inventory/hotbar overlays (drawn by the shared EasyView mixins).
 		EasyView.register(new EasyViewProvider());
@@ -82,6 +89,18 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		HudRegistry.register(satchelHud, () -> {
 			config.satchelHudX = satchelHud.x;
 			config.satchelHudY = satchelHud.y;
+			config.save();
+		});
+
+		statsHud = new StatsHud();
+		statsHud.x = config.statsHudX;
+		statsHud.y = config.statsHudY;
+		statsHud.defaultX = def.statsHudX;
+		statsHud.defaultY = def.statsHudY;
+		statsHud.enabled = config.statsHudEnabled;
+		HudRegistry.register(statsHud, () -> {
+			config.statsHudX = statsHud.x;
+			config.statsHudY = statsHud.y;
 			config.save();
 		});
 	}
@@ -122,5 +141,6 @@ public class BetterPrisonsClient implements ClientModInitializer {
 
 		ConfigRegistry.register(EasyViewPanel.create());
 		ConfigRegistry.register(SatchelHudPanel.create());
+		ConfigRegistry.register(StatsHudPanel.create());
 	}
 }

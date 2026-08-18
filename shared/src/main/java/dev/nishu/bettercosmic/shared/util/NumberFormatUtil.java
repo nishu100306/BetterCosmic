@@ -4,6 +4,8 @@ import dev.nishu.bettercosmic.shared.config.SharedConfig;
 
 import java.text.NumberFormat;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Number formatting shared across BetterCosmic HUDs and overlays: either compact suffixes
@@ -17,7 +19,39 @@ public final class NumberFormatUtil {
 
 	private static final NumberFormat GROUPED = NumberFormat.getNumberInstance(Locale.US);
 
+	/** Matches a formatted number with an optional K/M/B/T suffix, e.g. {@code 1,234}, {@code 1.2M}. */
+	private static final Pattern NUMBER_PATTERN =
+			Pattern.compile("([0-9,]+\\.?[0-9]*)\\s*([KMBT]?)", Pattern.CASE_INSENSITIVE);
+
 	private NumberFormatUtil() {}
+
+	/**
+	 * Parses a human-formatted number back to a {@code long}: strips commas and applies a trailing
+	 * K/M/B/T multiplier ({@code "1,234"} → 1234, {@code "1.2M"} → 1200000). Returns {@code 0} when no
+	 * number can be parsed. The inverse of {@link #compact}/{@link #withCommas}. Ported from
+	 * BetterPrisons' {@code EnchantParsing.parseFormattedNumber}.
+	 */
+	public static long parse(String text) {
+		if (text == null || text.isEmpty()) {
+			return 0;
+		}
+		Matcher matcher = NUMBER_PATTERN.matcher(text.trim());
+		if (!matcher.find()) {
+			return 0;
+		}
+		try {
+			double base = Double.parseDouble(matcher.group(1).replace(",", ""));
+			return switch (matcher.group(2).toUpperCase()) {
+				case "K" -> (long) (base * 1_000L);
+				case "M" -> (long) (base * 1_000_000L);
+				case "B" -> (long) (base * 1_000_000_000L);
+				case "T" -> (long) (base * 1_000_000_000_000L);
+				default -> (long) base;
+			};
+		} catch (NumberFormatException e) {
+			return 0;
+		}
+	}
 
 	/** Formats using the shared preference: commas when {@code useCommaFormatting} is on, else compact. */
 	public static String format(long value) {
