@@ -2,6 +2,9 @@
 	"required": true,
 	"package": "dev.nishu.bettercosmic.prisons.mixin",
 	"compatibilityLevel": "JAVA_21",
+	"client": [
+		"SuperBreakerParticleMixin"
+	],
 	"mixins": [],
 	"injectors": {
 		"defaultRequire": 1

@@ -7,6 +7,7 @@ import dev.nishu.bettercosmic.prisons.easyview.EasyViewProvider;
 import dev.nishu.bettercosmic.prisons.enchants.EnchantSoundListener;
 import dev.nishu.bettercosmic.prisons.enchants.EnchantTracker;
 import dev.nishu.bettercosmic.prisons.enchants.SoundTracker;
+import dev.nishu.bettercosmic.prisons.enchants.SuperBreakerDetector;
 import dev.nishu.bettercosmic.prisons.hud.CooldownHud;
 import dev.nishu.bettercosmic.prisons.hud.CooldownHudPanel;
 import dev.nishu.bettercosmic.prisons.hud.EnchantHud;
@@ -115,6 +116,9 @@ public class BetterPrisonsClient implements ClientModInitializer {
 				soundListenerRegistered[0] = true;
 			}
 			enchantTracker.tick(client);
+			// Super Breaker activation: correlate this tick's nearest flame/spell particle with the
+			// dragon-growl sound. Runs after the enchant tick and before the sound flags are cleared.
+			SuperBreakerDetector.evaluate();
 			SoundTracker.clearTickCache();
 		});
 	}

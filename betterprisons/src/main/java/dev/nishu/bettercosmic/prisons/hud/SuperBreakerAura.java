@@ -13,10 +13,10 @@ import org.joml.Matrix3x2fStack;
 /**
  * Super Breaker Aura: a centered ring (like a WoW WeakAura) around the crosshair that counts down the
  * Super Breaker duration. Registered as a non-draggable HUD (crosshair-anchored, positioned via
- * config X/Y offsets, not the drag editor). Ported from BetterPrisons (Yarn → Mojang).
- *
- * <p>Dormant until Super Breaker activation is wired upstream (its chat pattern is empty in BP) — see
- * {@link dev.nishu.bettercosmic.prisons.enchants.SuperBreakerEnchant}.
+ * config X/Y offsets, not the drag editor). Shows while Super Breaker is active — detected via the
+ * dragon-growl sound + nearby particles (see
+ * {@link dev.nishu.bettercosmic.prisons.enchants.SuperBreakerDetector}). Ported from BetterPrisons
+ * (Yarn → Mojang).
  */
 public class SuperBreakerAura extends BaseHud {
 

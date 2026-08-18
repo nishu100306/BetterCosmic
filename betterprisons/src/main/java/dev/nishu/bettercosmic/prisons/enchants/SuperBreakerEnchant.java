@@ -7,9 +7,9 @@ import net.minecraft.client.Minecraft;
  * Super Breaker enchant tracking. While active it stays up only as long as the player holds a pickaxe
  * with the Super Breaker enchant. Ported from BetterPrisons (Yarn → Mojang).
  *
- * <p>Note: the chat activation pattern is empty in BetterPrisons ("filled in after server testing"),
- * so this never activates from chat yet — the Enchant HUD entry and Super Breaker Aura are dormant
- * until an activation trigger is added upstream. Ported faithfully.
+ * <p>Activation is <em>not</em> from chat (its chat pattern is empty in BetterPrisons) but from
+ * {@link SuperBreakerDetector}: the ender-dragon growl sound plus a nearby flame/spell particle. The
+ * {@code onChatMessage} hook is retained but inert.
  */
 public class SuperBreakerEnchant extends BaseEnchant {
 
