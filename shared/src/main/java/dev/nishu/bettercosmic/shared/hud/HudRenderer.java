@@ -1,12 +1,14 @@
 package dev.nishu.bettercosmic.shared.hud;
 
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.Minecraft;
 
 /**
- * Draws every enabled HUD in the {@link HudRegistry} each frame, respecting F1 (vanilla "hide GUI").
- * Registered once from a mod's client init; the shared library owns the render loop, the mods own the
- * HUD content.
+ * Drives every HUD in the {@link HudRegistry}: ticks them each client tick (so they refresh their
+ * data and enabled state) and draws the enabled ones each frame, respecting F1 (vanilla "hide GUI").
+ * Registered once from a mod's client init; the shared library owns the render/tick loops, the mods
+ * own the HUD content.
  *
  * <p>Ported and de-hardcoded from BetterPrisons' {@code HudRenderer} (Yarn → Mojang).
  */
@@ -14,7 +16,7 @@ public final class HudRenderer {
 
 	private HudRenderer() {}
 
-	/** Hooks the HUD render callback. Call once from a mod client init. */
+	/** Hooks the HUD render + tick loops. Call once from a mod client init. */
 	public static void register() {
 		HudRenderCallback.EVENT.register((context, tickCounter) -> {
 			Minecraft client = Minecraft.getInstance();
@@ -25,6 +27,14 @@ public final class HudRenderer {
 				if (entry.hud.enabled) {
 					entry.hud.render(context, client);
 				}
+			}
+		});
+
+		// Tick every HUD (even disabled ones, so a HUD can sync its enabled flag from config).
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			for (HudRegistry.Entry entry : HudRegistry.entries()) {
+				entry.hud.tick();
+				entry.hud.tick(client);
 			}
 		});
 	}

@@ -4,9 +4,12 @@ import dev.nishu.bettercosmic.prisons.BetterPrisons;
 import dev.nishu.bettercosmic.prisons.config.PrisonsConfig;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewPanel;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewProvider;
+import dev.nishu.bettercosmic.prisons.hud.SatchelHud;
+import dev.nishu.bettercosmic.prisons.hud.SatchelHudPanel;
 import dev.nishu.bettercosmic.shared.config.BetterCosmicConfig;
 import dev.nishu.bettercosmic.shared.config.SharedConfig;
 import dev.nishu.bettercosmic.shared.easyview.EasyView;
+import dev.nishu.bettercosmic.shared.hud.HudRegistry;
 import dev.nishu.bettercosmic.shared.hud.HudRenderer;
 import dev.nishu.bettercosmic.shared.notification.ToastRenderer;
 import dev.nishu.bettercosmic.shared.ui.ConfigUi;
@@ -35,6 +38,9 @@ public class BetterPrisonsClient implements ClientModInitializer {
 	/** BetterPrisons' own config (config/bettercosmic/betterprisons.json). */
 	public static PrisonsConfig config;
 
+	// ---- Feature systems (populated as they are ported in Phase C) ----
+	public static SatchelHud satchelHud;
+
 	@Override
 	public void onInitializeClient() {
 		sharedConfig = SharedConfig.get();
@@ -45,7 +51,10 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		ToastRenderer.setCornerSupplier(() -> config.toastCorner);
 		ToastRenderer.register();
 
-		// Draw registered HUDs (populated as HUDs are ported in Phase C).
+		// Feature HUDs — construct, load position from config, register with the shared framework.
+		registerHuds();
+
+		// Draw + tick registered HUDs, respecting F1.
 		HudRenderer.register();
 
 		// EasyView inventory/hotbar overlays (drawn by the shared EasyView mixins).
@@ -58,8 +67,28 @@ public class BetterPrisonsClient implements ClientModInitializer {
 	}
 
 	/**
-	 * Registers the BetterPrisons config panels. Only "Misc" is wired so far; the per-feature panels
-	 * (HUDs, EasyView, Waypoints, ...) are added alongside their features in Phase C.
+	 * Constructs the feature HUDs, loads their saved position from config, and registers them with the
+	 * shared {@link HudRegistry} (each with a callback that persists its position after a drag).
+	 */
+	private void registerHuds() {
+		PrisonsConfig def = new PrisonsConfig();
+
+		satchelHud = new SatchelHud();
+		satchelHud.x = config.satchelHudX;
+		satchelHud.y = config.satchelHudY;
+		satchelHud.defaultX = def.satchelHudX;
+		satchelHud.defaultY = def.satchelHudY;
+		satchelHud.enabled = config.satchelHudEnabled;
+		HudRegistry.register(satchelHud, () -> {
+			config.satchelHudX = satchelHud.x;
+			config.satchelHudY = satchelHud.y;
+			config.save();
+		});
+	}
+
+	/**
+	 * Registers the BetterPrisons config panels. Per-feature panels are added alongside their features
+	 * in Phase C.
 	 */
 	private void registerPanels() {
 		PrisonsConfig def = new PrisonsConfig(); // code defaults, so reset restores these
@@ -92,5 +121,6 @@ public class BetterPrisonsClient implements ClientModInitializer {
 				"General BetterPrisons features", PanelIcon.GEAR, List.of(qol, search)));
 
 		ConfigRegistry.register(EasyViewPanel.create());
+		ConfigRegistry.register(SatchelHudPanel.create());
 	}
 }
