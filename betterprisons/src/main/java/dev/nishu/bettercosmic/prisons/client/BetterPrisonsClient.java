@@ -4,12 +4,18 @@ import dev.nishu.bettercosmic.prisons.BetterPrisons;
 import dev.nishu.bettercosmic.prisons.config.PrisonsConfig;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewPanel;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewProvider;
+import dev.nishu.bettercosmic.prisons.enchants.EnchantSoundListener;
+import dev.nishu.bettercosmic.prisons.enchants.EnchantTracker;
+import dev.nishu.bettercosmic.prisons.enchants.SoundTracker;
 import dev.nishu.bettercosmic.prisons.hud.CooldownHud;
 import dev.nishu.bettercosmic.prisons.hud.CooldownHudPanel;
+import dev.nishu.bettercosmic.prisons.hud.EnchantHud;
+import dev.nishu.bettercosmic.prisons.hud.EnchantHudPanel;
 import dev.nishu.bettercosmic.prisons.hud.SatchelHud;
 import dev.nishu.bettercosmic.prisons.hud.SatchelHudPanel;
 import dev.nishu.bettercosmic.prisons.hud.StatsHud;
 import dev.nishu.bettercosmic.prisons.hud.StatsHudPanel;
+import dev.nishu.bettercosmic.prisons.hud.SuperBreakerAura;
 import dev.nishu.bettercosmic.prisons.input.PrisonKeybinds;
 import dev.nishu.bettercosmic.shared.config.BetterCosmicConfig;
 import dev.nishu.bettercosmic.shared.config.SharedConfig;
@@ -24,6 +30,7 @@ import dev.nishu.bettercosmic.shared.ui.model.OptionGroup;
 import dev.nishu.bettercosmic.shared.ui.model.Options;
 import dev.nishu.bettercosmic.shared.ui.model.PanelIcon;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 
@@ -49,6 +56,9 @@ public class BetterPrisonsClient implements ClientModInitializer {
 	public static SatchelHud satchelHud;
 	public static StatsHud statsHud;
 	public static CooldownHud cooldownHud;
+	public static EnchantHud enchantHud;
+	public static SuperBreakerAura superBreakerAura;
+	public static EnchantTracker enchantTracker;
 
 	@Override
 	public void onInitializeClient() {
@@ -59,6 +69,10 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		ConfigUi.setSubtitle("Prisons");
 		ToastRenderer.setCornerSupplier(() -> config.toastCorner);
 		ToastRenderer.register();
+
+		// Enchant tracking (Super Breaker, Powerball) — must exist before the HUDs that read it.
+		enchantTracker = new EnchantTracker();
+		registerEnchantSystem();
 
 		// Feature HUDs — construct, load position from config, register with the shared framework.
 		registerHuds();
@@ -73,7 +87,9 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		ClientSendMessageEvents.COMMAND.register(command -> cooldownHud.onCommandSent("/" + command));
 		ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
 			if (!overlay) {
-				cooldownHud.onChatReceived(message.getString());
+				String text = message.getString();
+				cooldownHud.onChatReceived(text);
+				enchantTracker.onChatMessage(text);
 			}
 		});
 
@@ -84,6 +100,23 @@ public class BetterPrisonsClient implements ClientModInitializer {
 
 		BetterPrisons.LOGGER.info("BetterPrisons initialized. Configs: {} and {}",
 				sharedConfig.configPath(), config.configPath());
+	}
+
+	/**
+	 * Ticks the enchant tracker each client tick (then clears the per-tick sound flag) and registers
+	 * the sound listener that detects Powerball's wither-shoot tell.
+	 */
+	private void registerEnchantSystem() {
+		final boolean[] soundListenerRegistered = {false};
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			// Register the sound listener once the sound manager is available.
+			if (!soundListenerRegistered[0] && client.getSoundManager() != null) {
+				client.getSoundManager().addListener(new EnchantSoundListener());
+				soundListenerRegistered[0] = true;
+			}
+			enchantTracker.tick(client);
+			SoundTracker.clearTickCache();
+		});
 	}
 
 	/**
@@ -129,6 +162,23 @@ public class BetterPrisonsClient implements ClientModInitializer {
 			config.cooldownHudY = cooldownHud.y;
 			config.save();
 		});
+
+		enchantHud = new EnchantHud();
+		enchantHud.x = config.enchantHudX;
+		enchantHud.y = config.enchantHudY;
+		enchantHud.defaultX = def.enchantHudX;
+		enchantHud.defaultY = def.enchantHudY;
+		enchantHud.enabled = config.enchantHudEnabled;
+		HudRegistry.register(enchantHud, () -> {
+			config.enchantHudX = enchantHud.x;
+			config.enchantHudY = enchantHud.y;
+			config.save();
+		});
+
+		// Super Breaker Aura is crosshair-centered (config X/Y offsets), so it isn't drag-editable.
+		superBreakerAura = new SuperBreakerAura();
+		superBreakerAura.enabled = config.superBreakerAuraEnabled;
+		HudRegistry.register(superBreakerAura, () -> {}, false);
 	}
 
 	/**
@@ -169,5 +219,6 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		ConfigRegistry.register(SatchelHudPanel.create());
 		ConfigRegistry.register(StatsHudPanel.create());
 		ConfigRegistry.register(CooldownHudPanel.create());
+		ConfigRegistry.register(EnchantHudPanel.create());
 	}
 }

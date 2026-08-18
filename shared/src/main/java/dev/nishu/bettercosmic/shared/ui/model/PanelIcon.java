@@ -20,7 +20,9 @@ public enum PanelIcon {
 	/** Pouch — satchels. */
 	SATCHEL,
 	/** Bar chart — stats/tracking. */
-	CHART;
+	CHART,
+	/** Sparkle/star — enchants & auras. */
+	SPARKLE;
 
 	public void draw(GuiGraphics g, int x, int y, int size, int color) {
 		switch (this) {
@@ -30,6 +32,21 @@ public enum PanelIcon {
 			case EYE -> eye(g, x, y, size, color);
 			case SATCHEL -> satchel(g, x, y, size, color);
 			case CHART -> chart(g, x, y, size, color);
+			case SPARKLE -> sparkle(g, x, y, size, color);
+		}
+	}
+
+	private static void sparkle(GuiGraphics g, int x, int y, int s, int color) {
+		int cx = x + s / 2;
+		int cy = y + s / 2;
+		int arm = s / 2 - 1;
+		// four-point star: a vertical and horizontal spike tapering to the center
+		for (int i = 0; i <= arm; i++) {
+			int half = Math.max(0, (arm - i) / 3);
+			g.fill(cx - half, cy - i, cx + half + 1, cy - i + 1, color); // up
+			g.fill(cx - half, cy + i, cx + half + 1, cy + i + 1, color); // down
+			g.fill(cx - i, cy - half, cx - i + 1, cy + half + 1, color); // left
+			g.fill(cx + i, cy - half, cx + i + 1, cy + half + 1, color); // right
 		}
 	}
 
