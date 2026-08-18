@@ -4,6 +4,8 @@ import dev.nishu.bettercosmic.prisons.BetterPrisons;
 import dev.nishu.bettercosmic.prisons.config.PrisonsConfig;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewPanel;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewProvider;
+import dev.nishu.bettercosmic.prisons.hud.CooldownHud;
+import dev.nishu.bettercosmic.prisons.hud.CooldownHudPanel;
 import dev.nishu.bettercosmic.prisons.hud.SatchelHud;
 import dev.nishu.bettercosmic.prisons.hud.SatchelHudPanel;
 import dev.nishu.bettercosmic.prisons.hud.StatsHud;
@@ -22,6 +24,8 @@ import dev.nishu.bettercosmic.shared.ui.model.OptionGroup;
 import dev.nishu.bettercosmic.shared.ui.model.Options;
 import dev.nishu.bettercosmic.shared.ui.model.PanelIcon;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
+import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 
 import java.util.List;
 
@@ -44,6 +48,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 	// ---- Feature systems (populated as they are ported in Phase C) ----
 	public static SatchelHud satchelHud;
 	public static StatsHud statsHud;
+	public static CooldownHud cooldownHud;
 
 	@Override
 	public void onInitializeClient() {
@@ -63,6 +68,14 @@ public class BetterPrisonsClient implements ClientModInitializer {
 
 		// Key bindings (reset/pause Stats HUD, ...).
 		PrisonKeybinds.register();
+
+		// Feed the Cooldown HUD from command sends and chat messages (replaces BP's chat mixins).
+		ClientSendMessageEvents.COMMAND.register(command -> cooldownHud.onCommandSent("/" + command));
+		ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
+			if (!overlay) {
+				cooldownHud.onChatReceived(message.getString());
+			}
+		});
 
 		// EasyView inventory/hotbar overlays (drawn by the shared EasyView mixins).
 		EasyView.register(new EasyViewProvider());
@@ -101,6 +114,19 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		HudRegistry.register(statsHud, () -> {
 			config.statsHudX = statsHud.x;
 			config.statsHudY = statsHud.y;
+			config.save();
+		});
+
+		cooldownHud = new CooldownHud();
+		cooldownHud.loadFromDefinitions();
+		cooldownHud.x = config.cooldownHudX;
+		cooldownHud.y = config.cooldownHudY;
+		cooldownHud.defaultX = def.cooldownHudX;
+		cooldownHud.defaultY = def.cooldownHudY;
+		cooldownHud.enabled = config.cooldownHudEnabled;
+		HudRegistry.register(cooldownHud, () -> {
+			config.cooldownHudX = cooldownHud.x;
+			config.cooldownHudY = cooldownHud.y;
 			config.save();
 		});
 	}
@@ -142,5 +168,6 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		ConfigRegistry.register(EasyViewPanel.create());
 		ConfigRegistry.register(SatchelHudPanel.create());
 		ConfigRegistry.register(StatsHudPanel.create());
+		ConfigRegistry.register(CooldownHudPanel.create());
 	}
 }
