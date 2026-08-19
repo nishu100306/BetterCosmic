@@ -4,6 +4,7 @@
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"AbstractContainerScreenMixin",
+		"AvatarRendererPeacefulMiningMixin",
 		"GameRendererPeacefulMiningMixin",
 		"GuiMixin",
 		"LivingEntityRendererPeacefulMiningMixin"
