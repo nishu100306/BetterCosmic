@@ -14,11 +14,15 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Renders peaceful-mining target players as translucent ghosts: a configurable alpha tint, a
- * translucent render type so the alpha actually blends, and no feature layers (armor/elytra/held
- * items) for a clean silhouette. Content-agnostic — targets and opacity come from the shared
- * {@link PeacefulMining} engine. Ported from BetterPrisons' {@code PeacefulMiningRendererMixin}
- * (Yarn → Mojang).
+ * Renders peaceful-mining target players as translucent ghosts: a configurable alpha tint plus a
+ * translucent render type so the alpha actually blends. Content-agnostic — targets and opacity come
+ * from the shared {@link PeacefulMining} engine. Ported from BetterPrisons'
+ * {@code PeacefulMiningRendererMixin} (Yarn → Mojang).
+ *
+ * <p>These two methods are inherited from {@link LivingEntityRenderer} (not overridden by
+ * {@code AvatarRenderer}), so injecting here reaches players. Feature-layer suppression is handled
+ * separately in {@code AvatarRendererPeacefulMiningMixin}, because {@code AvatarRenderer} <em>does</em>
+ * override {@code shouldRenderLayers}.
  */
 @Mixin(LivingEntityRenderer.class)
 public abstract class LivingEntityRendererPeacefulMiningMixin {
@@ -39,13 +43,6 @@ public abstract class LivingEntityRendererPeacefulMiningMixin {
 			boolean translucent, boolean glowing, CallbackInfoReturnable<RenderType> cir) {
 		if (state instanceof AvatarRenderState avatar && PeacefulMining.isTarget(avatar.id)) {
 			cir.setReturnValue(RenderTypes.itemEntityTranslucentCull(getTextureLocation(state)));
-		}
-	}
-
-	@Inject(method = "shouldRenderLayers", at = @At("HEAD"), cancellable = true)
-	private void bettercosmicshared$ghostNoLayers(LivingEntityRenderState state, CallbackInfoReturnable<Boolean> cir) {
-		if (state instanceof AvatarRenderState avatar && PeacefulMining.isTarget(avatar.id)) {
-			cir.setReturnValue(false);
 		}
 	}
 }
