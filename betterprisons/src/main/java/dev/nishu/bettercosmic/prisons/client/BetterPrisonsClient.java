@@ -8,6 +8,7 @@ import dev.nishu.bettercosmic.prisons.config.PrisonsConfig;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewPanel;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewProvider;
 import dev.nishu.bettercosmic.prisons.easyview.ItemCooldownProvider;
+import dev.nishu.bettercosmic.prisons.feature.EventChatParser;
 import dev.nishu.bettercosmic.prisons.feature.PeacefulMiningPanel;
 import dev.nishu.bettercosmic.prisons.feature.PrisonsPeacefulMiningPolicy;
 import dev.nishu.bettercosmic.prisons.enchants.EnchantSoundListener;
@@ -18,12 +19,17 @@ import dev.nishu.bettercosmic.prisons.hud.CooldownHud;
 import dev.nishu.bettercosmic.prisons.hud.CooldownHudPanel;
 import dev.nishu.bettercosmic.prisons.hud.EnchantHud;
 import dev.nishu.bettercosmic.prisons.hud.EnchantHudPanel;
+import dev.nishu.bettercosmic.prisons.hud.EventsHud;
+import dev.nishu.bettercosmic.prisons.hud.EventsHudPanel;
 import dev.nishu.bettercosmic.prisons.hud.SatchelHud;
 import dev.nishu.bettercosmic.prisons.hud.SatchelHudPanel;
 import dev.nishu.bettercosmic.prisons.hud.StatsHud;
 import dev.nishu.bettercosmic.prisons.hud.StatsHudPanel;
 import dev.nishu.bettercosmic.prisons.hud.SuperBreakerAura;
 import dev.nishu.bettercosmic.prisons.input.PrisonKeybinds;
+import dev.nishu.bettercosmic.prisons.waypoint.WaypointManager;
+import dev.nishu.bettercosmic.prisons.waypoint.WaypointSuppliers;
+import dev.nishu.bettercosmic.prisons.waypoint.WaypointsPanel;
 import dev.nishu.bettercosmic.shared.config.BetterCosmicConfig;
 import dev.nishu.bettercosmic.shared.config.SharedConfig;
 import dev.nishu.bettercosmic.shared.easyview.EasyView;
@@ -31,6 +37,9 @@ import dev.nishu.bettercosmic.shared.hud.HudRegistry;
 import dev.nishu.bettercosmic.shared.hud.HudRenderer;
 import dev.nishu.bettercosmic.shared.notification.ToastRenderer;
 import dev.nishu.bettercosmic.shared.peacefulmining.PeacefulMining;
+import dev.nishu.bettercosmic.shared.render.BeaconBeamRenderer;
+import dev.nishu.bettercosmic.shared.render.WaypointRenderer;
+import dev.nishu.bettercosmic.shared.render.WorldSpaceTransform;
 import dev.nishu.bettercosmic.shared.ui.ConfigUi;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigPanel;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigRegistry;
@@ -42,6 +51,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 
 import java.util.List;
 
@@ -66,8 +76,11 @@ public class BetterPrisonsClient implements ClientModInitializer {
 	public static StatsHud statsHud;
 	public static CooldownHud cooldownHud;
 	public static EnchantHud enchantHud;
+	public static EventsHud eventsHud;
 	public static SuperBreakerAura superBreakerAura;
 	public static EnchantTracker enchantTracker;
+	public static WaypointManager waypointManager;
+	private static final EventChatParser eventChatParser = new EventChatParser();
 
 	@Override
 	public void onInitializeClient() {
@@ -78,6 +91,10 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		ConfigUi.setSubtitle("Prisons");
 		ToastRenderer.setCornerSupplier(() -> config.toastCorner);
 		ToastRenderer.register();
+
+		// Waypoint store (custom + auto-added event waypoints) — needed by the Events HUD and renderers.
+		waypointManager = new WaypointManager();
+		waypointManager.load();
 
 		// Enchant tracking (Super Breaker, Powerball) — must exist before the HUDs that read it.
 		enchantTracker = new EnchantTracker();
@@ -99,7 +116,31 @@ public class BetterPrisonsClient implements ClientModInitializer {
 				String text = message.getString();
 				cooldownHud.onChatReceived(text);
 				enchantTracker.onChatMessage(text);
+				eventChatParser.handle(eventsHud, text);
 			}
+		});
+
+		// Waypoints + beacon beams: capture camera/FOV for projection, then draw beams (3D) and
+		// screen-edge markers (2D) from the prison suppliers (events + custom waypoints).
+		WorldSpaceTransform.register();
+		BeaconBeamRenderer.init();
+		WaypointRenderer.init();
+		BeaconBeamRenderer.addSource(WaypointSuppliers::beams);
+		WaypointRenderer.addSource(WaypointSuppliers::edgeTargets);
+
+		// Track the current world for per-world custom waypoints; clear stale event waypoints on join.
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			String world = WaypointManager.detectWorldKey();
+			if (!world.equals(waypointManager.getCurrentWorld())) {
+				waypointManager.setCurrentWorld(world);
+			}
+		});
+		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+			waypointManager.clearAllEventWaypoints();
+			eventsHud.clearMeteors();
+			eventsHud.clearMerchants();
+			eventsHud.clearBanditRushes();
+			eventsHud.clearMeteoriteShowers();
 		});
 
 		// EasyView inventory/hotbar overlays (drawn by the shared EasyView mixins).
@@ -201,6 +242,18 @@ public class BetterPrisonsClient implements ClientModInitializer {
 			config.save();
 		});
 
+		eventsHud = new EventsHud();
+		eventsHud.x = config.eventsHudX;
+		eventsHud.y = config.eventsHudY;
+		eventsHud.defaultX = def.eventsHudX;
+		eventsHud.defaultY = def.eventsHudY;
+		eventsHud.enabled = config.eventsHudEnabled;
+		HudRegistry.register(eventsHud, () -> {
+			config.eventsHudX = eventsHud.x;
+			config.eventsHudY = eventsHud.y;
+			config.save();
+		});
+
 		// Super Breaker Aura is crosshair-centered (config X/Y offsets), so it isn't drag-editable.
 		superBreakerAura = new SuperBreakerAura();
 		superBreakerAura.enabled = config.superBreakerAuraEnabled;
@@ -246,6 +299,8 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		ConfigRegistry.register(StatsHudPanel.create());
 		ConfigRegistry.register(CooldownHudPanel.create());
 		ConfigRegistry.register(EnchantHudPanel.create());
+		ConfigRegistry.register(EventsHudPanel.create());
+		ConfigRegistry.register(WaypointsPanel.create());
 		ConfigRegistry.register(SearchPanel.create());
 		ConfigRegistry.register(PeacefulMiningPanel.create());
 	}
