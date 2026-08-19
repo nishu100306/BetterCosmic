@@ -7,6 +7,8 @@ import dev.nishu.bettercosmic.prisons.chestsearch.SearchPanel;
 import dev.nishu.bettercosmic.prisons.config.PrisonsConfig;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewPanel;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewProvider;
+import dev.nishu.bettercosmic.prisons.feature.PeacefulMiningPanel;
+import dev.nishu.bettercosmic.prisons.feature.PrisonsPeacefulMiningPolicy;
 import dev.nishu.bettercosmic.prisons.enchants.EnchantSoundListener;
 import dev.nishu.bettercosmic.prisons.enchants.EnchantTracker;
 import dev.nishu.bettercosmic.prisons.enchants.SoundTracker;
@@ -27,6 +29,7 @@ import dev.nishu.bettercosmic.shared.easyview.EasyView;
 import dev.nishu.bettercosmic.shared.hud.HudRegistry;
 import dev.nishu.bettercosmic.shared.hud.HudRenderer;
 import dev.nishu.bettercosmic.shared.notification.ToastRenderer;
+import dev.nishu.bettercosmic.shared.peacefulmining.PeacefulMining;
 import dev.nishu.bettercosmic.shared.ui.ConfigUi;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigPanel;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigRegistry;
@@ -107,6 +110,11 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		// Item tooltips: flag unmapped clue-scroll steps.
 		ItemTooltipCallback.EVENT.register((stack, tooltipContext, tooltipType, lines) ->
 				ClueScrollProvider.appendTooltip(stack, lines));
+
+		// Peaceful mining: register the prison policy and start the shared engine (ghost render +
+		// block-through targeting + interaction blocking live in :shared).
+		PeacefulMining.setPolicy(new PrisonsPeacefulMiningPolicy());
+		PeacefulMining.init();
 
 		registerPanels();
 
@@ -236,5 +244,6 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		ConfigRegistry.register(CooldownHudPanel.create());
 		ConfigRegistry.register(EnchantHudPanel.create());
 		ConfigRegistry.register(SearchPanel.create());
+		ConfigRegistry.register(PeacefulMiningPanel.create());
 	}
 }
