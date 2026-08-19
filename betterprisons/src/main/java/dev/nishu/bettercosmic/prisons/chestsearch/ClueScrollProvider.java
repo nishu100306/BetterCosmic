@@ -90,6 +90,11 @@ public final class ClueScrollProvider implements ItemOverlayProvider {
 	/** Unmapped types already logged this session — avoids per-frame log spam. */
 	private static final Set<String> LOGGED_UNMAPPED = new HashSet<>();
 
+	/** The displayed step number for a clue NBT step type, or {@code null} if unmapped (used by dev tools). */
+	public static Integer getStep(String type) {
+		return TYPE_TO_STEP.get(type);
+	}
+
 	@Override
 	public SlotOverlay getOverlay(ItemStack stack) {
 		if (BetterPrisonsClient.config == null || !BetterPrisonsClient.config.clueScrollSortingEnabled) {

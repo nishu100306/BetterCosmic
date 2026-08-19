@@ -5,6 +5,7 @@ import dev.nishu.bettercosmic.prisons.chestsearch.ChestSearchTintProvider;
 import dev.nishu.bettercosmic.prisons.chestsearch.ClueScrollProvider;
 import dev.nishu.bettercosmic.prisons.chestsearch.SearchPanel;
 import dev.nishu.bettercosmic.prisons.config.PrisonsConfig;
+import dev.nishu.bettercosmic.prisons.devtools.PrisonDevCommands;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewPanel;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewProvider;
 import dev.nishu.bettercosmic.prisons.easyview.ItemCooldownProvider;
@@ -108,6 +109,9 @@ public class BetterPrisonsClient implements ClientModInitializer {
 
 		// Key bindings (reset/pause Stats HUD, ...).
 		PrisonKeybinds.register();
+
+		// Developer/debug commands (gated behind the shared /bdev developer mode).
+		PrisonDevCommands.register();
 
 		// Feed the Cooldown HUD from command sends and chat messages (replaces BP's chat mixins).
 		ClientSendMessageEvents.COMMAND.register(command -> cooldownHud.onCommandSent("/" + command));
