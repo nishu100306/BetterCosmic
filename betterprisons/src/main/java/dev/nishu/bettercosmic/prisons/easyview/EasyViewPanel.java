@@ -90,8 +90,35 @@ public final class EasyViewPanel {
 						() -> c.easyViewXpBottleTierColor, v -> { c.easyViewXpBottleTierColor = v; c.save(); })
 						.tooltip("Color the XP-bottle overlay by its tier.")));
 
+		OptionGroup cooldowns = new OptionGroup("Item cooldowns", List.<Option>of(
+				Options.toggle("Item cooldown timers", d.itemCooldownsEnabled,
+						() -> c.itemCooldownsEnabled, v -> { c.itemCooldownsEnabled = v; c.save(); })
+						.tooltip("Show a m:ss timer on pets, trinkets, and bandit boxes."),
+				Options.toggle("Pets", d.itemCooldownsPetEnabled,
+						() -> c.itemCooldownsPetEnabled, v -> { c.itemCooldownsPetEnabled = v; c.save(); }),
+				PrisonOptions.colorRgb("Pet cooldown color", d.itemCooldownsPetCooldownColor,
+						() -> c.itemCooldownsPetCooldownColor, v -> { c.itemCooldownsPetCooldownColor = v; c.save(); })
+						.tooltip("Timer color while the pet is on cooldown."),
+				PrisonOptions.colorRgb("Pet active color", d.itemCooldownsPetActiveColor,
+						() -> c.itemCooldownsPetActiveColor, v -> { c.itemCooldownsPetActiveColor = v; c.save(); })
+						.tooltip("Timer color while the pet's effect is active."),
+				Options.toggle("Pet: bold", d.itemCooldownsPetBold,
+						() -> c.itemCooldownsPetBold, v -> { c.itemCooldownsPetBold = v; c.save(); }),
+				Options.toggle("Trinkets", d.itemCooldownsTrinketEnabled,
+						() -> c.itemCooldownsTrinketEnabled, v -> { c.itemCooldownsTrinketEnabled = v; c.save(); }),
+				PrisonOptions.colorRgb("Trinket color", d.itemCooldownsTrinketColor,
+						() -> c.itemCooldownsTrinketColor, v -> { c.itemCooldownsTrinketColor = v; c.save(); }),
+				Options.toggle("Trinket: bold", d.itemCooldownsTrinketBold,
+						() -> c.itemCooldownsTrinketBold, v -> { c.itemCooldownsTrinketBold = v; c.save(); }),
+				Options.toggle("Bandit boxes", d.itemCooldownsBanditBoxEnabled,
+						() -> c.itemCooldownsBanditBoxEnabled, v -> { c.itemCooldownsBanditBoxEnabled = v; c.save(); }),
+				PrisonOptions.colorRgb("Bandit box color", d.itemCooldownsBanditBoxColor,
+						() -> c.itemCooldownsBanditBoxColor, v -> { c.itemCooldownsBanditBoxColor = v; c.save(); }),
+				Options.toggle("Bandit box: bold", d.itemCooldownsBanditBoxBold,
+						() -> c.itemCooldownsBanditBoxBold, v -> { c.itemCooldownsBanditBoxBold = v; c.save(); })));
+
 		return ConfigPanel.of("prisons-easyview", "EasyView",
 				"Inventory value & level overlays", PanelIcon.EYE,
-				List.of(general, value, percent, gear, misc));
+				List.of(general, value, percent, gear, misc, cooldowns));
 	}
 }

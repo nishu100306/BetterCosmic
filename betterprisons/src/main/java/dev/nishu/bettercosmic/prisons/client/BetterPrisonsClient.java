@@ -7,6 +7,7 @@ import dev.nishu.bettercosmic.prisons.chestsearch.SearchPanel;
 import dev.nishu.bettercosmic.prisons.config.PrisonsConfig;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewPanel;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewProvider;
+import dev.nishu.bettercosmic.prisons.easyview.ItemCooldownProvider;
 import dev.nishu.bettercosmic.prisons.feature.PeacefulMiningPanel;
 import dev.nishu.bettercosmic.prisons.feature.PrisonsPeacefulMiningPolicy;
 import dev.nishu.bettercosmic.prisons.enchants.EnchantSoundListener;
@@ -103,6 +104,8 @@ public class BetterPrisonsClient implements ClientModInitializer {
 
 		// EasyView inventory/hotbar overlays (drawn by the shared EasyView mixins).
 		EasyView.register(new EasyViewProvider());
+		// Item cooldown timers (pet / trinket / bandit box), centered on the item.
+		EasyView.register(new ItemCooldownProvider());
 		// Clue scroll step number (overlay) + chest-search match highlight (tint).
 		EasyView.register(new ClueScrollProvider());
 		EasyView.registerTint(new ChestSearchTintProvider());
