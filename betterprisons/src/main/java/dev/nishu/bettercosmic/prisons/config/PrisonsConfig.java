@@ -376,8 +376,6 @@ public class PrisonsConfig extends BetterCosmicConfig {
 	public float gangPingIconMinScale = 0.5f;
 	public float gangPingIconMaxScale = 1.5f;
 	public boolean gangPingDistanceScaling = true;
-	public boolean trucePingEnabled = true;
-	public int trucePingColor = 0x55AAFF;
 	public boolean gangPingShowNonGang = false;
 
 	// ---- Minimap ----

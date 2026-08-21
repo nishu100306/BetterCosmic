@@ -12,9 +12,9 @@ import dev.nishu.bettercosmic.shared.ui.model.PanelIcon;
 import java.util.List;
 
 /**
- * Config panel for gang / truce pings: enable + colors, distance-based icon scaling, beacon beams,
- * sound, and the per-line info display. Bound to {@link PrisonsConfig} via the shared {@code Options}
- * lambdas. Sending is bound to the gang-ping (G) / truce-ping (H) / block-ping (unbound) keys.
+ * Config panel for gang pings: enable + color, distance-based icon scaling, beacon beams, sound, and
+ * the per-line info display. Bound to {@link PrisonsConfig} via the shared {@code Options} lambdas.
+ * Sending is bound to the gang-ping (G) / block-ping (unbound) keys.
  */
 public final class GangPingsPanel {
 
@@ -29,13 +29,9 @@ public final class GangPingsPanel {
 						() -> c.gangPingEnabled, v -> { c.gangPingEnabled = v; c.save(); }),
 				PrisonOptions.colorRgb("Gang color", d.gangPingColor,
 						() -> c.gangPingColor, v -> { c.gangPingColor = v; c.save(); }),
-				Options.toggle("Truce pings", d.trucePingEnabled,
-						() -> c.trucePingEnabled, v -> { c.trucePingEnabled = v; c.save(); }),
-				PrisonOptions.colorRgb("Truce color", d.trucePingColor,
-						() -> c.trucePingColor, v -> { c.trucePingColor = v; c.save(); }),
 				Options.toggle("Show non-gang pings", d.gangPingShowNonGang,
 						() -> c.gangPingShowNonGang, v -> { c.gangPingShowNonGang = v; c.save(); })
-						.tooltip("Also show pings received outside gang/truce chat.")));
+						.tooltip("Also show pings received outside gang chat.")));
 
 		OptionGroup icon = new OptionGroup("Icon", List.<Option>of(
 				Options.toggle("Distance scaling", d.gangPingDistanceScaling,
@@ -77,7 +73,7 @@ public final class GangPingsPanel {
 						() -> (double) c.gangPingTextScale, v -> { c.gangPingTextScale = v.floatValue(); c.save(); })));
 
 		return ConfigPanel.of("prisons-gangpings", "Gang Pings",
-				"Gang & truce ping markers", PanelIcon.SPARKLE,
+				"Gang ping markers", PanelIcon.SPARKLE,
 				List.of(general, icon, beams, sound, text));
 	}
 }

@@ -14,14 +14,13 @@ import org.lwjgl.glfw.GLFW;
 /**
  * BetterPrisons' key bindings, registered under a "betterprisons" category via the shared
  * {@link KeyBinds} helper. The shared config-UI already owns the "open config" key, so it isn't
- * re-registered here. More keys (gang ping, truce ping, ...) are added alongside their features.
+ * re-registered here. More keys (gang ping, ...) are added alongside their features.
  */
 public final class PrisonKeybinds {
 
 	public static KeyMapping resetStats;
 	public static KeyMapping pauseStats;
 	public static KeyMapping gangPing;
-	public static KeyMapping trucePing;
 	public static KeyMapping gangPingBlock;
 
 	private PrisonKeybinds() {}
@@ -32,7 +31,6 @@ public final class PrisonKeybinds {
 		resetStats = KeyBinds.register("key.betterprisons.reset_stats", GLFW.GLFW_KEY_R, category);
 		pauseStats = KeyBinds.register("key.betterprisons.pause", GLFW.GLFW_KEY_B, category);
 		gangPing = KeyBinds.register("key.betterprisons.gang_ping", GLFW.GLFW_KEY_G, category);
-		trucePing = KeyBinds.register("key.betterprisons.truce_ping", GLFW.GLFW_KEY_H, category);
 		gangPingBlock = KeyBinds.register("key.betterprisons.gang_ping_block", GLFW.GLFW_KEY_UNKNOWN, category);
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -49,11 +47,6 @@ public final class PrisonKeybinds {
 			while (gangPing.consumeClick()) {
 				if (BetterPrisonsClient.config.gangPingEnabled) {
 					BetterPrisonsClient.gangPingManager.sendPing(client);
-				}
-			}
-			while (trucePing.consumeClick()) {
-				if (BetterPrisonsClient.config.trucePingEnabled) {
-					BetterPrisonsClient.gangPingManager.sendTrucePing(client);
 				}
 			}
 			while (gangPingBlock.consumeClick()) {

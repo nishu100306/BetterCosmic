@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Draws gang/truce pings as 2D screen markers: a player-head icon (distance-scaled, distance-faded)
+ * Draws gang pings as 2D screen markers: a player-head icon (distance-scaled, distance-faded)
  * with a multi-line info panel (name / timer / coords / HP / facing) when on-screen, or clamped to the
  * screen edge with a direction arrow when off-screen. Projection comes from the shared
  * {@link WorldSpaceTransform}; the player-head presentation is gang-ping-specific, so it lives here
@@ -51,23 +51,16 @@ public final class GangPingRenderer {
 	public static List<dev.nishu.bettercosmic.shared.render.BeaconBeamRenderer.Beam> beams() {
 		List<dev.nishu.bettercosmic.shared.render.BeaconBeamRenderer.Beam> beams = new ArrayList<>();
 		PrisonsConfig c = BetterPrisonsClient.config;
-		if (c == null || !c.gangPingBeamEnabled || (!c.gangPingEnabled && !c.trucePingEnabled)) {
+		if (c == null || !c.gangPingBeamEnabled || !c.gangPingEnabled) {
 			return beams;
 		}
 		String currentWorld = WaypointManager.detectWorldKey();
 		for (GangPingManager.GangPingInfo ping : BetterPrisonsClient.gangPingManager.getActivePings()) {
-			if (ping.isTruce && !c.trucePingEnabled) {
-				continue;
-			}
-			if (!ping.isTruce && !c.gangPingEnabled) {
-				continue;
-			}
 			if (!ping.world.equals(currentWorld)) {
 				continue;
 			}
-			int color = ping.isTruce ? c.trucePingColor : c.gangPingColor;
 			beams.add(new dev.nishu.bettercosmic.shared.render.BeaconBeamRenderer.Beam(
-					ping.x + 0.5, 0, ping.z + 0.5, 250f, color, c.gangPingBeamOpacity, c.beaconBeamThroughWalls));
+					ping.x + 0.5, 0, ping.z + 0.5, 250f, c.gangPingColor, c.gangPingBeamOpacity, c.beaconBeamThroughWalls));
 		}
 		return beams;
 	}
@@ -84,7 +77,7 @@ public final class GangPingRenderer {
 
 	private static void render(GuiGraphics ctx) {
 		PrisonsConfig c = BetterPrisonsClient.config;
-		if (c == null || (!c.gangPingEnabled && !c.trucePingEnabled)) {
+		if (c == null || !c.gangPingEnabled) {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
@@ -100,12 +93,6 @@ public final class GangPingRenderer {
 
 		List<Entry> entries = new ArrayList<>();
 		for (GangPingManager.GangPingInfo ping : BetterPrisonsClient.gangPingManager.getActivePings()) {
-			if (ping.isTruce && !c.trucePingEnabled) {
-				continue;
-			}
-			if (!ping.isTruce && !c.gangPingEnabled) {
-				continue;
-			}
 			if (!ping.world.equals(currentWorld)) {
 				continue;
 			}
@@ -190,7 +177,7 @@ public final class GangPingRenderer {
 		int ix = e.ix, iy = e.iy;
 		float scale = e.scale;
 		int scaledHalf = Math.max(1, (int) (ICON_HALF * scale));
-		int pingColor = e.ping.isTruce ? c.trucePingColor : c.gangPingColor;
+		int pingColor = c.gangPingColor;
 		int alphaInt = Math.max(0, Math.min(255, (int) (e.alpha * 255)));
 
 		Matrix3x2fStack ms = ctx.pose();

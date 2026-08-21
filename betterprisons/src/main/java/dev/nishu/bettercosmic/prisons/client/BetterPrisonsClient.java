@@ -105,7 +105,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		waypointManager = new WaypointManager();
 		waypointManager.load();
 
-		// Gang/truce ping tracking.
+		// Gang ping tracking.
 		gangPingManager = new GangPingManager();
 
 		// Enchant tracking (Super Breaker, Powerball) — must exist before the HUDs that read it.

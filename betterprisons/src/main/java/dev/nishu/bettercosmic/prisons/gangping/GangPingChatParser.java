@@ -10,18 +10,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Detects incoming gang ({@code [!]}) and truce ({@code [T!]}) ping chat lines and feeds them to the
- * {@link GangPingManager}, honoring the gang-chat ({@code [GC]}) / truce-chat ({@code [TC]}) / show-
- * non-gang gates. Ported from the ping-parsing block of BetterPrisons' {@code ChatReceiveMixin}
- * (Yarn → Mojang); runs from {@code ClientReceiveMessageEvents.GAME}. The raw text (with §-codes and
- * the chat-channel tags) is required, so parsing uses the unstripped message.
+ * Detects incoming gang ({@code [!]}) ping chat lines and feeds them to the {@link GangPingManager},
+ * honoring the gang-chat ({@code [GC]}) / show-non-gang gates. Ported from the ping-parsing block of
+ * BetterPrisons' {@code ChatReceiveMixin} (Yarn → Mojang); runs from
+ * {@code ClientReceiveMessageEvents.GAME}. The raw text (with §-codes and the chat-channel tags) is
+ * required, so parsing uses the unstripped message.
  */
 public final class GangPingChatParser {
 
 	private static final Pattern GANG_PING = Pattern.compile(
 			"\\[!]\\s+(\\S+)\\s+has pinged at\\s+(-?\\d+)x\\s+(-?\\d+)y\\s+(-?\\d+)z\\s+(\\S+)\\s+\\|\\s+HP:?\\s+([\\d.]+)/([\\d.]+)\\s+\\|\\s+Facing:?\\s+(\\w+)");
-	private static final Pattern TRUCE_PING = Pattern.compile(
-			"\\[T!]\\s+(\\S+)\\s+has pinged at\\s+(-?\\d+)x\\s+(-?\\d+)y\\s+(-?\\d+)z\\s+(\\S+)\\s+\\|\\s+HP:?\\s+([\\d.]+)/([\\d.]+)\\s+\\|\\s+Facing:?\\s+(\\w+)");
 
 	private GangPingChatParser() {}
 
@@ -31,30 +29,18 @@ public final class GangPingChatParser {
 			return;
 		}
 		PrisonsConfig c = BetterPrisonsClient.config;
+		if (!c.gangPingEnabled) {
+			return;
+		}
 		boolean showNonGang = c.gangPingShowNonGang;
 		boolean fromGangChat = rawText.contains("[GC]");
-		boolean fromTruceChat = rawText.contains("[TC]");
 
-		boolean isTruce = false;
-		Matcher matcher = null;
-
-		// Truce pings: accept from [TC] or [GC], or any chat if show-non-gang is on.
-		if (c.trucePingEnabled && rawText.contains("[T!]") && (fromTruceChat || fromGangChat || showNonGang)) {
-			matcher = TRUCE_PING.matcher(rawText);
-			if (matcher.find()) {
-				isTruce = true;
-			} else {
-				matcher = null;
-			}
-		}
 		// Gang pings: accept from [GC], or any chat if show-non-gang is on.
-		if (matcher == null && c.gangPingEnabled && rawText.contains("[!]") && (fromGangChat || showNonGang)) {
-			matcher = GANG_PING.matcher(rawText);
-			if (!matcher.find()) {
-				matcher = null;
-			}
+		if (!rawText.contains("[!]") || !(fromGangChat || showNonGang)) {
+			return;
 		}
-		if (matcher == null) {
+		Matcher matcher = GANG_PING.matcher(rawText);
+		if (!matcher.find()) {
 			return;
 		}
 
@@ -67,13 +53,13 @@ public final class GangPingChatParser {
 			float hp = Float.parseFloat(matcher.group(6));
 			float maxHp = Float.parseFloat(matcher.group(7));
 			String facing = matcher.group(8);
-			BetterPrisonsClient.gangPingManager.onGangPingReceived(playerName, px, py, pz, world, hp, maxHp, facing, isTruce);
+			BetterPrisonsClient.gangPingManager.onGangPingReceived(playerName, px, py, pz, world, hp, maxHp, facing);
 
 			if (c.gangPingSoundEnabled && world.equals(WaypointManager.detectWorldKey())) {
 				Sounds.play("note_pling", c.gangPingSoundVolume / 100.0f, 2.0f);
 			}
 		} catch (NumberFormatException e) {
-			BetterPrisons.LOGGER.warn("Failed to parse {} ping: {}", isTruce ? "truce" : "gang", rawText);
+			BetterPrisons.LOGGER.warn("Failed to parse gang ping: {}", rawText);
 		}
 	}
 }

@@ -14,11 +14,11 @@ import java.util.Map;
 
 /**
  * Manages gang-ping waypoints — transient waypoints triggered by chat pings (one per player; a new
- * ping replaces the old one; auto-expires). Sends this client's own pings (gang / truce / block-target)
- * through the server's gang-chat command, subject to a client-side cooldown. Ported from BetterPrisons'
- * {@code gangping/GangPingManager} (Yarn → Mojang: {@code getNetworkHandler().sendChatCommand/
- * sendChatMessage} → {@code getConnection().sendCommand/sendChat}, {@code getBlockPos} →
- * {@code blockPosition}, {@code getHorizontalFacing().asString} → {@code getDirection().getName}).
+ * ping replaces the old one; auto-expires). Sends this client's own pings (at the player's position or
+ * a targeted block) through the server's gang-chat command, subject to a client-side cooldown. Ported
+ * from BetterPrisons' {@code gangping/GangPingManager} (Yarn → Mojang: {@code getNetworkHandler().
+ * sendChatCommand/sendChatMessage} → {@code getConnection().sendCommand/sendChat}, {@code getBlockPos}
+ * → {@code blockPosition}, {@code getHorizontalFacing().asString} → {@code getDirection().getName}).
  */
 public class GangPingManager {
 
@@ -36,10 +36,9 @@ public class GangPingManager {
 		public final float hp, maxHp;
 		public final String facing;
 		public final long createdAt;
-		public final boolean isTruce;
 
 		public GangPingInfo(String playerName, int x, int y, int z, String world,
-				float hp, float maxHp, String facing, boolean isTruce) {
+				float hp, float maxHp, String facing) {
 			this.playerName = playerName;
 			this.x = x;
 			this.y = y;
@@ -48,7 +47,6 @@ public class GangPingManager {
 			this.hp = hp;
 			this.maxHp = maxHp;
 			this.facing = facing;
-			this.isTruce = isTruce;
 			this.createdAt = System.currentTimeMillis();
 		}
 	}
@@ -56,19 +54,15 @@ public class GangPingManager {
 	// ---- Send ----
 
 	public void sendPing(Minecraft client) {
-		sendPingInternal(client, false, null);
-	}
-
-	public void sendTrucePing(Minecraft client) {
-		sendPingInternal(client, true, null);
+		sendPingInternal(client, null);
 	}
 
 	/** Sends a gang ping at the given block position instead of the player's position. */
 	public void sendPingAtBlock(Minecraft client, BlockPos pos) {
-		sendPingInternal(client, false, pos);
+		sendPingInternal(client, pos);
 	}
 
-	private void sendPingInternal(Minecraft client, boolean truce, BlockPos overridePos) {
+	private void sendPingInternal(Minecraft client, BlockPos overridePos) {
 		if (client.player == null || client.level == null || client.getConnection() == null) {
 			return;
 		}
@@ -99,22 +93,20 @@ public class GangPingManager {
 		Direction dir = client.player.getDirection();
 		String facing = dir.getName().substring(0, 1).toUpperCase() + dir.getName().substring(1);
 
-		String prefix = truce ? "[T!]" : "[!]";
-		String msg = String.format("%s %s has pinged at %dx %dy %dz %s | HP %.0f/%.0f | Facing %s",
-				prefix, client.player.getGameProfile().name(), x, y, z, world, hp, maxHp, facing);
+		String msg = String.format("[!] %s has pinged at %dx %dy %dz %s | HP %.0f/%.0f | Facing %s",
+				client.player.getGameProfile().name(), x, y, z, world, hp, maxHp, facing);
 
-		client.getConnection().sendCommand(truce ? "g c t" : "g c g");
+		client.getConnection().sendCommand("g c g");
 		client.getConnection().sendChat(msg);
 	}
 
 	// ---- Receive ----
 
 	public void onGangPingReceived(String playerName, int x, int y, int z, String world,
-			float hp, float maxHp, String facing, boolean isTruce) {
-		GangPingInfo info = new GangPingInfo(playerName, x, y, z, world, hp, maxHp, facing, isTruce);
+			float hp, float maxHp, String facing) {
+		GangPingInfo info = new GangPingInfo(playerName, x, y, z, world, hp, maxHp, facing);
 		activePings.put(playerName, info);
-		BetterPrisons.LOGGER.info("{} ping from {} at {}, {}, {} ({})",
-				isTruce ? "Truce" : "Gang", playerName, x, y, z, world);
+		BetterPrisons.LOGGER.info("Gang ping from {} at {}, {}, {} ({})", playerName, x, y, z, world);
 	}
 
 	// ---- Tick — expire old pings ----
