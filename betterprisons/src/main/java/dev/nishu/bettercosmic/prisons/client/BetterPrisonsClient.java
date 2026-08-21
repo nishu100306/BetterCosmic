@@ -11,6 +11,10 @@ import dev.nishu.bettercosmic.prisons.easyview.EasyViewPanel;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewProvider;
 import dev.nishu.bettercosmic.prisons.easyview.ItemCooldownProvider;
 import dev.nishu.bettercosmic.prisons.feature.EventChatParser;
+import dev.nishu.bettercosmic.prisons.gangping.GangPingChatParser;
+import dev.nishu.bettercosmic.prisons.gangping.GangPingManager;
+import dev.nishu.bettercosmic.prisons.gangping.GangPingRenderer;
+import dev.nishu.bettercosmic.prisons.gangping.GangPingsPanel;
 import dev.nishu.bettercosmic.prisons.feature.PeacefulMiningPanel;
 import dev.nishu.bettercosmic.prisons.feature.PrisonsPeacefulMiningPolicy;
 import dev.nishu.bettercosmic.prisons.enchantprocs.EnchantProcManager;
@@ -84,6 +88,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 	public static SuperBreakerAura superBreakerAura;
 	public static EnchantTracker enchantTracker;
 	public static WaypointManager waypointManager;
+	public static GangPingManager gangPingManager;
 	private static final EventChatParser eventChatParser = new EventChatParser();
 
 	@Override
@@ -99,6 +104,9 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		// Waypoint store (custom + auto-added event waypoints) — needed by the Events HUD and renderers.
 		waypointManager = new WaypointManager();
 		waypointManager.load();
+
+		// Gang/truce ping tracking.
+		gangPingManager = new GangPingManager();
 
 		// Enchant tracking (Super Breaker, Powerball) — must exist before the HUDs that read it.
 		enchantTracker = new EnchantTracker();
@@ -124,6 +132,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 				cooldownHud.onChatReceived(text);
 				enchantTracker.onChatMessage(text);
 				eventChatParser.handle(eventsHud, text);
+				GangPingChatParser.handle(text);
 			}
 		});
 
@@ -134,6 +143,11 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		WaypointRenderer.init();
 		BeaconBeamRenderer.addSource(WaypointSuppliers::beams);
 		WaypointRenderer.addSource(WaypointSuppliers::edgeTargets);
+
+		// Gang pings: screen markers (player heads + info panel) + beacon beams, expiring each tick.
+		GangPingRenderer.init();
+		BeaconBeamRenderer.addSource(GangPingRenderer::beams);
+		ClientTickEvents.END_CLIENT_TICK.register(client -> gangPingManager.tick());
 
 		// Enchant procs: floating world-space labels driven by the Cosmic API's player.enchant_proc hook.
 		FloatingTextRenderer.init();
@@ -316,6 +330,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		ConfigRegistry.register(EnchantHudPanel.create());
 		ConfigRegistry.register(EventsHudPanel.create());
 		ConfigRegistry.register(WaypointsPanel.create());
+		ConfigRegistry.register(GangPingsPanel.create());
 		ConfigRegistry.register(SearchPanel.create());
 		ConfigRegistry.register(PeacefulMiningPanel.create());
 	}
