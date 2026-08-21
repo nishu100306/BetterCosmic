@@ -14,6 +14,7 @@ import dev.nishu.bettercosmic.prisons.waypoint.CustomWaypoint;
 import dev.nishu.bettercosmic.prisons.waypoint.WaypointManager;
 import dev.nishu.bettercosmic.shared.command.DevCommands;
 import dev.nishu.bettercosmic.shared.notification.ToastRenderer;
+import dev.nishu.bettercosmic.shared.render.FloatingTextRenderer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
@@ -41,8 +42,8 @@ import net.minecraft.world.scores.Scoreboard;
  *
  * <p>Ported from BetterPrisons' {@code devtools/DevCommands} (Yarn → Mojang). Commands whose
  * dependencies are not yet ported are intentionally omitted: {@code /bpitem} (now the shared
- * {@code /bitem}), {@code /bpfloat} (FloatingTextRenderer), {@code /calc} (EnergyCalculator),
- * {@code /bptest} (gang pings), {@code /bpwaypoints} (the Waypoints screen), and {@code /bploadcmd}.
+ * {@code /bitem}), {@code /calc} (EnergyCalculator), {@code /bptest} (gang pings), {@code /bpwaypoints}
+ * (the Waypoints screen), and {@code /bploadcmd}.
  */
 public final class PrisonDevCommands {
 
@@ -73,6 +74,21 @@ public final class PrisonDevCommands {
 			dispatcher.register(ClientCommandManager.literal("bpclue")
 					.requires(DevCommands::devModeEnabled)
 					.executes(PrisonDevCommands::inspectClueScroll));
+
+			// /bpfloat [message] — spawn test world-space floating text at the player's target.
+			dispatcher.register(ClientCommandManager.literal("bpfloat")
+					.requires(DevCommands::devModeEnabled)
+					.executes(ctx -> {
+						FloatingTextRenderer.spawn(
+								Component.literal("Test Proc").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD), 1500L);
+						return 1;
+					})
+					.then(ClientCommandManager.argument("message", StringArgumentType.greedyString())
+							.executes(ctx -> {
+								FloatingTextRenderer.spawn(
+										Component.literal(StringArgumentType.getString(ctx, "message")), 1500L);
+								return 1;
+							})));
 
 			// /bptoast [message] — show a test toast.
 			dispatcher.register(ClientCommandManager.literal("bptoast")
