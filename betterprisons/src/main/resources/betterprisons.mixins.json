@@ -3,8 +3,13 @@
 	"package": "dev.nishu.bettercosmic.prisons.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
+		"ChatBookTooltipMixin",
 		"ContainerSearchMixin",
-		"SuperBreakerParticleMixin"
+		"HeldItemScaleMixin",
+		"InventoryDropMixin",
+		"ItemDropMixin",
+		"SuperBreakerParticleMixin",
+		"TitleBoldMixin"
 	],
 	"mixins": [],
 	"injectors": {

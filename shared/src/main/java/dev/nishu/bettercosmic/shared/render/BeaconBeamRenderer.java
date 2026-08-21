@@ -1,15 +1,10 @@
 package dev.nishu.bettercosmic.shared.render;
 
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.platform.DepthTestFunction;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.SubmitNodeCollector;
-import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -48,28 +43,6 @@ public final class BeaconBeamRenderer {
 	private static final float BEAM_DIST_SCALE = 0.005f;
 
 	private static final List<BeamSource> SOURCES = new ArrayList<>();
-
-	/** POSITION_COLOR, translucent, no depth test, no cull — visible through all blocks. */
-	private static final RenderPipeline NO_DEPTH_PIPELINE = RenderPipelines.register(
-			RenderPipeline.builder(RenderPipelines.DEBUG_FILLED_SNIPPET)
-					.withLocation(Identifier.fromNamespaceAndPath("bettercosmicshared", "pipeline/beacon_beam_no_depth"))
-					.withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-					.withCull(false)
-					.build());
-
-	/** Same shader, but standard depth test so the beam is occluded by nearer terrain. */
-	private static final RenderPipeline DEPTH_PIPELINE = RenderPipelines.register(
-			RenderPipeline.builder(RenderPipelines.DEBUG_FILLED_SNIPPET)
-					.withLocation(Identifier.fromNamespaceAndPath("bettercosmicshared", "pipeline/beacon_beam_depth"))
-					.withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
-					.withCull(false)
-					.build());
-
-	private static final RenderType NO_DEPTH_LAYER = RenderType.create(
-			"bettercosmicshared:beacon_beam_no_depth", RenderSetup.builder(NO_DEPTH_PIPELINE).createRenderSetup());
-
-	private static final RenderType DEPTH_LAYER = RenderType.create(
-			"bettercosmicshared:beacon_beam_depth", RenderSetup.builder(DEPTH_PIPELINE).createRenderSetup());
 
 	private BeaconBeamRenderer() {}
 
@@ -148,7 +121,7 @@ public final class BeaconBeamRenderer {
 		pose.pushPose();
 		pose.translate(dx, dy, dz);
 
-		RenderType layer = beam.throughWalls() ? NO_DEPTH_LAYER : DEPTH_LAYER;
+		RenderType layer = beam.throughWalls() ? PositionColorLayers.NO_DEPTH : PositionColorLayers.DEPTH;
 		float h = beam.height();
 		queue.submitCustomGeometry(pose, layer,
 				(entry, consumer) -> drawBeam(consumer, entry.pose(), r, g, b, a, halfWidth, h));

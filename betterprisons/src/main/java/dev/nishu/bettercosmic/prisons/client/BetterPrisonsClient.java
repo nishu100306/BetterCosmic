@@ -10,6 +10,7 @@ import dev.nishu.bettercosmic.prisons.devtools.PrisonDevCommands;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewPanel;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewProvider;
 import dev.nishu.bettercosmic.prisons.easyview.ItemCooldownProvider;
+import dev.nishu.bettercosmic.prisons.feature.AutoTrade;
 import dev.nishu.bettercosmic.prisons.feature.EventChatParser;
 import dev.nishu.bettercosmic.prisons.gangping.GangPingChatParser;
 import dev.nishu.bettercosmic.prisons.gangping.GangPingManager;
@@ -34,6 +35,12 @@ import dev.nishu.bettercosmic.prisons.hud.StatsHud;
 import dev.nishu.bettercosmic.prisons.hud.StatsHudPanel;
 import dev.nishu.bettercosmic.prisons.hud.SuperBreakerAura;
 import dev.nishu.bettercosmic.prisons.input.PrisonKeybinds;
+import dev.nishu.bettercosmic.prisons.misc.EnchantBookTooltip;
+import dev.nishu.bettercosmic.prisons.misc.GangPointTooltip;
+import dev.nishu.bettercosmic.prisons.misc.PickaxeDropConfirmation;
+import dev.nishu.bettercosmic.prisons.misc.QolPanel;
+import dev.nishu.bettercosmic.prisons.misc.TooltipsPanel;
+import dev.nishu.bettercosmic.prisons.render.BlinkTrinketRenderer;
 import dev.nishu.bettercosmic.prisons.waypoint.WaypointManager;
 import dev.nishu.bettercosmic.prisons.waypoint.WaypointSuppliers;
 import dev.nishu.bettercosmic.prisons.waypoint.WaypointsPanel;
@@ -89,6 +96,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 	public static EnchantTracker enchantTracker;
 	public static WaypointManager waypointManager;
 	public static GangPingManager gangPingManager;
+	public static PickaxeDropConfirmation pickaxeDropConfirmation;
 	private static final EventChatParser eventChatParser = new EventChatParser();
 
 	@Override
@@ -149,6 +157,13 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		BeaconBeamRenderer.addSource(GangPingRenderer::beams);
 		ClientTickEvents.END_CLIENT_TICK.register(client -> gangPingManager.tick());
 
+		// QoL: pickaxe drop protection (drop mixins call this), auto-trade (shift-right-click a player),
+		// and the Blink-trinket destination overlay. Held-item scale + bold titles are pure mixins.
+		pickaxeDropConfirmation = new PickaxeDropConfirmation();
+		ClientTickEvents.END_CLIENT_TICK.register(client -> pickaxeDropConfirmation.tick());
+		AutoTrade.register();
+		BlinkTrinketRenderer.register();
+
 		// Enchant procs: floating world-space labels driven by the Cosmic API's player.enchant_proc hook.
 		FloatingTextRenderer.init();
 		EnchantProcManager.init();
@@ -180,9 +195,12 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		EasyView.register(new ClueScrollProvider());
 		EasyView.registerTint(new ChestSearchTintProvider());
 
-		// Item tooltips: flag unmapped clue-scroll steps.
-		ItemTooltipCallback.EVENT.register((stack, tooltipContext, tooltipType, lines) ->
-				ClueScrollProvider.appendTooltip(stack, lines));
+		// Item tooltips: clue-scroll unmapped-step warning, enchant-book upgrade costs, gang-point expiry.
+		ItemTooltipCallback.EVENT.register((stack, tooltipContext, tooltipType, lines) -> {
+			ClueScrollProvider.appendTooltip(stack, lines);
+			EnchantBookTooltip.append(stack, lines);
+			GangPointTooltip.append(stack, lines);
+		});
 
 		// Peaceful mining: register the prison policy and start the shared engine (ghost render +
 		// block-through targeting + interaction blocking live in :shared).
@@ -331,6 +349,8 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		ConfigRegistry.register(EventsHudPanel.create());
 		ConfigRegistry.register(WaypointsPanel.create());
 		ConfigRegistry.register(GangPingsPanel.create());
+		ConfigRegistry.register(TooltipsPanel.create());
+		ConfigRegistry.register(QolPanel.create());
 		ConfigRegistry.register(SearchPanel.create());
 		ConfigRegistry.register(PeacefulMiningPanel.create());
 	}
