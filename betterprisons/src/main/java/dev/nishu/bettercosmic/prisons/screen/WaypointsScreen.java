@@ -4,6 +4,7 @@ import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import dev.nishu.bettercosmic.prisons.waypoint.CustomWaypoint;
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.render.RenderUtils;
+import dev.nishu.bettercosmic.shared.ui.widget.DropdownList;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -49,6 +50,10 @@ public class WaypointsScreen extends Screen {
 	private static final int FORM_W = 300;
 	private static final int FORM_H = 300;
 
+	private static final int WORLD_BOX_W = 200;
+	private static final int WORLD_BOX_H = 14;
+	private static final int WORLD_LABEL_W = 40;
+
 	private int scrollOffset = 0;
 	private int maxScroll = 0;
 
@@ -58,6 +63,7 @@ public class WaypointsScreen extends Screen {
 	private int pendingColor = 0xFFFFFF;
 
 	private String viewedWorld;
+	private DropdownList worldList; // open world-selector popup, or null
 
 	private EditBox nameField;
 	private EditBox xField, yField, zField;
@@ -71,6 +77,7 @@ public class WaypointsScreen extends Screen {
 	}
 
 	private void rebuild() {
+		worldList = null;
 		clearWidgets();
 		init();
 	}
@@ -262,6 +269,29 @@ public class WaypointsScreen extends Screen {
 			renderEditForm(ctx, mouseX, mouseY);
 		}
 		super.render(ctx, mouseX, mouseY, delta);
+
+		// The open world-selector list floats above everything else.
+		if (worldList != null) {
+			worldList.render(ctx, mouseX, mouseY, delta);
+		}
+	}
+
+	private int[] worldBoxRect() {
+		int panelX = (width - PANEL_W) / 2;
+		return new int[]{panelX + WORLD_LABEL_W, LIST_TOP - 41, WORLD_BOX_W, WORLD_BOX_H};
+	}
+
+	private void openWorldList() {
+		int[] box = worldBoxRect();
+		worldList = new DropdownList(worldsList(), viewedWorld, box[0], box[1], box[2], this.height,
+				this::selectWorld, () -> worldList = null);
+	}
+
+	private void selectWorld(String world) {
+		viewedWorld = world;
+		scrollOffset = 0;
+		int listH = height - LIST_TOP - BOTTOM_BAR_H;
+		maxScroll = Math.max(0, waypoints().size() * ROW_H - listH);
 	}
 
 	private void renderList(GuiGraphics ctx, int mouseX, int mouseY) {
@@ -270,19 +300,17 @@ public class WaypointsScreen extends Screen {
 
 		RenderUtils.panel(ctx, panelX - 4, LIST_TOP - 6, PANEL_W + 8, listH + 10, Theme.surface, Theme.line);
 
-		// World selector: "◂ World: <name> ▸" (arrows cycle through worlds).
-		List<String> worlds = worldsList();
-		String worldText = "World: " + viewedWorld;
-		int wtX = panelX;
-		int wtY = LIST_TOP - 34;
-		if (worlds.size() > 1) {
-			RenderUtils.triLeft(ctx, wtX, wtY, 6, 8, Theme.accent);
-			ctx.drawString(this.font, Component.literal(worldText), wtX + 12, wtY, Theme.text, false);
-			int rightArrowX = wtX + 12 + this.font.width(worldText) + 4;
-			RenderUtils.triRight(ctx, rightArrowX, wtY, 6, 8, Theme.accent);
-		} else {
-			ctx.drawString(this.font, Component.literal(worldText), wtX, wtY, Theme.muted, false);
-		}
+		// World selector dropdown box (the open list is drawn on top in render()).
+		int[] box = worldBoxRect();
+		ctx.drawString(this.font, Component.literal("World:"), panelX, box[1] + 3, Theme.muted, false);
+		boolean boxHover = RenderUtils.hit(mouseX, mouseY, box[0], box[1], box[2], box[3]);
+		int border = (boxHover || worldList != null) ? Theme.accent : Theme.line;
+		RenderUtils.panel(ctx, box[0], box[1], box[2], box[3], Theme.surface, border);
+		int caretW = 5, caretH = 3;
+		int caretX = box[0] + box[2] - caretW - 5;
+		RenderUtils.triDown(ctx, caretX, box[1] + (box[3] - caretH) / 2, caretW, caretH, Theme.muted);
+		String valueText = this.font.plainSubstrByWidth(viewedWorld, caretX - (box[0] + 5) - 2);
+		ctx.drawString(this.font, Component.literal(valueText), box[0] + 5, box[1] + (box[3] - 8) / 2, Theme.text, false);
 
 		ctx.drawString(this.font, Component.literal("Name"), panelX + 24, LIST_TOP - 17, Theme.muted, false);
 		ctx.drawString(this.font, Component.literal("Coords"), panelX + 200, LIST_TOP - 17, Theme.muted, false);
@@ -389,6 +417,12 @@ public class WaypointsScreen extends Screen {
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
 		double mx = event.x(), my = event.y();
 
+		// An open world list takes input first (any click selects-or-closes it).
+		if (!editMode && worldList != null) {
+			worldList.mouseClicked(mx, my, event.button());
+			return true;
+		}
+
 		if (editMode) {
 			int formX = (width - FORM_W) / 2;
 			int formY = (height - FORM_H) / 2;
@@ -403,20 +437,15 @@ public class WaypointsScreen extends Screen {
 
 		int panelX = (width - PANEL_W) / 2;
 
-		// World cycle arrows.
-		List<String> worlds = worldsList();
-		if (worlds.size() > 1) {
-			int wtY = LIST_TOP - 34;
-			String worldText = "World: " + viewedWorld;
-			if (RenderUtils.hit(mx, my, panelX, wtY, 8, 8)) {
-				cycleWorld(worlds, -1);
-				return true;
+		// World selector box → toggle the dropdown list.
+		int[] box = worldBoxRect();
+		if (RenderUtils.hit(mx, my, box[0], box[1], box[2], box[3])) {
+			if (worldList == null) {
+				openWorldList();
+			} else {
+				worldList = null;
 			}
-			int rightArrowX = panelX + 12 + this.font.width(worldText) + 4;
-			if (RenderUtils.hit(mx, my, rightArrowX, wtY, 8, 8)) {
-				cycleWorld(worlds, 1);
-				return true;
-			}
+			return true;
 		}
 
 		// List row actions.
@@ -447,16 +476,11 @@ public class WaypointsScreen extends Screen {
 		return super.mouseClicked(event, doubleClick);
 	}
 
-	private void cycleWorld(List<String> worlds, int dir) {
-		int idx = Math.max(0, worlds.indexOf(viewedWorld));
-		viewedWorld = worlds.get((idx + dir + worlds.size()) % worlds.size());
-		scrollOffset = 0;
-		int listH = height - LIST_TOP - BOTTOM_BAR_H;
-		maxScroll = Math.max(0, waypoints().size() * ROW_H - listH);
-	}
-
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+		if (worldList != null) {
+			return true; // swallow while the world list is open
+		}
 		if (!editMode) {
 			scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) (scrollY * ROW_H)));
 		}
@@ -465,6 +489,10 @@ public class WaypointsScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
+		if (worldList != null) {
+			worldList.keyPressed(event.key(), event.scancode(), event.modifiers());
+			return true;
+		}
 		if (editMode && event.key() == GLFW.GLFW_KEY_ESCAPE) {
 			cancelEdit();
 			return true;
