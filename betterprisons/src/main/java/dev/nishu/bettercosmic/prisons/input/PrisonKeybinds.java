@@ -1,6 +1,7 @@
 package dev.nishu.bettercosmic.prisons.input;
 
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
+import dev.nishu.bettercosmic.prisons.screen.WaypointsScreen;
 import dev.nishu.bettercosmic.shared.input.KeyBinds;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.KeyMapping;
@@ -22,6 +23,7 @@ public final class PrisonKeybinds {
 	public static KeyMapping pauseStats;
 	public static KeyMapping gangPing;
 	public static KeyMapping gangPingBlock;
+	public static KeyMapping waypoints;
 
 	private PrisonKeybinds() {}
 
@@ -32,6 +34,7 @@ public final class PrisonKeybinds {
 		pauseStats = KeyBinds.register("key.betterprisons.pause", GLFW.GLFW_KEY_B, category);
 		gangPing = KeyBinds.register("key.betterprisons.gang_ping", GLFW.GLFW_KEY_G, category);
 		gangPingBlock = KeyBinds.register("key.betterprisons.gang_ping_block", GLFW.GLFW_KEY_UNKNOWN, category);
+		waypoints = KeyBinds.register("key.betterprisons.waypoints", GLFW.GLFW_KEY_UNKNOWN, category);
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (resetStats.consumeClick()) {
@@ -48,6 +51,9 @@ public final class PrisonKeybinds {
 				if (BetterPrisonsClient.config.gangPingEnabled) {
 					BetterPrisonsClient.gangPingManager.sendPing(client);
 				}
+			}
+			while (waypoints.consumeClick()) {
+				client.setScreen(new WaypointsScreen());
 			}
 			while (gangPingBlock.consumeClick()) {
 				if (BetterPrisonsClient.config.gangPingEnabled) {

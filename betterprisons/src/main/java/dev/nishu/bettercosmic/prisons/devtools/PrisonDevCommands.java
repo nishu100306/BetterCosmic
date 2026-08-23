@@ -10,6 +10,7 @@ import dev.nishu.bettercosmic.prisons.BetterPrisons;
 import dev.nishu.bettercosmic.prisons.chestsearch.ClueScrollProvider;
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import dev.nishu.bettercosmic.prisons.hud.EventsHud;
+import dev.nishu.bettercosmic.prisons.screen.WaypointsScreen;
 import dev.nishu.bettercosmic.prisons.waypoint.CustomWaypoint;
 import dev.nishu.bettercosmic.prisons.waypoint.WaypointManager;
 import dev.nishu.bettercosmic.shared.command.DevCommands;
@@ -42,8 +43,8 @@ import net.minecraft.world.scores.Scoreboard;
  *
  * <p>Ported from BetterPrisons' {@code devtools/DevCommands} (Yarn → Mojang). Commands whose
  * dependencies are not yet ported are intentionally omitted: {@code /bpitem} (now the shared
- * {@code /bitem}), {@code /calc} (EnergyCalculator), {@code /bptest} (gang pings), {@code /bpwaypoints}
- * (the Waypoints screen), and {@code /bploadcmd}.
+ * {@code /bitem}), {@code /calc} (EnergyCalculator), {@code /bptest} (gang pings), and
+ * {@code /bploadcmd}.
  */
 public final class PrisonDevCommands {
 
@@ -62,6 +63,15 @@ public final class PrisonDevCommands {
 					.requires(DevCommands::devModeEnabled)
 					.executes(ctx -> {
 						ctx.getSource().sendFeedback(Component.literal("§7Current world: §f" + WaypointManager.detectWorldKey()));
+						return 1;
+					}));
+
+			// /bpwaypoints — open the waypoints management screen.
+			dispatcher.register(ClientCommandManager.literal("bpwaypoints")
+					.requires(DevCommands::devModeEnabled)
+					.executes(ctx -> {
+						ctx.getSource().getClient().execute(() ->
+								ctx.getSource().getClient().setScreen(new WaypointsScreen()));
 						return 1;
 					}));
 
