@@ -18,6 +18,8 @@ import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
@@ -512,11 +514,13 @@ public class WaypointsScreen extends Screen {
 
 	// ---- Helpers ----
 
+	/** Worlds with waypoints, plus the current and viewed worlds so they're always selectable. */
 	private List<String> worldsList() {
-		List<String> worlds = new ArrayList<>(BetterPrisonsClient.waypointManager.getWorlds());
-		if (worlds.isEmpty()) {
-			worlds.add(viewedWorld);
-		}
+		LinkedHashSet<String> set = new LinkedHashSet<>(BetterPrisonsClient.waypointManager.getWorlds());
+		set.add(BetterPrisonsClient.waypointManager.getCurrentWorld());
+		set.add(viewedWorld);
+		List<String> worlds = new ArrayList<>(set);
+		Collections.sort(worlds);
 		return worlds;
 	}
 

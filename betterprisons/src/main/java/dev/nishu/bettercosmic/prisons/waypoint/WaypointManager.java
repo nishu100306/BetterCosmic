@@ -56,8 +56,18 @@ public class WaypointManager {
 		return currentWorld;
 	}
 
+	/**
+	 * Worlds that actually have at least one waypoint, sorted. Empty entries — which
+	 * {@code computeIfAbsent} leaves behind just from visiting a world or rendering — are excluded, so
+	 * the Waypoints screen never lists a world you have no waypoints in.
+	 */
 	public List<String> getWorlds() {
-		List<String> worlds = new ArrayList<>(worldWaypoints.keySet());
+		List<String> worlds = new ArrayList<>();
+		for (Map.Entry<String, List<CustomWaypoint>> entry : worldWaypoints.entrySet()) {
+			if (!entry.getValue().isEmpty()) {
+				worlds.add(entry.getKey());
+			}
+		}
 		Collections.sort(worlds);
 		return worlds;
 	}
