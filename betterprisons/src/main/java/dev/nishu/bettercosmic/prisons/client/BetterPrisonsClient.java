@@ -38,8 +38,11 @@ import dev.nishu.bettercosmic.prisons.input.PrisonKeybinds;
 import dev.nishu.bettercosmic.prisons.misc.EnchantBookTooltip;
 import dev.nishu.bettercosmic.prisons.misc.GangPointTooltip;
 import dev.nishu.bettercosmic.prisons.misc.PickaxeDropConfirmation;
+import dev.nishu.bettercosmic.prisons.misc.PrisonbreakTexturePack;
 import dev.nishu.bettercosmic.prisons.misc.QolPanel;
 import dev.nishu.bettercosmic.prisons.misc.TooltipsPanel;
+import dev.nishu.bettercosmic.prisons.notification.MessageNotifications;
+import dev.nishu.bettercosmic.prisons.notification.NotificationsPanel;
 import dev.nishu.bettercosmic.prisons.render.BlinkTrinketRenderer;
 import dev.nishu.bettercosmic.prisons.waypoint.WaypointManager;
 import dev.nishu.bettercosmic.prisons.waypoint.WaypointSuppliers;
@@ -141,6 +144,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 				enchantTracker.onChatMessage(text);
 				eventChatParser.handle(eventsHud, text);
 				GangPingChatParser.handle(text);
+				MessageNotifications.handle(text);
 			}
 		});
 
@@ -163,6 +167,11 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> pickaxeDropConfirmation.tick());
 		AutoTrade.register();
 		BlinkTrinketRenderer.register();
+
+		// PrisonBreak texture pack: bundle it and auto-apply/remove by world each tick.
+		PrisonbreakTexturePack.register();
+		ClientTickEvents.END_CLIENT_TICK.register(client ->
+				PrisonbreakTexturePack.update("minecraft:prisonbreak".equals(WaypointManager.detectWorldKey())));
 
 		// Enchant procs: floating world-space labels driven by the Cosmic API's player.enchant_proc hook.
 		FloatingTextRenderer.init();
@@ -351,6 +360,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		ConfigRegistry.register(GangPingsPanel.create());
 		ConfigRegistry.register(TooltipsPanel.create());
 		ConfigRegistry.register(QolPanel.create());
+		ConfigRegistry.register(NotificationsPanel.create());
 		ConfigRegistry.register(SearchPanel.create());
 		ConfigRegistry.register(PeacefulMiningPanel.create());
 	}
