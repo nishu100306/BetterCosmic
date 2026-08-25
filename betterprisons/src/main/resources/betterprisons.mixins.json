@@ -8,6 +8,7 @@
 		"HeldItemScaleMixin",
 		"InventoryDropMixin",
 		"ItemDropMixin",
+		"LocalPlayerHurtMixin",
 		"SuperBreakerParticleMixin",
 		"TitleBoldMixin"
 	],

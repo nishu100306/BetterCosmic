@@ -70,6 +70,7 @@ import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 
 import java.util.List;
 
@@ -215,6 +216,16 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		// block-through targeting + interaction blocking live in :shared).
 		PeacefulMining.setPolicy(new PrisonsPeacefulMiningPolicy());
 		PeacefulMining.init();
+
+		// Refresh the Combat cooldown when you attack another player (being hit is handled by
+		// LocalPlayerHurtMixin). PASS so the hit is never consumed here.
+		AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+			if (world.isClientSide() && entity != player && entity instanceof net.minecraft.world.entity.player.Player
+					&& cooldownHud != null) {
+				cooldownHud.resetCombatCooldown();
+			}
+			return net.minecraft.world.InteractionResult.PASS;
+		});
 
 		registerPanels();
 
