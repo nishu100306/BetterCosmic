@@ -35,6 +35,11 @@ public final class QolPanel {
 				Options.intSlider("Other", d.heldItemOtherScale, 50, 150, 5,
 						() -> c.heldItemOtherScale, v -> { c.heldItemOtherScale = v; c.save(); })));
 
+		OptionGroup interactions = new OptionGroup("Interactions", List.<Option>of(
+				Options.toggle("Use items while mining", d.useItemWhileMiningEnabled,
+						() -> c.useItemWhileMiningEnabled, v -> { c.useItemWhileMiningEnabled = v; c.save(); })
+						.tooltip("Allow right-click item use while actively breaking a block.")));
+
 		OptionGroup pickaxeDrop = new OptionGroup("Pickaxe drop protection", List.<Option>of(
 				Options.toggle("Confirm before dropping", d.pickaxeDropConfirmationEnabled,
 						() -> c.pickaxeDropConfirmationEnabled, v -> { c.pickaxeDropConfirmationEnabled = v; c.save(); })
@@ -59,6 +64,6 @@ public final class QolPanel {
 
 		return ConfigPanel.of("prisons-qol", "Quality of Life",
 				"Held-item scale, drop protection, Blink overlay", PanelIcon.GEAR,
-				List.of(heldItem, pickaxeDrop, blink));
+				List.of(heldItem, interactions, pickaxeDrop, blink));
 	}
 }

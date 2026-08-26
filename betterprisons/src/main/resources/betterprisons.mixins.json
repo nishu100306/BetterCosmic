@@ -10,7 +10,8 @@
 		"ItemDropMixin",
 		"LocalPlayerHurtMixin",
 		"SuperBreakerParticleMixin",
-		"TitleBoldMixin"
+		"TitleBoldMixin",
+		"UseItemWhileMiningMixin"
 	],
 	"mixins": [],
 	"injectors": {

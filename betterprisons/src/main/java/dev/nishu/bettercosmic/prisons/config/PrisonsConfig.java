@@ -88,6 +88,7 @@ public class PrisonsConfig extends BetterCosmicConfig {
 	// ---- Misc features ----
 	public boolean autoTradeEnabled = true;
 	public boolean boldXpEnergyTitles = false;
+	public boolean useItemWhileMiningEnabled = true;
 	public boolean cosmicApiEnabled = true;
 	public String cosmicApiInstallId = "";
 	public boolean chestSearchEnabled = true;
