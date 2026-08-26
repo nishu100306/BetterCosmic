@@ -8,8 +8,7 @@
 		"GameRendererFovMixin",
 		"GameRendererPeacefulMiningMixin",
 		"GuiMixin",
-		"LivingEntityRendererPeacefulMiningMixin",
-		"MinecraftPeacefulMiningMixin"
+		"LivingEntityRendererPeacefulMiningMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
