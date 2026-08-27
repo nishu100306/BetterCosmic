@@ -4,7 +4,11 @@
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"AbstractContainerScreenMixin",
-		"GuiMixin"
+		"AvatarRendererPeacefulMiningMixin",
+		"GameRendererFovMixin",
+		"GameRendererPeacefulMiningMixin",
+		"GuiMixin",
+		"LivingEntityRendererPeacefulMiningMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

@@ -2,6 +2,17 @@
 	"required": true,
 	"package": "dev.nishu.bettercosmic.prisons.mixin",
 	"compatibilityLevel": "JAVA_21",
+	"client": [
+		"ChatBookTooltipMixin",
+		"ContainerSearchMixin",
+		"HeldItemScaleMixin",
+		"InventoryDropMixin",
+		"ItemDropMixin",
+		"LocalPlayerHurtMixin",
+		"SuperBreakerParticleMixin",
+		"TitleBoldMixin",
+		"UseItemWhileMiningMixin"
+	],
 	"mixins": [],
 	"injectors": {
 		"defaultRequire": 1

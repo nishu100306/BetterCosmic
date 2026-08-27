@@ -14,14 +14,84 @@ public enum PanelIcon {
 	/** Gear — general/settings. */
 	GEAR,
 	/** Padlock — locked "coming soon" placeholders. */
-	LOCK;
+	LOCK,
+	/** Eye — inventory/overlay views (EasyView). */
+	EYE,
+	/** Pouch — satchels. */
+	SATCHEL,
+	/** Bar chart — stats/tracking. */
+	CHART,
+	/** Sparkle/star — enchants & auras. */
+	SPARKLE;
 
 	public void draw(GuiGraphics g, int x, int y, int size, int color) {
 		switch (this) {
 			case FLASK -> flask(g, x, y, size, color);
 			case GEAR -> gear(g, x, y, size, color);
 			case LOCK -> lock(g, x, y, size, color);
+			case EYE -> eye(g, x, y, size, color);
+			case SATCHEL -> satchel(g, x, y, size, color);
+			case CHART -> chart(g, x, y, size, color);
+			case SPARKLE -> sparkle(g, x, y, size, color);
 		}
+	}
+
+	private static void sparkle(GuiGraphics g, int x, int y, int s, int color) {
+		int cx = x + s / 2;
+		int cy = y + s / 2;
+		int arm = s / 2 - 1;
+		// four-point star: a vertical and horizontal spike tapering to the center
+		for (int i = 0; i <= arm; i++) {
+			int half = Math.max(0, (arm - i) / 3);
+			g.fill(cx - half, cy - i, cx + half + 1, cy - i + 1, color); // up
+			g.fill(cx - half, cy + i, cx + half + 1, cy + i + 1, color); // down
+			g.fill(cx - i, cy - half, cx - i + 1, cy + half + 1, color); // left
+			g.fill(cx + i, cy - half, cx + i + 1, cy + half + 1, color); // right
+		}
+	}
+
+	private static void chart(GuiGraphics g, int x, int y, int s, int color) {
+		int base = y + s - 1;
+		int barW = Math.max(2, s / 5);
+		int gap = Math.max(1, (s - barW * 3) / 4);
+		int[] heights = {Math.round(s * 0.45f), Math.round(s * 0.75f), Math.round(s * 0.6f)};
+		int bx = x + gap;
+		for (int h : heights) {
+			g.fill(bx, base - h, bx + barW, base, color);
+			bx += barW + gap;
+		}
+	}
+
+	private static void eye(GuiGraphics g, int x, int y, int s, int color) {
+		int cy = y + s / 2;
+		int left = x + 1;
+		int right = x + s - 1;
+		// almond outline: taller in the middle, tapering to the corners
+		int span = right - left;
+		for (int i = 0; i <= span; i++) {
+			float f = span == 0 ? 0 : i / (float) span;
+			int half = Math.round((float) Math.sin(f * Math.PI) * (s * 0.28f));
+			int xx = left + i;
+			g.fill(xx, cy - half, xx + 1, cy - half + 1, color);       // top lid
+			g.fill(xx, cy + half - 1, xx + 1, cy + half, color);       // bottom lid
+		}
+		g.fill(x + s / 2 - 2, cy - 2, x + s / 2 + 2, cy + 2, color);   // pupil
+	}
+
+	private static void satchel(GuiGraphics g, int x, int y, int s, int color) {
+		int top = y + Math.round(s * 0.32f);
+		int bottom = y + s - 1;
+		int span = bottom - top;
+		for (int i = 0; i < span; i++) {                               // widening body (trapezoid)
+			float f = span == 0 ? 0 : i / (float) span;
+			int half = Math.round((s * 0.24f) + f * (s * 0.18f));
+			int cx = x + s / 2;
+			int yy = top + i;
+			g.fill(cx - half, yy, cx + half, yy + 1, color);
+		}
+		int cx = x + s / 2;
+		g.fill(cx - Math.round(s * 0.22f), y + Math.round(s * 0.2f),   // flap
+				cx + Math.round(s * 0.22f), top + 1, color);
 	}
 
 	private static void flask(GuiGraphics g, int x, int y, int s, int color) {

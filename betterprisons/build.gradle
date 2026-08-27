@@ -11,10 +11,8 @@ base {
 }
 
 repositories {
-	// Add repositories to retrieve artifacts from in here (only for mod dependencies).
-	// NOTE(port): the original BetterPrisons uses ModMenu — add
-	//   maven { url = "https://maven.terraformersmc.com/releases/" }
-	// and the modImplementation for it when that integration is ported.
+	// ModMenu, for the optional mod-list config-screen integration.
+	maven { url = "https://maven.terraformersmc.com/releases/" }
 }
 
 loom {
@@ -49,6 +47,11 @@ dependencies {
 	mappings loom.officialMojangMappings()
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// ModMenu — optional integration (compile against it; if a user doesn't have ModMenu the
+	// entrypoint simply never loads). Not bundled; users supply their own copy.
+	modCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+	modLocalRuntime "com.terraformersmc:modmenu:${project.modmenu_version}"
 
 	// Shared library: `namedElements` gives the dev-mapped classes for compile/run; `include`
 	// bundles the remapped jar into the BetterPrisons jar as a Jar-in-Jar nested mod so that

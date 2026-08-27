@@ -3,3 +3,11 @@ accessWidener	v2	named
 # Shared access-widener for the Cosmic Mods library (Mojang mappings).
 # Entries are added here as shared code is ported in and needs widened access.
 # NOTE: when porting from BetterPrisons (Yarn), every entry must be re-expressed in Mojang names.
+
+# --- BeaconBeamRenderer: build/register a custom position-color pipeline for the beacon beams. ---
+# DEBUG_FILLED_SNIPPET is the 1.21.11 position_color/translucent/quads snippet (successor to BP's
+# Yarn POSITION_COLOR_SNIPPET); register() adds a built pipeline to the compiler's map; RenderType.create
+# wraps a pipeline+setup into a submittable layer. We mirror exactly how vanilla builds DEBUG_QUADS.
+accessible	field	net/minecraft/client/renderer/RenderPipelines	DEBUG_FILLED_SNIPPET	Lcom/mojang/blaze3d/pipeline/RenderPipeline$Snippet;
+accessible	method	net/minecraft/client/renderer/RenderPipelines	register	(Lcom/mojang/blaze3d/pipeline/RenderPipeline;)Lcom/mojang/blaze3d/pipeline/RenderPipeline;
+accessible	method	net/minecraft/client/renderer/rendertype/RenderType	create	(Ljava/lang/String;Lnet/minecraft/client/renderer/rendertype/RenderSetup;)Lnet/minecraft/client/renderer/rendertype/RenderType;

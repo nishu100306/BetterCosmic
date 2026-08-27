@@ -1,0 +1,8 @@
+{
+	"key.betterprisons.reset_stats": "Reset Stats HUD tracking",
+	"key.betterprisons.pause": "Pause/Resume Stats HUD tracking",
+	"key.betterprisons.gang_ping": "Gang ping (your position)",
+	"key.betterprisons.gang_ping_block": "Gang ping (block you're looking at)",
+	"key.betterprisons.waypoints": "Open waypoints screen",
+	"key.categories.betterprisons.betterprisons": "BetterPrisons"
+}
