@@ -3,6 +3,7 @@ package dev.nishu.bettercosmic.prisons.gangping;
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import dev.nishu.bettercosmic.prisons.config.PrisonsConfig;
 import dev.nishu.bettercosmic.prisons.waypoint.WaypointManager;
+import dev.nishu.bettercosmic.shared.render.ScreenMarkers;
 import dev.nishu.bettercosmic.shared.render.WorldSpaceTransform;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.Minecraft;
@@ -153,23 +154,14 @@ public final class GangPingRenderer {
 		int baseY = e.iy;
 		int half = Math.max(1, (int) (ICON_HALF * e.scale));
 		for (int yi = 0; yi < MAX_NUDGES * 2; yi++) {
-			int off = (yi == 0 ? 0 : (yi % 2 == 1 ? (yi + 1) / 2 : -(yi / 2))) * NUDGE_STEP;
+			int off = ScreenMarkers.nudgeOffset(yi) * NUDGE_STEP;
 			int tryY = Math.max(EDGE_MARGIN, Math.min(screenH - EDGE_MARGIN, baseY + off));
 			int[] r = {e.ix - half, tryY - half, e.ix + half, tryY + half + 2 + LABEL_H};
-			if (!overlapsAny(r, placed)) {
+			if (!ScreenMarkers.overlapsAny(r, placed)) {
 				e.iy = tryY;
 				return;
 			}
 		}
-	}
-
-	private static boolean overlapsAny(int[] r, List<int[]> placed) {
-		for (int[] p : placed) {
-			if (r[0] < p[2] && r[2] > p[0] && r[1] < p[3] && r[3] > p[1]) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	private static void drawEntry(GuiGraphics ctx, Font font, Minecraft client, Entry e) {
@@ -191,7 +183,7 @@ public final class GangPingRenderer {
 			double angle = Math.atan2(e.projY - iy, e.projX - ix);
 			int arrowOffset = Math.max(ARROW_OFFSET, scaledHalf + 3);
 			int argb = (alphaInt << 24) | (pingColor & 0xFFFFFF);
-			drawArrow(ctx, ix + (int) (arrowOffset * Math.cos(angle)),
+			ScreenMarkers.drawArrow(ctx, ix + (int) (arrowOffset * Math.cos(angle)),
 					iy + (int) (arrowOffset * Math.sin(angle)), angle, ARROW_RADIUS, argb);
 		}
 
@@ -263,38 +255,4 @@ public final class GangPingRenderer {
 		}
 	}
 
-	private static void drawArrow(GuiGraphics ctx, int cx, int cy, double angle, int r, int color) {
-		int tipX = cx + (int) (r * Math.cos(angle));
-		int tipY = cy + (int) (r * Math.sin(angle));
-		double perp = angle + Math.PI / 2;
-		int baseHalf = r - 1;
-		int baseX = cx - (int) ((r / 2.0) * Math.cos(angle));
-		int baseY = cy - (int) ((r / 2.0) * Math.sin(angle));
-		int b1x = baseX + (int) (baseHalf * Math.cos(perp));
-		int b1y = baseY + (int) (baseHalf * Math.sin(perp));
-		int b2x = baseX - (int) (baseHalf * Math.cos(perp));
-		int b2y = baseY - (int) (baseHalf * Math.sin(perp));
-		fillTriangle(ctx, tipX, tipY, b1x, b1y, b2x, b2y, color);
-	}
-
-	private static void fillTriangle(GuiGraphics ctx, int x0, int y0, int x1, int y1, int x2, int y2, int color) {
-		int minX = Math.min(x0, Math.min(x1, x2));
-		int maxX = Math.max(x0, Math.max(x1, x2));
-		int minY = Math.min(y0, Math.min(y1, y2));
-		int maxY = Math.max(y0, Math.max(y1, y2));
-		int denom = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2);
-		if (denom == 0) {
-			return;
-		}
-		for (int py = minY; py <= maxY; py++) {
-			for (int px = minX; px <= maxX; px++) {
-				int w0 = (y1 - y2) * (px - x2) + (x2 - x1) * (py - y2);
-				int w1 = (y2 - y0) * (px - x2) + (x0 - x2) * (py - y2);
-				int w2 = denom - w0 - w1;
-				if (denom > 0 ? (w0 >= 0 && w1 >= 0 && w2 >= 0) : (w0 <= 0 && w1 <= 0 && w2 <= 0)) {
-					ctx.fill(px, py, px + 1, py + 1, color);
-				}
-			}
-		}
-	}
 }
