@@ -56,6 +56,6 @@ public class InventoryDropMixin {
 	}
 
 	private static boolean isPickaxe(ItemStack stack) {
-		return stack.getItem().toString().toLowerCase().contains("pickaxe");
+		return stack.getItem().getDescriptionId().toLowerCase().contains("pickaxe");
 	}
 }

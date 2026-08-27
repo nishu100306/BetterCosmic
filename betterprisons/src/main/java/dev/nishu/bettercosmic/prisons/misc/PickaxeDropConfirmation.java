@@ -53,6 +53,6 @@ public final class PickaxeDropConfirmation {
 	}
 
 	private static boolean isPickaxe(ItemStack stack) {
-		return !stack.isEmpty() && stack.getItem().toString().toLowerCase().contains("pickaxe");
+		return !stack.isEmpty() && stack.getItem().getDescriptionId().toLowerCase().contains("pickaxe");
 	}
 }

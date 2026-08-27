@@ -1,5 +1,6 @@
 package dev.nishu.bettercosmic.prisons.waypoint;
 
+import dev.nishu.bettercosmic.prisons.PrisonWorlds;
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import dev.nishu.bettercosmic.prisons.config.PrisonsConfig;
 import dev.nishu.bettercosmic.prisons.hud.EventsHud;
@@ -46,8 +47,8 @@ public final class WaypointSuppliers {
 		EventsHud events = BetterPrisonsClient.eventsHud;
 		boolean throughWalls = c.beaconBeamThroughWalls;
 		String world = worldKey();
-		boolean inOverworld = "minecraft:overworld".equals(world);
-		boolean inBadlands = "minecraft:badlands".equals(world);
+		boolean inOverworld = PrisonWorlds.OVERWORLD.equals(world);
+		boolean inBadlands = PrisonWorlds.BADLANDS.equals(world);
 
 		if (inOverworld && c.waypointMeteorsEnabled) {
 			for (EventsHud.MeteorInfo m : events.getActiveMeteors()) {
@@ -95,8 +96,8 @@ public final class WaypointSuppliers {
 		}
 		EventsHud events = BetterPrisonsClient.eventsHud;
 		String world = worldKey();
-		boolean inOverworld = "minecraft:overworld".equals(world);
-		boolean inBadlands = "minecraft:badlands".equals(world);
+		boolean inOverworld = PrisonWorlds.OVERWORLD.equals(world);
+		boolean inBadlands = PrisonWorlds.BADLANDS.equals(world);
 
 		if (inOverworld && c.waypointMeteorsEnabled) {
 			for (EventsHud.MeteorInfo m : events.getActiveMeteors()) {

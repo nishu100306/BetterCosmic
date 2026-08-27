@@ -1,6 +1,7 @@
 package dev.nishu.bettercosmic.prisons.client;
 
 import dev.nishu.bettercosmic.prisons.BetterPrisons;
+import dev.nishu.bettercosmic.prisons.PrisonWorlds;
 import dev.nishu.bettercosmic.prisons.api.CosmicApi;
 import dev.nishu.bettercosmic.prisons.chestsearch.ChestSearchTintProvider;
 import dev.nishu.bettercosmic.prisons.chestsearch.ClueScrollProvider;
@@ -172,7 +173,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		// PrisonBreak texture pack: bundle it and auto-apply/remove by world each tick.
 		PrisonbreakTexturePack.register();
 		ClientTickEvents.END_CLIENT_TICK.register(client ->
-				PrisonbreakTexturePack.update("minecraft:prisonbreak".equals(WaypointManager.detectWorldKey())));
+				PrisonbreakTexturePack.update(PrisonWorlds.PRISONBREAK.equals(WaypointManager.detectWorldKey())));
 
 		// Enchant procs: floating world-space labels driven by the Cosmic API's player.enchant_proc hook.
 		FloatingTextRenderer.init();

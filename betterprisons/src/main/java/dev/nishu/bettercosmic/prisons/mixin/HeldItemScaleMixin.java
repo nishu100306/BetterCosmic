@@ -35,7 +35,7 @@ public class HeldItemScaleMixin {
 		if (stack.isEmpty()) {
 			return 1.0f;
 		}
-		String name = stack.getItem().toString().toLowerCase();
+		String name = stack.getItem().getDescriptionId().toLowerCase();
 		if (name.contains("pickaxe")) {
 			return BetterPrisonsClient.config.heldItemPickaxeScale / 100.0f;
 		}

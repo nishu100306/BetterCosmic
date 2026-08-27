@@ -18,6 +18,10 @@ public final class MessageNotifications {
 	private static final Pattern PM_PATTERN =
 			Pattern.compile("\\[.*?]\\s*\\[.+?(?:\\s*->\\s*|\\s+to\\s+)me].*");
 
+	// Whole-word username matcher, cached and rebuilt only when the username changes.
+	private static String cachedUsername;
+	private static Pattern mentionPattern;
+
 	private MessageNotifications() {}
 
 	/** Handles one received game-chat line (raw, with §-codes intact). */
@@ -52,8 +56,12 @@ public final class MessageNotifications {
 		if (username == null || username.isEmpty()) {
 			return;
 		}
-		// Whole-word, case-insensitive match of the username.
-		Matcher matcher = Pattern.compile("(?i)(?<![\\w])" + Pattern.quote(username) + "(?![\\w])").matcher(text);
+		// Whole-word, case-insensitive match of the username (pattern cached per username).
+		if (!username.equals(cachedUsername)) {
+			cachedUsername = username;
+			mentionPattern = Pattern.compile("(?i)(?<![\\w])" + Pattern.quote(username) + "(?![\\w])");
+		}
+		Matcher matcher = mentionPattern.matcher(text);
 		if (!matcher.find()) {
 			return;
 		}

@@ -379,20 +379,7 @@ public class PrisonsConfig extends BetterCosmicConfig {
 	public boolean gangPingDistanceScaling = true;
 	public boolean gangPingShowNonGang = false;
 
-	// ---- Minimap ----
-	public boolean minimapEnabled = false;
-	public int minimapX = 5;
-	public int minimapY = 5;
-	public int minimapScale = 100;
-	public int minimapSize = 128;
-	public int minimapPixelsPerBlock = 1;
-	public boolean minimapCircleShape = true;
-	public boolean minimapRotating = false;
-	public boolean minimapShowWaypoints = true;
-	public boolean minimapShowCoords = true;
-	public int minimapBorderColor = 0xFFFFFF;
-	public int minimapBorderOpacity = 220;
-	public int minimapBorderThickness = 2;
+	// (Minimap HUD is out of scope — its config fields were dropped along with the feature.)
 
 	// ---- Notifications (per-NotificationType.id, absent = registry default) ----
 	public Map<String, Boolean> notificationEnabled = new HashMap<>();

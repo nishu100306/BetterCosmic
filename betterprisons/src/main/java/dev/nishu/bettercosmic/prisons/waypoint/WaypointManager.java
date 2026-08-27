@@ -7,9 +7,13 @@ import net.minecraft.client.Minecraft;
 
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.lang.reflect.Type;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -90,10 +94,30 @@ public class WaypointManager {
 		}
 	}
 
+	/**
+	 * Persists atomically (temp file + move) so a crash mid-write can't truncate the store, and writes
+	 * only worlds that still have waypoints — {@code computeIfAbsent} leaves empty lists behind just from
+	 * visiting or rendering a world, and those shouldn't clutter the file.
+	 */
 	public void save() {
 		WAYPOINTS_FILE.getParentFile().mkdirs();
-		try (FileWriter writer = new FileWriter(WAYPOINTS_FILE)) {
-			GSON.toJson(worldWaypoints, writer);
+		Map<String, List<CustomWaypoint>> toWrite = new LinkedHashMap<>();
+		for (Map.Entry<String, List<CustomWaypoint>> entry : worldWaypoints.entrySet()) {
+			if (!entry.getValue().isEmpty()) {
+				toWrite.put(entry.getKey(), entry.getValue());
+			}
+		}
+		try {
+			Path target = WAYPOINTS_FILE.toPath();
+			Path tmp = Files.createTempFile(target.getParent(), "waypoints", ".json.tmp");
+			try (Writer writer = Files.newBufferedWriter(tmp)) {
+				GSON.toJson(toWrite, writer);
+			}
+			try {
+				Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+			} catch (AtomicMoveNotSupportedException ex) {
+				Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+			}
 		} catch (IOException e) {
 			// Best-effort persistence — a failed save must not crash the client
 		}
@@ -160,7 +184,7 @@ public class WaypointManager {
 
 	// ---- Event waypoint helpers (auto-added from the Events HUD) ----
 
-	private static final String OVERWORLD = "minecraft:overworld";
+	private static final String OVERWORLD = dev.nishu.bettercosmic.prisons.PrisonWorlds.OVERWORLD;
 
 	/** Removes all event waypoints from every world (called on world join to clear stale entries). */
 	public void clearAllEventWaypoints() {

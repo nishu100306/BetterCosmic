@@ -52,7 +52,8 @@ public final class PrisonsPeacefulMiningPolicy implements PeacefulMining.Policy 
 
 	private static boolean inPrisonbreak(Minecraft client) {
 		return client.level != null
-				&& "minecraft:prisonbreak".equals(client.level.dimension().identifier().toString());
+				&& dev.nishu.bettercosmic.prisons.PrisonWorlds.PRISONBREAK
+						.equals(client.level.dimension().identifier().toString());
 	}
 
 	private static boolean isEnabledTool(ItemStack stack) {
