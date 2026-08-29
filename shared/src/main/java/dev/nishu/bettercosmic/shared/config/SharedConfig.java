@@ -47,6 +47,13 @@ public class SharedConfig extends BetterCosmicConfig {
 	/** Format large numbers with commas (1,234,567) instead of compact suffixes (1.2M). */
 	public boolean useCommaFormatting = false;
 
+	/**
+	 * The config profile (network) last viewed in the config screen, as a {@link
+	 * dev.nishu.bettercosmic.shared.server.Network} name. Used as the selector's default when the
+	 * client isn't connected to a recognised network; {@code null} until the player first switches.
+	 */
+	public String lastConfigProfile = null;
+
 	// ---- UI theme (compact token set, shared + persisted) ----
 	// The config UI derives its entire look from these eight ARGB tokens; see
 	// dev.nishu.bettercosmic.shared.ui.core.Theme, which copies them into static fields at load and

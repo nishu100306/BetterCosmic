@@ -3,6 +3,8 @@ package dev.nishu.bettercosmic.shared;
 import dev.nishu.bettercosmic.shared.command.DevCommands;
 import dev.nishu.bettercosmic.shared.config.SharedConfig;
 import dev.nishu.bettercosmic.shared.ui.ConfigUi;
+import dev.nishu.bettercosmic.shared.ui.GeneralPanel;
+import dev.nishu.bettercosmic.shared.ui.model.ConfigRegistry;
 import net.fabricmc.api.ClientModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +34,10 @@ public class BetterCosmicShared implements ClientModInitializer {
 
 		// Register the config-UI keybind (default I) that opens the shared config screen.
 		ConfigUi.init();
+
+		// Register the shared General panel once, as a global (all-profile) panel. Feature panels are
+		// registered by each mod under its own Network.
+		ConfigRegistry.register(GeneralPanel.create());
 
 		LOGGER.info("BetterCosmic Shared library initialized (config dir: {}).",
 				SharedConfig.configDir());

@@ -61,7 +61,6 @@ import dev.nishu.bettercosmic.shared.render.FloatingTextRenderer;
 import dev.nishu.bettercosmic.shared.render.WaypointRenderer;
 import dev.nishu.bettercosmic.shared.render.WorldSpaceTransform;
 import dev.nishu.bettercosmic.shared.server.Network;
-import dev.nishu.bettercosmic.shared.ui.ConfigUi;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigPanel;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigRegistry;
 import dev.nishu.bettercosmic.shared.ui.model.OptionGroup;
@@ -111,8 +110,8 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		sharedConfig = SharedConfig.get();
 		config = BetterCosmicConfig.load(PrisonsConfig.class);
 
-		// Brand the shared config screen and route toasts to the configured corner.
-		ConfigUi.setSubtitle("Prisons");
+		// Route toasts to the configured corner. (The config screen labels itself from its profile
+		// selector; BetterPrisons registers its panels under Network.PRISONS in registerPanels().)
 		ToastRenderer.setCornerSupplier(() -> config.toastCorner);
 		ToastRenderer.register();
 
@@ -384,20 +383,20 @@ public class BetterPrisonsClient implements ClientModInitializer {
 						.tooltip("Show each clue scroll's step number on the item.")));
 
 		ConfigRegistry.register(ConfigPanel.of("prisons-misc", "Misc",
-				"General BetterPrisons features", PanelIcon.GEAR, List.of(qol, search)));
+				"General BetterPrisons features", PanelIcon.GEAR, List.of(qol, search)), Network.PRISONS);
 
-		ConfigRegistry.register(EasyViewPanel.create());
-		ConfigRegistry.register(SatchelHudPanel.create());
-		ConfigRegistry.register(StatsHudPanel.create());
-		ConfigRegistry.register(CooldownHudPanel.create());
-		ConfigRegistry.register(EnchantHudPanel.create());
-		ConfigRegistry.register(EventsHudPanel.create());
-		ConfigRegistry.register(WaypointsPanel.create());
-		ConfigRegistry.register(GangPingsPanel.create());
-		ConfigRegistry.register(TooltipsPanel.create());
-		ConfigRegistry.register(QolPanel.create());
-		ConfigRegistry.register(NotificationsPanel.create());
-		ConfigRegistry.register(SearchPanel.create());
-		ConfigRegistry.register(PeacefulMiningPanel.create());
+		ConfigRegistry.register(EasyViewPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(SatchelHudPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(StatsHudPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(CooldownHudPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(EnchantHudPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(EventsHudPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(WaypointsPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(GangPingsPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(TooltipsPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(QolPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(NotificationsPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(SearchPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(PeacefulMiningPanel.create(), Network.PRISONS);
 	}
 }

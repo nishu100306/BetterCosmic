@@ -10,13 +10,20 @@ package dev.nishu.bettercosmic.shared.server;
  */
 public enum Network {
 
-	PRISONS("cosmicprisons.com"),
-	SKY("cosmicsky.net");
+	PRISONS("Prisons", "cosmicprisons.com"),
+	SKY("Sky", "cosmicsky.net");
 
+	private final String displayName;
 	private final String[] hosts;
 
-	Network(String... hosts) {
+	Network(String displayName, String... hosts) {
+		this.displayName = displayName;
 		this.hosts = hosts;
+	}
+
+	/** Human-readable name for the config UI (e.g. "Prisons"). */
+	public String displayName() {
+		return displayName;
 	}
 
 	/** The host suffixes that identify this network (lower-case, no port). */

@@ -4,8 +4,6 @@ import dev.nishu.bettercosmic.shared.config.BetterCosmicConfig;
 import dev.nishu.bettercosmic.shared.config.SharedConfig;
 import dev.nishu.bettercosmic.shared.easyview.EasyView;
 import dev.nishu.bettercosmic.shared.server.Network;
-import dev.nishu.bettercosmic.shared.ui.ConfigUi;
-import dev.nishu.bettercosmic.shared.ui.GeneralPanel;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigPanel;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigRegistry;
 import dev.nishu.bettercosmic.shared.ui.model.OptionGroup;
@@ -35,11 +33,9 @@ public class BetterSkyClient implements ClientModInitializer {
 		// EasyView: show potion trinket charges in the slot corner (only on Cosmic Sky).
 		EasyView.register(new TrinketChargesProvider(), Network.SKY);
 
-		// Config UI: brand the shared screen as "Sky" and register the panels. Trinkets is
-		// BetterSky's own feature panel; General is the shared panel (dev mode, formatting, theme).
-		// The placeholders are roadmap chips shown as "Coming soon" cards.
-		ConfigUi.setSubtitle("Sky");
-
+		// Config UI: register BetterSky's own feature panel under the Sky profile. The shared General
+		// panel (dev mode, formatting, theme) is registered by the shared library, and the header
+		// profile selector labels the screen — so nothing is branded here.
 		SkyConfig def = new SkyConfig(); // code defaults (so reset restores these, not the persisted values)
 		OptionGroup overlayGroup = new OptionGroup("Overlay", List.of(
 				Options.toggle("Charge overlay", def.trinketChargesOverlay,
@@ -66,16 +62,8 @@ public class BetterSkyClient implements ClientModInitializer {
 						.tooltip("Used only when Source is Custom.")
 		));
 		ConfigRegistry.register(ConfigPanel.of("trinkets", "Trinkets",
-				"Potion trinket charge overlay", PanelIcon.FLASK, List.of(overlayGroup, colorGroup)));
-
-		ConfigRegistry.register(GeneralPanel.create());
-
-		for (String soon : new String[] {
-				"HUD", "Waypoints", "Notifications", "Chat",
-				"Minimap", "Rendering", "Inventory", "Combat", "Events", "Misc" }) {
-			ConfigRegistry.register(
-					ConfigPanel.placeholder(soon.toLowerCase(), soon, PanelIcon.LOCK));
-		}
+				"Potion trinket charge overlay", PanelIcon.FLASK, List.of(overlayGroup, colorGroup)),
+				Network.SKY);
 
 		BetterSky.LOGGER.info("Loaded configs: {} and {}",
 				sharedConfig.configPath(), config.configPath());

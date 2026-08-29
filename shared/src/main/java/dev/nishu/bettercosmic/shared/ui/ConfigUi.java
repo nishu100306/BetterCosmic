@@ -13,21 +13,25 @@ import org.lwjgl.glfw.GLFW;
  * and opens the single {@link ConfigScreen} that lists every mod's registered panels.
  *
  * <p>Lives in {@code :shared} so BetterSky and BetterPrisons share one keybind and one screen. The
- * opening mod sets its brand tag via {@link #setSubtitle} (BetterSky → "Sky"). ModMenu, when present,
- * opens the same screen through {@link #create}.
+ * screen labels itself from its in-header profile selector (Prisons / Sky), so no brand tag is passed
+ * in. ModMenu, when present, opens the same screen through {@link #create}.
  */
 public final class ConfigUi {
 
 	public static final String KEY_OPEN = "key.bettercosmic.open_config";
 
 	private static KeyMapping openKey;
-	private static String subtitle = "Cosmic";
 
 	private ConfigUi() {}
 
-	/** Sets the header brand tag (e.g. "Sky"). Call before/at client init. */
+	/**
+	 * @deprecated The config screen now derives its header label from the active profile selector, so
+	 *     there is no per-mod subtitle to set. Retained as a no-op while the consuming mods are merged;
+	 *     remove once no caller remains.
+	 */
+	@Deprecated
 	public static void setSubtitle(String s) {
-		subtitle = s == null ? "" : s;
+		// no-op
 	}
 
 	/**
@@ -63,6 +67,6 @@ public final class ConfigUi {
 
 	/** Builds the config screen (used by the keybind and by ModMenu). */
 	public static Screen create(Screen parent) {
-		return new ConfigScreen(parent, subtitle);
+		return new ConfigScreen(parent);
 	}
 }

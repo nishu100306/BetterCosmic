@@ -1,7 +1,10 @@
 package dev.nishu.bettercosmic.shared.ui.screen;
 
+import dev.nishu.bettercosmic.shared.config.SharedConfig;
 import dev.nishu.bettercosmic.shared.hud.HudEditorScreen;
 import dev.nishu.bettercosmic.shared.hud.HudRegistry;
+import dev.nishu.bettercosmic.shared.server.Network;
+import dev.nishu.bettercosmic.shared.server.ServerContext;
 import dev.nishu.bettercosmic.shared.ui.core.OverlayLayer;
 import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import dev.nishu.bettercosmic.shared.ui.core.UiSounds;
@@ -36,21 +39,45 @@ public final class ConfigScreen extends Screen {
 	private static final int FOOTER = 26;
 
 	private final Screen parent;
-	private final String subtitle;
 
 	private final OverlayLayer overlay = new OverlayLayer();
 	private PanelGrid grid;
 	private Pager pager;
 
+	/** The network profile whose panels are shown (plus global panels). See {@link #initialProfile()}. */
+	private Network profile;
+
 	private int x0, y0;
 	private int resetX, resetW, doneX, doneW; // header/footer button hit-rects (y derived)
 	private int hudX, hudW; // footer "HUD editor" button (only shown when HUDs are registered)
+	private int prisonsX, prisonsW, skyX, skyW; // header profile-selector hit-rects (y derived)
 	private boolean resetArmed; // "Reset all" needs a confirming second click
 
-	public ConfigScreen(Screen parent, String subtitle) {
+	public ConfigScreen(Screen parent) {
 		super(Component.literal("BetterCosmic"));
 		this.parent = parent;
-		this.subtitle = subtitle == null ? "" : subtitle;
+		this.profile = initialProfile();
+	}
+
+	/**
+	 * The profile to open on: the connected network if recognised, else the last one the player viewed
+	 * (persisted in {@link SharedConfig#lastConfigProfile}), else {@link Network#PRISONS}. This lets the
+	 * screen default to where you are while still allowing off-server editing of either profile.
+	 */
+	private static Network initialProfile() {
+		Network detected = ServerContext.detected();
+		if (detected != null) {
+			return detected;
+		}
+		String saved = SharedConfig.get().lastConfigProfile;
+		if (saved != null) {
+			try {
+				return Network.valueOf(saved);
+			} catch (IllegalArgumentException ignored) {
+				// stale/renamed value — fall through to the default
+			}
+		}
+		return Network.PRISONS;
 	}
 
 	@Override
@@ -60,9 +87,14 @@ public final class ConfigScreen extends Screen {
 		x0 = (this.width - W) / 2;
 		y0 = (this.height - H) / 2;
 
-		grid = new PanelGrid(ConfigRegistry.panels(), this::openPanel);
-		grid.layout(x0 + PAD, y0 + HEADER + PAD, W - 2 * PAD, H - HEADER - FOOTER - 2 * PAD);
-		pager = new Pager(() -> grid.prevPage(), () -> grid.nextPage());
+		buildGrid();
+
+		// Header profile selector ("Prisons" / "Sky"), just right of the brand name.
+		int selX = x0 + PAD + 12 + RenderUtils.textWidth("BetterCosmic") + 10;
+		prisonsX = selX;
+		prisonsW = RenderUtils.textWidth(Network.PRISONS.displayName());
+		skyX = prisonsX + prisonsW + 12; // gap holds the divider dot
+		skyW = RenderUtils.textWidth(Network.SKY.displayName());
 
 		resetW = RenderUtils.textWidth("Reset all") + 12;
 		resetX = x0 + W - PAD - resetW;
@@ -72,6 +104,27 @@ public final class ConfigScreen extends Screen {
 		// "HUD editor" sits just left of Done, and only when a mod has registered HUDs.
 		hudW = RenderUtils.textWidth("HUD editor") + 16;
 		hudX = doneX - 6 - hudW;
+	}
+
+	/** (Re)builds the panel grid for the current {@link #profile}, scoping to its panels plus globals. */
+	private void buildGrid() {
+		grid = new PanelGrid(ConfigRegistry.panels(profile), this::openPanel);
+		grid.layout(x0 + PAD, y0 + HEADER + PAD, W - 2 * PAD, H - HEADER - FOOTER - 2 * PAD);
+		pager = new Pager(() -> grid.prevPage(), () -> grid.nextPage());
+	}
+
+	/** Switches the viewed profile, persisting it and rebuilding the grid from page one. */
+	private void switchProfile(Network network) {
+		if (network == profile) {
+			return;
+		}
+		UiSounds.click();
+		profile = network;
+		SharedConfig c = SharedConfig.get();
+		c.lastConfigProfile = network.name();
+		c.save();
+		resetArmed = false;
+		buildGrid();
 	}
 
 	private void openPanel(ConfigPanel panel) {
@@ -135,10 +188,15 @@ public final class ConfigScreen extends Screen {
 
 		int nameX = x0 + PAD + 12;
 		RenderUtils.text(g, "BetterCosmic", nameX, textY, Theme.text);
-		if (!subtitle.isEmpty()) {
-			int subX = nameX + RenderUtils.textWidth("BetterCosmic") + 6;
-			RenderUtils.text(g, subtitle.toUpperCase(), subX, textY, Theme.muted);
-		}
+
+		// Profile selector: the active network in accent, the other muted/hovered. Clicking switches.
+		boolean pHover = RenderUtils.hit(mouseX, mouseY, prisonsX, y0 + 6, prisonsW, 14);
+		boolean sHover = RenderUtils.hit(mouseX, mouseY, skyX, y0 + 6, skyW, 14);
+		RenderUtils.text(g, Network.PRISONS.displayName(), prisonsX, textY,
+			profile == Network.PRISONS ? Theme.accent : (pHover ? Theme.text : Theme.muted));
+		RenderUtils.text(g, "·", prisonsX + prisonsW + 4, textY, Theme.faint);
+		RenderUtils.text(g, Network.SKY.displayName(), skyX, textY,
+			profile == Network.SKY ? Theme.accent : (sHover ? Theme.text : Theme.muted));
 
 		// "Reset all" — two-click arm: first click shows "Confirm?", second resets everything.
 		boolean rHover = RenderUtils.hit(mouseX, mouseY, resetX, y0 + 6, resetW, 14);
@@ -173,6 +231,15 @@ public final class ConfigScreen extends Screen {
 		double my = event.y();
 		int button = event.button();
 		if (overlay.mouseClicked(mx, my, button)) {
+			return true;
+		}
+		// Profile selector — switch which network's panels the grid shows.
+		if (button == 0 && RenderUtils.hit(mx, my, prisonsX, y0 + 6, prisonsW, 14)) {
+			switchProfile(Network.PRISONS);
+			return true;
+		}
+		if (button == 0 && RenderUtils.hit(mx, my, skyX, y0 + 6, skyW, 14)) {
+			switchProfile(Network.SKY);
 			return true;
 		}
 		// "Reset all" — arm on first click, reset on the confirming second click.
