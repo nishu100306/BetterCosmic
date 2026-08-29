@@ -1,5 +1,7 @@
 package dev.nishu.bettercosmic.shared.render;
 
+import dev.nishu.bettercosmic.shared.server.Network;
+import dev.nishu.bettercosmic.shared.server.ServerContext;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -60,13 +62,21 @@ public final class WaypointRenderer {
 	private static final int NUDGE_STEP = 26;
 	private static final int MAX_NUDGES = 8;
 
-	private static final List<Source> SOURCES = new ArrayList<>();
+	/** A registered source paired with the network it belongs to ({@code null} = always active). */
+	private record SourceEntry(Source source, Network network) {}
+
+	private static final List<SourceEntry> SOURCES = new ArrayList<>();
 
 	private WaypointRenderer() {}
 
 	/** Registers a target source. */
 	public static void addSource(Source source) {
-		SOURCES.add(source);
+		addSource(source, null);
+	}
+
+	/** Registers a target source owned by {@code network}; it draws only while that network is active. */
+	public static void addSource(Source source, Network network) {
+		SOURCES.add(new SourceEntry(source, network));
 	}
 
 	/** Hooks the HUD render pass. Call once at client init. */
@@ -106,10 +116,13 @@ public final class WaypointRenderer {
 		Font font = client.font;
 
 		List<Entry> entries = new ArrayList<>();
-		for (Source source : SOURCES) {
+		for (SourceEntry sourceEntry : SOURCES) {
+			if (!ServerContext.isActive(sourceEntry.network())) {
+				continue;
+			}
 			List<EdgeTarget> targets;
 			try {
-				targets = source.targets();
+				targets = sourceEntry.source().targets();
 			} catch (Exception e) {
 				continue;
 			}

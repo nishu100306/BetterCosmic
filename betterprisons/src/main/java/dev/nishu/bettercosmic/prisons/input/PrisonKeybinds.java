@@ -37,6 +37,15 @@ public final class PrisonKeybinds {
 		waypoints = KeyBinds.register("key.betterprisons.waypoints", GLFW.GLFW_KEY_UNKNOWN, category);
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (!dev.nishu.bettercosmic.prisons.PrisonsGate.active()) {
+				// Off-server: drain any queued presses so they don't fire on reconnect, then do nothing.
+				resetStats.consumeClick();
+				pauseStats.consumeClick();
+				gangPing.consumeClick();
+				waypoints.consumeClick();
+				gangPingBlock.consumeClick();
+				return;
+			}
 			while (resetStats.consumeClick()) {
 				if (BetterPrisonsClient.statsHud != null) {
 					BetterPrisonsClient.statsHud.resetTracking();

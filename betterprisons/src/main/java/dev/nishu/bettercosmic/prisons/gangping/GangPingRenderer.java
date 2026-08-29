@@ -1,5 +1,6 @@
 package dev.nishu.bettercosmic.prisons.gangping;
 
+import dev.nishu.bettercosmic.prisons.PrisonsGate;
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import dev.nishu.bettercosmic.prisons.config.PrisonsConfig;
 import dev.nishu.bettercosmic.prisons.waypoint.WaypointManager;
@@ -78,7 +79,7 @@ public final class GangPingRenderer {
 
 	private static void render(GuiGraphics ctx) {
 		PrisonsConfig c = BetterPrisonsClient.config;
-		if (c == null || !c.gangPingEnabled) {
+		if (c == null || !c.gangPingEnabled || !PrisonsGate.active()) {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();

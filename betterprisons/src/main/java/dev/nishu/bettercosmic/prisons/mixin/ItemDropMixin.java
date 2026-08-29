@@ -1,5 +1,6 @@
 package dev.nishu.bettercosmic.prisons.mixin;
 
+import dev.nishu.bettercosmic.prisons.PrisonsGate;
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -19,6 +20,9 @@ public class ItemDropMixin {
 
 	@Inject(method = "drop(Z)Z", at = @At("HEAD"), cancellable = true)
 	private void bettercosmic$confirmPickaxeDrop(boolean entireStack, CallbackInfoReturnable<Boolean> cir) {
+		if (!PrisonsGate.active()) {
+			return;
+		}
 		LocalPlayer player = (LocalPlayer) (Object) this;
 		ItemStack stack = player.getInventory().getSelectedItem();
 		if (!BetterPrisonsClient.pickaxeDropConfirmation.canDrop(stack)) {

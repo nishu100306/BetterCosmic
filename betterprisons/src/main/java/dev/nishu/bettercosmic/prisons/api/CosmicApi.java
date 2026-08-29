@@ -87,6 +87,9 @@ public final class CosmicApi {
 	}
 
 	private static void sendHello() {
+		if (!dev.nishu.bettercosmic.prisons.PrisonsGate.active()) {
+			return; // don't announce ourselves to a non-Prisons server
+		}
 		if (BetterPrisonsClient.config == null || !BetterPrisonsClient.config.cosmicApiEnabled) {
 			return;
 		}

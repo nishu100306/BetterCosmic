@@ -3,6 +3,7 @@ package dev.nishu.bettercosmic.sky.client;
 import dev.nishu.bettercosmic.shared.config.BetterCosmicConfig;
 import dev.nishu.bettercosmic.shared.config.SharedConfig;
 import dev.nishu.bettercosmic.shared.easyview.EasyView;
+import dev.nishu.bettercosmic.shared.server.Network;
 import dev.nishu.bettercosmic.shared.ui.ConfigUi;
 import dev.nishu.bettercosmic.shared.ui.GeneralPanel;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigPanel;
@@ -31,8 +32,8 @@ public class BetterSkyClient implements ClientModInitializer {
 		sharedConfig = SharedConfig.get();
 		config = BetterCosmicConfig.load(SkyConfig.class);
 
-		// EasyView: show potion trinket charges in the slot corner.
-		EasyView.register(new TrinketChargesProvider());
+		// EasyView: show potion trinket charges in the slot corner (only on Cosmic Sky).
+		EasyView.register(new TrinketChargesProvider(), Network.SKY);
 
 		// Config UI: brand the shared screen as "Sky" and register the panels. Trinkets is
 		// BetterSky's own feature panel; General is the shared panel (dev mode, formatting, theme).

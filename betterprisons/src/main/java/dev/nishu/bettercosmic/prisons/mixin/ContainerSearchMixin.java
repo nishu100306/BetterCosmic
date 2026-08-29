@@ -3,6 +3,7 @@ package dev.nishu.bettercosmic.prisons.mixin;
 import dev.nishu.bettercosmic.prisons.chestsearch.ChestSearchFilterRule;
 import dev.nishu.bettercosmic.prisons.chestsearch.ChestSearchFilterState;
 import dev.nishu.bettercosmic.prisons.chestsearch.ChestSearchState;
+import dev.nishu.bettercosmic.prisons.PrisonsGate;
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -44,7 +45,7 @@ public abstract class ContainerSearchMixin extends Screen {
 
 	@Inject(method = "init", at = @At("TAIL"))
 	private void betterprisons$init(CallbackInfo ci) {
-		if (!BetterPrisonsClient.config.chestSearchEnabled) {
+		if (!PrisonsGate.active() || !BetterPrisonsClient.config.chestSearchEnabled) {
 			return;
 		}
 		betterprisons$buildSearchBar();
@@ -154,7 +155,7 @@ public abstract class ContainerSearchMixin extends Screen {
 
 	@Inject(method = "render", at = @At("TAIL"))
 	private void betterprisons$renderSidebarBackdrop(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-		if (!BetterPrisonsClient.config.chestSearchEnabled || !ChestSearchFilterState.sidebarOpen) {
+		if (!PrisonsGate.active() || !BetterPrisonsClient.config.chestSearchEnabled || !ChestSearchFilterState.sidebarOpen) {
 			return;
 		}
 		int sidebarW = 140;
@@ -170,7 +171,7 @@ public abstract class ContainerSearchMixin extends Screen {
 
 	@Inject(method = "mouseClicked", at = @At("HEAD"))
 	private void betterprisons$clearFocusOnOutsideClick(MouseButtonEvent event, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
-		if (!BetterPrisonsClient.config.chestSearchEnabled) {
+		if (!PrisonsGate.active() || !BetterPrisonsClient.config.chestSearchEnabled) {
 			return;
 		}
 		if (this.getFocused() instanceof EditBox field && !field.isMouseOver(event.x(), event.y())) {
@@ -181,7 +182,7 @@ public abstract class ContainerSearchMixin extends Screen {
 
 	@Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
 	private void betterprisons$keyPressed(KeyEvent event, CallbackInfoReturnable<Boolean> cir) {
-		if (!BetterPrisonsClient.config.chestSearchEnabled) {
+		if (!PrisonsGate.active() || !BetterPrisonsClient.config.chestSearchEnabled) {
 			return;
 		}
 		if (event.key() == 256) { // GLFW_KEY_ESCAPE — let escape close the screen normally

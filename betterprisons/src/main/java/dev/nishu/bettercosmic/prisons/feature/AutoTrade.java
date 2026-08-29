@@ -1,5 +1,6 @@
 package dev.nishu.bettercosmic.prisons.feature;
 
+import dev.nishu.bettercosmic.prisons.PrisonsGate;
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.client.Minecraft;
@@ -26,7 +27,8 @@ public final class AutoTrade {
 					|| !player.isShiftKeyDown()) {
 				return InteractionResult.PASS;
 			}
-			if (!BetterPrisonsClient.config.autoTradeEnabled) {
+			if (!PrisonsGate.active()
+					|| !BetterPrisonsClient.config.autoTradeEnabled) {
 				return InteractionResult.PASS;
 			}
 			Minecraft client = Minecraft.getInstance();

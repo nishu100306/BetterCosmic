@@ -1,6 +1,7 @@
 package dev.nishu.bettercosmic.prisons.render;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import dev.nishu.bettercosmic.prisons.PrisonsGate;
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import dev.nishu.bettercosmic.shared.render.PositionColorLayers;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
@@ -39,7 +40,7 @@ public final class BlinkTrinketRenderer {
 	}
 
 	private static void render(WorldRenderContext ctx) {
-		if (!BetterPrisonsClient.config.blinkOverlayEnabled) {
+		if (!PrisonsGate.active() || !BetterPrisonsClient.config.blinkOverlayEnabled) {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();

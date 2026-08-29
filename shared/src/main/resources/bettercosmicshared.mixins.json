@@ -8,7 +8,8 @@
 		"GameRendererFovMixin",
 		"GameRendererPeacefulMiningMixin",
 		"GuiMixin",
-		"LivingEntityRendererPeacefulMiningMixin"
+		"LivingEntityRendererPeacefulMiningMixin",
+		"PlayerTabOverlayAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 1

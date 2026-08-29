@@ -1,5 +1,7 @@
 package dev.nishu.bettercosmic.shared.render;
 
+import dev.nishu.bettercosmic.shared.server.Network;
+import dev.nishu.bettercosmic.shared.server.ServerContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.Minecraft;
@@ -42,13 +44,21 @@ public final class BeaconBeamRenderer {
 	// Angular half-width scale: keeps the beam ~5 screen px wide at typical FOV across all distances.
 	private static final float BEAM_DIST_SCALE = 0.005f;
 
-	private static final List<BeamSource> SOURCES = new ArrayList<>();
+	/** A registered beam source paired with the network it belongs to ({@code null} = always active). */
+	private record SourceEntry(BeamSource source, Network network) {}
+
+	private static final List<SourceEntry> SOURCES = new ArrayList<>();
 
 	private BeaconBeamRenderer() {}
 
 	/** Registers a beam source. Each frame all sources are drawn. */
 	public static void addSource(BeamSource source) {
-		SOURCES.add(source);
+		addSource(source, null);
+	}
+
+	/** Registers a beam source owned by {@code network}; it draws only while that network is active. */
+	public static void addSource(BeamSource source, Network network) {
+		SOURCES.add(new SourceEntry(source, network));
 	}
 
 	/** Hooks the world-render pass. Call once at client init. */
@@ -70,10 +80,13 @@ public final class BeaconBeamRenderer {
 		}
 		Vec3 camera = client.gameRenderer.getMainCamera().position();
 
-		for (BeamSource source : SOURCES) {
+		for (SourceEntry sourceEntry : SOURCES) {
+			if (!ServerContext.isActive(sourceEntry.network())) {
+				continue;
+			}
 			List<Beam> beams;
 			try {
-				beams = source.beams();
+				beams = sourceEntry.source().beams();
 			} catch (Exception e) {
 				continue; // a misbehaving source must never break world rendering
 			}

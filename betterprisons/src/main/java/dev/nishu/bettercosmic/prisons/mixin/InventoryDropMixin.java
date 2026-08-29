@@ -1,5 +1,6 @@
 package dev.nishu.bettercosmic.prisons.mixin;
 
+import dev.nishu.bettercosmic.prisons.PrisonsGate;
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -24,7 +25,8 @@ public class InventoryDropMixin {
 
 	@Inject(method = "slotClicked", at = @At("HEAD"), cancellable = true)
 	private void bettercosmic$blockPickaxeDrop(Slot slot, int slotId, int button, ClickType actionType, CallbackInfo ci) {
-		if (!BetterPrisonsClient.config.pickaxeDropConfirmationEnabled
+		if (!PrisonsGate.active()
+				|| !BetterPrisonsClient.config.pickaxeDropConfirmationEnabled
 				|| !BetterPrisonsClient.config.pickaxeDropDragBlockEnabled) {
 			return;
 		}

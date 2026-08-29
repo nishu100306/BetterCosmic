@@ -1,5 +1,6 @@
 package dev.nishu.bettercosmic.prisons.mixin;
 
+import dev.nishu.bettercosmic.prisons.PrisonsGate;
 import dev.nishu.bettercosmic.prisons.enchants.SuperBreakerDetector;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.FlameParticle;
@@ -22,6 +23,9 @@ public class SuperBreakerParticleMixin {
 
 	@Inject(method = "add", at = @At("HEAD"))
 	private void betterprisons$detectSuperBreakerParticle(Particle particle, CallbackInfo ci) {
+		if (!PrisonsGate.active()) {
+			return;
+		}
 		if (!(particle instanceof FlameParticle || particle instanceof SpellParticle)) {
 			return;
 		}

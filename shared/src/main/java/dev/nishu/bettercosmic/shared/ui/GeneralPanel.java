@@ -33,7 +33,11 @@ public final class GeneralPanel {
 			Options.toggle("Developer mode", d.developerMode,
 				() -> c.developerMode,
 				v -> { c.developerMode = v; c.save(); })
-				.tooltip("Enables the shared dev commands (/bitem)."),
+				.tooltip("Enables the shared dev commands (/bcitem)."),
+			Options.toggle("Restrict to server", d.restrictFeaturesToServer,
+				() -> c.restrictFeaturesToServer,
+				v -> { c.restrictFeaturesToServer = v; c.save(); })
+				.tooltip("Run each mod's features only on its own Cosmic server. Off = everywhere."),
 			Options.toggle("Comma number format", d.useCommaFormatting,
 				() -> c.useCommaFormatting,
 				v -> { c.useCommaFormatting = v; c.save(); })

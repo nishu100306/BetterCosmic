@@ -1,5 +1,6 @@
 package dev.nishu.bettercosmic.prisons.mixin;
 
+import dev.nishu.bettercosmic.prisons.PrisonsGate;
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -24,6 +25,9 @@ public class LocalPlayerHurtMixin {
 
 	@Inject(method = "handleDamageEvent", at = @At("TAIL"))
 	private void bettercosmic$resetCombatOnHurt(ClientboundDamageEventPacket packet, CallbackInfo ci) {
+		if (!PrisonsGate.active()) {
+			return;
+		}
 		Minecraft client = Minecraft.getInstance();
 		if (client.player == null || client.level == null || BetterPrisonsClient.cooldownHud == null) {
 			return;

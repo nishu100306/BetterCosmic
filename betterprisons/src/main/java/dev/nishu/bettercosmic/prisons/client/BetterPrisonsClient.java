@@ -2,6 +2,7 @@ package dev.nishu.bettercosmic.prisons.client;
 
 import dev.nishu.bettercosmic.prisons.BetterPrisons;
 import dev.nishu.bettercosmic.prisons.PrisonWorlds;
+import dev.nishu.bettercosmic.prisons.PrisonsGate;
 import dev.nishu.bettercosmic.prisons.api.CosmicApi;
 import dev.nishu.bettercosmic.prisons.chestsearch.ChestSearchTintProvider;
 import dev.nishu.bettercosmic.prisons.chestsearch.ClueScrollProvider;
@@ -59,6 +60,7 @@ import dev.nishu.bettercosmic.shared.render.BeaconBeamRenderer;
 import dev.nishu.bettercosmic.shared.render.FloatingTextRenderer;
 import dev.nishu.bettercosmic.shared.render.WaypointRenderer;
 import dev.nishu.bettercosmic.shared.render.WorldSpaceTransform;
+import dev.nishu.bettercosmic.shared.server.Network;
 import dev.nishu.bettercosmic.shared.ui.ConfigUi;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigPanel;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigRegistry;
@@ -134,13 +136,17 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		// Key bindings (reset/pause Stats HUD, ...).
 		PrisonKeybinds.register();
 
-		// Developer/debug commands (gated behind the shared /bdev developer mode).
+		// Developer/debug commands (gated behind the shared /bcdev developer mode).
 		PrisonDevCommands.register();
 
 		// Feed the Cooldown HUD from command sends and chat messages (replaces BP's chat mixins).
-		ClientSendMessageEvents.COMMAND.register(command -> cooldownHud.onCommandSent("/" + command));
+		ClientSendMessageEvents.COMMAND.register(command -> {
+			if (PrisonsGate.active()) {
+				cooldownHud.onCommandSent("/" + command);
+			}
+		});
 		ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
-			if (!overlay) {
+			if (!overlay && PrisonsGate.active()) {
 				String text = message.getString();
 				cooldownHud.onChatReceived(text);
 				enchantTracker.onChatMessage(text);
@@ -155,25 +161,34 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		WorldSpaceTransform.register();
 		BeaconBeamRenderer.init();
 		WaypointRenderer.init();
-		BeaconBeamRenderer.addSource(WaypointSuppliers::beams);
-		WaypointRenderer.addSource(WaypointSuppliers::edgeTargets);
+		BeaconBeamRenderer.addSource(WaypointSuppliers::beams, Network.PRISONS);
+		WaypointRenderer.addSource(WaypointSuppliers::edgeTargets, Network.PRISONS);
 
 		// Gang pings: screen markers (player heads + info panel) + beacon beams, expiring each tick.
 		GangPingRenderer.init();
-		BeaconBeamRenderer.addSource(GangPingRenderer::beams);
-		ClientTickEvents.END_CLIENT_TICK.register(client -> gangPingManager.tick());
+		BeaconBeamRenderer.addSource(GangPingRenderer::beams, Network.PRISONS);
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (PrisonsGate.active()) {
+				gangPingManager.tick();
+			}
+		});
 
 		// QoL: pickaxe drop protection (drop mixins call this), auto-trade (shift-right-click a player),
 		// and the Blink-trinket destination overlay. Held-item scale + bold titles are pure mixins.
 		pickaxeDropConfirmation = new PickaxeDropConfirmation();
-		ClientTickEvents.END_CLIENT_TICK.register(client -> pickaxeDropConfirmation.tick());
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (PrisonsGate.active()) {
+				pickaxeDropConfirmation.tick();
+			}
+		});
 		AutoTrade.register();
 		BlinkTrinketRenderer.register();
 
 		// PrisonBreak texture pack: bundle it and auto-apply/remove by world each tick.
 		PrisonbreakTexturePack.register();
 		ClientTickEvents.END_CLIENT_TICK.register(client ->
-				PrisonbreakTexturePack.update(PrisonWorlds.PRISONBREAK.equals(WaypointManager.detectWorldKey())));
+				PrisonbreakTexturePack.update(PrisonsGate.active()
+						&& PrisonWorlds.PRISONBREAK.equals(WaypointManager.detectWorldKey())));
 
 		// Enchant procs: floating world-space labels driven by the Cosmic API's player.enchant_proc hook.
 		FloatingTextRenderer.init();
@@ -185,6 +200,9 @@ public class BetterPrisonsClient implements ClientModInitializer {
 
 		// Track the current world for per-world custom waypoints; clear stale event waypoints on join.
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (!PrisonsGate.active()) {
+				return;
+			}
 			String world = WaypointManager.detectWorldKey();
 			if (!world.equals(waypointManager.getCurrentWorld())) {
 				waypointManager.setCurrentWorld(world);
@@ -199,15 +217,18 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		});
 
 		// EasyView inventory/hotbar overlays (drawn by the shared EasyView mixins).
-		EasyView.register(new EasyViewProvider());
+		EasyView.register(new EasyViewProvider(), Network.PRISONS);
 		// Item cooldown timers (pet / trinket / bandit box), centered on the item.
-		EasyView.register(new ItemCooldownProvider());
+		EasyView.register(new ItemCooldownProvider(), Network.PRISONS);
 		// Clue scroll step number (overlay) + chest-search match highlight (tint).
-		EasyView.register(new ClueScrollProvider());
-		EasyView.registerTint(new ChestSearchTintProvider());
+		EasyView.register(new ClueScrollProvider(), Network.PRISONS);
+		EasyView.registerTint(new ChestSearchTintProvider(), Network.PRISONS);
 
 		// Item tooltips: clue-scroll unmapped-step warning, enchant-book upgrade costs, gang-point expiry.
 		ItemTooltipCallback.EVENT.register((stack, tooltipContext, tooltipType, lines) -> {
+			if (!PrisonsGate.active()) {
+				return;
+			}
 			ClueScrollProvider.appendTooltip(stack, lines);
 			EnchantBookTooltip.append(stack, lines);
 			GangPointTooltip.append(stack, lines);
@@ -215,14 +236,14 @@ public class BetterPrisonsClient implements ClientModInitializer {
 
 		// Peaceful mining: register the prison policy and start the shared engine (ghost render +
 		// block-through targeting + interaction blocking live in :shared).
-		PeacefulMining.setPolicy(new PrisonsPeacefulMiningPolicy());
+		PeacefulMining.setPolicy(new PrisonsPeacefulMiningPolicy(), Network.PRISONS);
 		PeacefulMining.init();
 
 		// Refresh the Combat cooldown when you attack another player (being hit is handled by
 		// LocalPlayerHurtMixin). PASS so the hit is never consumed here.
 		AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-			if (world.isClientSide() && entity != player && entity instanceof net.minecraft.world.entity.player.Player
-					&& cooldownHud != null) {
+			if (PrisonsGate.active() && world.isClientSide() && entity != player
+					&& entity instanceof net.minecraft.world.entity.player.Player && cooldownHud != null) {
 				cooldownHud.resetCombatCooldown();
 			}
 			return net.minecraft.world.InteractionResult.PASS;
@@ -245,6 +266,9 @@ public class BetterPrisonsClient implements ClientModInitializer {
 			if (!soundListenerRegistered[0] && client.getSoundManager() != null) {
 				client.getSoundManager().addListener(new EnchantSoundListener());
 				soundListenerRegistered[0] = true;
+			}
+			if (!PrisonsGate.active()) {
+				return;
 			}
 			enchantTracker.tick(client);
 			// Super Breaker activation: correlate this tick's nearest flame/spell particle with the
@@ -271,7 +295,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 			config.satchelHudX = satchelHud.x;
 			config.satchelHudY = satchelHud.y;
 			config.save();
-		});
+		}, Network.PRISONS);
 
 		statsHud = new StatsHud();
 		statsHud.x = config.statsHudX;
@@ -283,7 +307,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 			config.statsHudX = statsHud.x;
 			config.statsHudY = statsHud.y;
 			config.save();
-		});
+		}, Network.PRISONS);
 
 		cooldownHud = new CooldownHud();
 		cooldownHud.loadFromDefinitions();
@@ -296,7 +320,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 			config.cooldownHudX = cooldownHud.x;
 			config.cooldownHudY = cooldownHud.y;
 			config.save();
-		});
+		}, Network.PRISONS);
 
 		enchantHud = new EnchantHud();
 		enchantHud.x = config.enchantHudX;
@@ -308,7 +332,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 			config.enchantHudX = enchantHud.x;
 			config.enchantHudY = enchantHud.y;
 			config.save();
-		});
+		}, Network.PRISONS);
 
 		eventsHud = new EventsHud();
 		eventsHud.x = config.eventsHudX;
@@ -320,12 +344,12 @@ public class BetterPrisonsClient implements ClientModInitializer {
 			config.eventsHudX = eventsHud.x;
 			config.eventsHudY = eventsHud.y;
 			config.save();
-		});
+		}, Network.PRISONS);
 
 		// Super Breaker Aura is crosshair-centered (config X/Y offsets), so it isn't drag-editable.
 		superBreakerAura = new SuperBreakerAura();
 		superBreakerAura.enabled = config.superBreakerAuraEnabled;
-		HudRegistry.register(superBreakerAura, () -> {}, false);
+		HudRegistry.register(superBreakerAura, () -> {}, false, Network.PRISONS);
 	}
 
 	/**

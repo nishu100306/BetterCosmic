@@ -27,7 +27,7 @@ public class BetterCosmicShared implements ClientModInitializer {
 		// and is available to every mod through SharedConfig.get().
 		SharedConfig.get();
 
-		// Register the shared dev commands (/bdev toggle + gated /bitem, ...).
+		// Register the shared dev commands (/bcdev toggle + gated /bcitem, ...).
 		DevCommands.register();
 
 		// Register the config-UI keybind (default I) that opens the shared config screen.

@@ -31,10 +31,18 @@ public class SharedConfig extends BetterCosmicConfig {
 
 	/**
 	 * Developer mode. When off (the default), the shared dev/debug commands are hidden and
-	 * unusable. Toggle it in-game with {@code /bdev}. See
+	 * unusable. Toggle it in-game with {@code /bcdev}. See
 	 * {@link dev.nishu.bettercosmic.shared.command.DevCommands}.
 	 */
 	public boolean developerMode = false;
+
+	/**
+	 * Restrict each mod's features to its own Cosmic network — BetterPrisons only on
+	 * {@code cosmicprisons.com}, BetterSky only on {@code cosmicsky.net}. When on (the default),
+	 * everywhere else only the config UI is available. Turn off to run every feature on every server
+	 * (legacy behaviour). See {@link dev.nishu.bettercosmic.shared.server.ServerContext}.
+	 */
+	public boolean restrictFeaturesToServer = true;
 
 	/** Format large numbers with commas (1,234,567) instead of compact suffixes (1.2M). */
 	public boolean useCommaFormatting = false;

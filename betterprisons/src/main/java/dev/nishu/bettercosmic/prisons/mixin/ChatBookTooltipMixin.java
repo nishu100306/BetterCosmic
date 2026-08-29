@@ -1,5 +1,6 @@
 package dev.nishu.bettercosmic.prisons.mixin;
 
+import dev.nishu.bettercosmic.prisons.PrisonsGate;
 import dev.nishu.bettercosmic.prisons.misc.EnchantBookTooltip;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -21,6 +22,9 @@ public class ChatBookTooltipMixin {
 	@Redirect(method = "renderComponentHoverEffect", at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/network/chat/HoverEvent$ShowText;value()Lnet/minecraft/network/chat/Component;"))
 	private Component bettercosmic$appendBookCost(HoverEvent.ShowText showText) {
+		if (!PrisonsGate.active()) {
+			return showText.value(); // off-server: leave the hover text untouched
+		}
 		return EnchantBookTooltip.appendChatHoverCost(showText.value());
 	}
 }

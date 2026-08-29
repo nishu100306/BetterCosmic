@@ -1,5 +1,7 @@
 package dev.nishu.bettercosmic.shared.easyview;
 
+import dev.nishu.bettercosmic.shared.server.Network;
+import dev.nishu.bettercosmic.shared.server.ServerContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -25,19 +27,34 @@ import java.util.List;
  */
 public final class EasyView {
 
-	private static final List<ItemOverlayProvider> PROVIDERS = new ArrayList<>();
-	private static final List<SlotTintProvider> TINTS = new ArrayList<>();
+	/** A registered provider paired with the network it belongs to ({@code null} = always active). */
+	private record OverlayEntry(ItemOverlayProvider provider, Network network) {}
+
+	private record TintEntry(SlotTintProvider provider, Network network) {}
+
+	private static final List<OverlayEntry> PROVIDERS = new ArrayList<>();
+	private static final List<TintEntry> TINTS = new ArrayList<>();
 
 	private EasyView() {}
 
 	/** Registers a provider. Multiple providers can draw to different corners of the same slot. */
 	public static void register(ItemOverlayProvider provider) {
-		PROVIDERS.add(provider);
+		register(provider, null);
+	}
+
+	/** Registers a provider owned by {@code network}; it draws only while that network is active. */
+	public static void register(ItemOverlayProvider provider, Network network) {
+		PROVIDERS.add(new OverlayEntry(provider, network));
 	}
 
 	/** Registers a slot-background tint provider (e.g. a search-match highlight). */
 	public static void registerTint(SlotTintProvider provider) {
-		TINTS.add(provider);
+		registerTint(provider, null);
+	}
+
+	/** Registers a tint provider owned by {@code network}; it draws only while that network is active. */
+	public static void registerTint(SlotTintProvider provider, Network network) {
+		TINTS.add(new TintEntry(provider, network));
 	}
 
 	/**
@@ -49,10 +66,13 @@ public final class EasyView {
 		if (TINTS.isEmpty() || stack.isEmpty()) {
 			return;
 		}
-		for (SlotTintProvider provider : TINTS) {
+		for (TintEntry entry : TINTS) {
+			if (!ServerContext.isActive(entry.network())) {
+				continue;
+			}
 			int tint;
 			try {
-				tint = provider.tint(stack);
+				tint = entry.provider().tint(stack);
 			} catch (Exception e) {
 				tint = 0; // a misbehaving provider must never break slot rendering
 			}
@@ -73,10 +93,13 @@ public final class EasyView {
 			return;
 		}
 		Font font = Minecraft.getInstance().font;
-		for (ItemOverlayProvider provider : PROVIDERS) {
+		for (OverlayEntry entry : PROVIDERS) {
+			if (!ServerContext.isActive(entry.network())) {
+				continue;
+			}
 			SlotOverlay overlay;
 			try {
-				overlay = provider.getOverlay(stack);
+				overlay = entry.provider().getOverlay(stack);
 			} catch (Exception e) {
 				overlay = null; // a misbehaving provider must never break slot rendering
 			}

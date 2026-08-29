@@ -1,6 +1,7 @@
 package dev.nishu.bettercosmic.prisons.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import dev.nishu.bettercosmic.prisons.PrisonsGate;
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -32,7 +33,7 @@ public class HeldItemScaleMixin {
 	}
 
 	private static float itemScale(ItemStack stack) {
-		if (stack.isEmpty()) {
+		if (stack.isEmpty() || !PrisonsGate.active()) {
 			return 1.0f;
 		}
 		String name = stack.getItem().getDescriptionId().toLowerCase();

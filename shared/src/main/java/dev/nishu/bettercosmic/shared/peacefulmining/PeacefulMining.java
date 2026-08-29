@@ -1,5 +1,7 @@
 package dev.nishu.bettercosmic.shared.peacefulmining;
 
+import dev.nishu.bettercosmic.shared.server.Network;
+import dev.nishu.bettercosmic.shared.server.ServerContext;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
@@ -40,16 +42,28 @@ public final class PeacefulMining {
 
 	private static Policy policy;
 
+	/** Owning network of the registered policy; peaceful mining is inert unless it is active. */
+	private static Network policyNetwork;
+
 	private PeacefulMining() {}
 
 	/** Registers the mod's policy. The last registration wins (one active policy per game). */
 	public static void setPolicy(Policy p) {
-		policy = p;
+		setPolicy(p, null);
 	}
 
-	/** Whether peaceful mining is globally active (per the registered policy). */
+	/**
+	 * Registers the mod's policy, owned by {@code network} — peaceful mining runs only while that
+	 * network is active ({@code null} = always). The last registration wins.
+	 */
+	public static void setPolicy(Policy p, Network network) {
+		policy = p;
+		policyNetwork = network;
+	}
+
+	/** Whether peaceful mining is globally active (per the registered policy and its network gate). */
 	public static boolean isActive() {
-		return policy != null && policy.isActive();
+		return policy != null && ServerContext.isActive(policyNetwork) && policy.isActive();
 	}
 
 	/** Ghost opacity (0–255), or fully opaque if no policy is set. */

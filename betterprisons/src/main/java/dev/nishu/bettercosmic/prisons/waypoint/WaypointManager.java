@@ -3,7 +3,7 @@ package dev.nishu.bettercosmic.prisons.waypoint;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import net.minecraft.client.Minecraft;
+import dev.nishu.bettercosmic.shared.util.WorldUtil;
 
 import java.io.File;
 import java.io.FileReader;
@@ -42,13 +42,12 @@ public class WaypointManager {
 
 	// ---- World management ----
 
-	/** The dimension key string of the world the client is currently in. */
+	/**
+	 * The dimension key string of the world the client is currently in. Delegates to the shared
+	 * {@link WorldUtil#detectWorldKey()}; kept here as a convenience alias for prisons' many call sites.
+	 */
 	public static String detectWorldKey() {
-		Minecraft client = Minecraft.getInstance();
-		if (client.level != null) {
-			return client.level.dimension().identifier().toString();
-		}
-		return "unknown";
+		return WorldUtil.detectWorldKey();
 	}
 
 	public void setCurrentWorld(String world) {

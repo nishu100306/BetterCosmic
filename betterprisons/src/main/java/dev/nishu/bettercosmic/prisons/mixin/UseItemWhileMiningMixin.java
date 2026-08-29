@@ -1,5 +1,6 @@
 package dev.nishu.bettercosmic.prisons.mixin;
 
+import dev.nishu.bettercosmic.prisons.PrisonsGate;
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
@@ -22,7 +23,8 @@ public class UseItemWhileMiningMixin {
 	@Redirect(method = "startUseItem", at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;isDestroying()Z"))
 	private boolean bettercosmic$allowUseWhileMining(MultiPlayerGameMode gameMode) {
-		if (BetterPrisonsClient.config != null && BetterPrisonsClient.config.useItemWhileMiningEnabled) {
+		if (PrisonsGate.active() && BetterPrisonsClient.config != null
+				&& BetterPrisonsClient.config.useItemWhileMiningEnabled) {
 			return false; // pretend we're not breaking a block → item use proceeds
 		}
 		return gameMode.isDestroying();

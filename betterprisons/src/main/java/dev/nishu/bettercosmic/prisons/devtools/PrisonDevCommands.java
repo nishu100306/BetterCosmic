@@ -8,43 +8,34 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import dev.nishu.bettercosmic.prisons.BetterPrisons;
 import dev.nishu.bettercosmic.prisons.chestsearch.ClueScrollProvider;
+import dev.nishu.bettercosmic.prisons.planet.PlanetDetector;
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import dev.nishu.bettercosmic.prisons.hud.EventsHud;
 import dev.nishu.bettercosmic.prisons.screen.WaypointsScreen;
 import dev.nishu.bettercosmic.prisons.waypoint.CustomWaypoint;
-import dev.nishu.bettercosmic.prisons.waypoint.WaypointManager;
 import dev.nishu.bettercosmic.shared.command.DevCommands;
-import dev.nishu.bettercosmic.shared.notification.ToastRenderer;
-import dev.nishu.bettercosmic.shared.render.FloatingTextRenderer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.scores.DisplaySlot;
-import net.minecraft.world.scores.Objective;
-import net.minecraft.world.scores.PlayerScoreEntry;
-import net.minecraft.world.scores.PlayerTeam;
-import net.minecraft.world.scores.Scoreboard;
 
 /**
  * BetterPrisons developer/debug commands (client-side, Brigadier), gated behind the shared developer
- * mode ({@code /bdev}) via the same {@link DevCommands#devModeEnabled} predicate the shared commands
- * use — so they are hidden from tab-completion until {@code /bdev on}, and the shared toggle's
+ * mode ({@code /bcdev}) via the same {@link DevCommands#devModeEnabled} predicate the shared commands
+ * use — so they are hidden from tab-completion until {@code /bcdev on}, and the shared toggle's
  * command-tree refresh reveals them immediately.
  *
  * <p>Ported from BetterPrisons' {@code devtools/DevCommands} (Yarn → Mojang). Commands whose
  * dependencies are not yet ported are intentionally omitted: {@code /bpitem} (now the shared
- * {@code /bitem}), {@code /calc} (EnergyCalculator), {@code /bptest} (gang pings), and
- * {@code /bploadcmd}.
+ * {@code /bcitem}), {@code /calc} (EnergyCalculator), {@code /bptest} (gang pings), and
+ * {@code /bploadcmd}. The generic {@code /bpfloat}, {@code /bptoast}, {@code /bpblock},
+ * {@code /bpscoreboard}, and {@code /bpworld} testers/inspectors have been promoted to the shared
+ * {@code /bcfloat}, {@code /bctoast}, {@code /bcblock}, {@code /bcscoreboard}, and {@code /bcworld}.
  */
 public final class PrisonDevCommands {
 
@@ -53,19 +44,6 @@ public final class PrisonDevCommands {
 	/** Hooks client command registration. Call once from the BetterPrisons client init. */
 	public static void register() {
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
-			// /bpblock — coordinates of the block under the crosshair.
-			dispatcher.register(ClientCommandManager.literal("bpblock")
-					.requires(DevCommands::devModeEnabled)
-					.executes(PrisonDevCommands::getBlockLookingAt));
-
-			// /bpworld — the current dimension key.
-			dispatcher.register(ClientCommandManager.literal("bpworld")
-					.requires(DevCommands::devModeEnabled)
-					.executes(ctx -> {
-						ctx.getSource().sendFeedback(Component.literal("§7Current world: §f" + WaypointManager.detectWorldKey()));
-						return 1;
-					}));
-
 			// /bpwaypoints — open the waypoints management screen.
 			dispatcher.register(ClientCommandManager.literal("bpwaypoints")
 					.requires(DevCommands::devModeEnabled)
@@ -75,47 +53,21 @@ public final class PrisonDevCommands {
 						return 1;
 					}));
 
-			// /bpscoreboard — dump the sidebar objective to the console.
-			dispatcher.register(ClientCommandManager.literal("bpscoreboard")
-					.requires(DevCommands::devModeEnabled)
-					.executes(PrisonDevCommands::dumpScoreboard));
-
 			// /bpclue — list the NBT step types of the held clue scroll.
 			dispatcher.register(ClientCommandManager.literal("bpclue")
 					.requires(DevCommands::devModeEnabled)
 					.executes(PrisonDevCommands::inspectClueScroll));
 
-			// /bpfloat [message] — spawn test world-space floating text at the player's target.
-			dispatcher.register(ClientCommandManager.literal("bpfloat")
+			// /bpplanet — the current prison planet, parsed from the tab-list header.
+			dispatcher.register(ClientCommandManager.literal("bpplanet")
 					.requires(DevCommands::devModeEnabled)
 					.executes(ctx -> {
-						FloatingTextRenderer.spawn(
-								Component.literal("Test Proc").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD), 1500L);
+						String planet = PlanetDetector.detect();
+						ctx.getSource().sendFeedback(planet != null
+								? Component.literal("§7Current planet: §f" + planet)
+								: Component.literal("§cCould not detect a planet from the tab header."));
 						return 1;
-					})
-					.then(ClientCommandManager.argument("message", StringArgumentType.greedyString())
-							.executes(ctx -> {
-								FloatingTextRenderer.spawn(
-										Component.literal(StringArgumentType.getString(ctx, "message")), 1500L);
-								return 1;
-							})));
-
-			// /bptoast [message] — show a test toast.
-			dispatcher.register(ClientCommandManager.literal("bptoast")
-					.requires(DevCommands::devModeEnabled)
-					.executes(ctx -> {
-						ToastRenderer.show(
-								Component.literal("Test Toast").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD),
-								Component.literal("This is a sample notification toast."));
-						return 1;
-					})
-					.then(ClientCommandManager.argument("message", StringArgumentType.greedyString())
-							.executes(ctx -> {
-								ToastRenderer.show(
-										Component.literal("BetterPrisons").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD),
-										Component.literal(StringArgumentType.getString(ctx, "message")));
-								return 1;
-							})));
+					}));
 
 			registerEvents(dispatcher);
 			registerWaypoint(dispatcher);
@@ -325,54 +277,6 @@ public final class PrisonDevCommands {
 		return IntegerArgumentType.getInteger(ctx, "x") + "x, "
 				+ IntegerArgumentType.getInteger(ctx, "y") + "y, "
 				+ IntegerArgumentType.getInteger(ctx, "z") + "z";
-	}
-
-	private static int getBlockLookingAt(CommandContext<FabricClientCommandSource> ctx) {
-		Minecraft client = ctx.getSource().getClient();
-		if (client.player == null || client.level == null) {
-			return 0;
-		}
-		HitResult hit = client.hitResult;
-		if (hit == null || hit.getType() != HitResult.Type.BLOCK) {
-			ctx.getSource().sendFeedback(Component.literal("§cNot looking at a block"));
-			return 0;
-		}
-		BlockPos pos = ((BlockHitResult) hit).getBlockPos();
-		BetterPrisons.LOGGER.info("Block at {}, {}, {}: {}", pos.getX(), pos.getY(), pos.getZ(),
-				client.level.getBlockState(pos).getBlock());
-		ctx.getSource().sendFeedback(Component.literal("§aBlock: §f" + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()));
-		return 1;
-	}
-
-	private static int dumpScoreboard(CommandContext<FabricClientCommandSource> ctx) {
-		Minecraft client = ctx.getSource().getClient();
-		if (client.level == null) {
-			ctx.getSource().sendFeedback(Component.literal("§cNo world loaded"));
-			return 0;
-		}
-		Scoreboard scoreboard = client.level.getScoreboard();
-		Objective sidebar = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR);
-		BetterPrisons.LOGGER.info("========== SIDEBAR DUMP ==========");
-		if (sidebar == null) {
-			BetterPrisons.LOGGER.info("(no sidebar objective)");
-			ctx.getSource().sendFeedback(Component.literal("§7No sidebar objective."));
-			return 1;
-		}
-		BetterPrisons.LOGGER.info("Objective: {} ({})", sidebar.getName(), sidebar.getDisplayName().getString());
-		int line = 1;
-		for (PlayerScoreEntry entry : scoreboard.listPlayerScores(sidebar)) {
-			String owner = entry.owner();
-			PlayerTeam team = scoreboard.getPlayersTeam(owner);
-			Component display = team != null
-					? PlayerTeam.formatNameForTeam(team, Component.literal(owner)) : Component.literal(owner);
-			String full = display.getString();
-			BetterPrisons.LOGGER.info("  [{}] \"{}\" | stripped: \"{}\" | value: {}",
-					line, full, full.replaceAll("§.", ""), entry.value());
-			line++;
-		}
-		BetterPrisons.LOGGER.info("==================================");
-		ctx.getSource().sendFeedback(Component.literal("§aSidebar dumped to console. Check latest.log"));
-		return 1;
 	}
 
 	private static int inspectClueScroll(CommandContext<FabricClientCommandSource> ctx) {

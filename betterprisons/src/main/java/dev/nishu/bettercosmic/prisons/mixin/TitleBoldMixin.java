@@ -1,5 +1,6 @@
 package dev.nishu.bettercosmic.prisons.mixin;
 
+import dev.nishu.bettercosmic.prisons.PrisonsGate;
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.network.chat.Component;
@@ -31,7 +32,8 @@ public class TitleBoldMixin {
 		if (text == null) {
 			return null;
 		}
-		if (BetterPrisonsClient.config == null || !BetterPrisonsClient.config.boldXpEnergyTitles) {
+		if (BetterPrisonsClient.config == null || !BetterPrisonsClient.config.boldXpEnergyTitles
+				|| !PrisonsGate.active()) {
 			return text;
 		}
 		String s = text.getString();

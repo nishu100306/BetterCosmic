@@ -1,5 +1,6 @@
 package dev.nishu.bettercosmic.shared.hud;
 
+import dev.nishu.bettercosmic.shared.server.ServerContext;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.Minecraft;
@@ -24,15 +25,19 @@ public final class HudRenderer {
 				return;
 			}
 			for (HudRegistry.Entry entry : HudRegistry.entries()) {
-				if (entry.hud.enabled) {
+				if (entry.hud.enabled && ServerContext.isActive(entry.network)) {
 					entry.hud.render(context, client);
 				}
 			}
 		});
 
-		// Tick every HUD (even disabled ones, so a HUD can sync its enabled flag from config).
+		// Tick every HUD (even disabled ones, so a HUD can sync its enabled flag from config), but only
+		// while its owning network is active — so an off-server HUD never accumulates or draws state.
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			for (HudRegistry.Entry entry : HudRegistry.entries()) {
+				if (!ServerContext.isActive(entry.network)) {
+					continue;
+				}
 				entry.hud.tick();
 				entry.hud.tick(client);
 			}
