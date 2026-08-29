@@ -32,6 +32,18 @@ bin/
 
 run/
 
+# Per-network dev run directories (loom runDir is module-relative → under bettercosmic/): ignore all
+# generated contents (saves, config, logs, companion-mod jars and their data) but keep the mods/
+# folder's note so the companion-mod drop points are tracked.
+bettercosmic/run-prisons/*
+!bettercosmic/run-prisons/mods/
+bettercosmic/run-prisons/mods/*
+!bettercosmic/run-prisons/mods/README.md
+bettercosmic/run-sky/*
+!bettercosmic/run-sky/mods/
+bettercosmic/run-sky/mods/*
+!bettercosmic/run-sky/mods/README.md
+
 # java
 
 hs_err_*.log

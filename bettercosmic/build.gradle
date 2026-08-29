@@ -28,11 +28,25 @@ loom {
 	}
 
 	runs {
-		// Client run for BetterCosmic. Regenerate the IDE config with:
+		// Two independent client runs so each Cosmic network can be tested in isolation. They share
+		// the same mod build (BetterCosmic loads both feature sets and gates them by the connected
+		// network), but each has its OWN run directory — so its saves, config, logs, and companion
+		// mods stay separate. Drop network-specific companion mods into the run dir's `mods/` folder:
+		//   run-prisons/mods/   and   run-sky/mods/
+		// Fabric loads those alongside the dev mod, per run. Regenerate IDE configs with:
 		//   ./gradlew :bettercosmic:genIntellijRuns
-		client {
-			name = "BetterCosmic Client"
-			runDir "run"
+		//
+		// Task names: ./gradlew :bettercosmic:runPrisonsClient   and   :bettercosmic:runSkyClient
+		prisonsClient {
+			client()
+			name = "BetterCosmic (Prisons)"
+			runDir "run-prisons"
+			ideConfigGenerated true
+		}
+		skyClient {
+			client()
+			name = "BetterCosmic (Sky)"
+			runDir "run-sky"
 			ideConfigGenerated true
 		}
 		// This is a client-only mod; don't clutter the IDE with a server run config.
