@@ -4,10 +4,10 @@ plugins {
 }
 
 group = 'dev.nishu.bettercosmic'
-version = project.betterprisons_version
+version = project.bettercosmic_version
 
 base {
-	archivesName = 'betterprisons'
+	archivesName = 'bettercosmic'
 }
 
 repositories {
@@ -17,21 +17,21 @@ repositories {
 
 loom {
 	// Client-only mod: a single `main` source set (with access to client-only Minecraft classes),
-	// same as the shared library. No split environment source sets.
-	accessWidenerPath = file("src/main/resources/betterprisons.accesswidener")
+	// same as the shared library. No split environment source sets. This one module carries both
+	// feature sets (BetterPrisons + BetterSky), each gated at runtime to its own Cosmic network.
+	accessWidenerPath = file("src/main/resources/bettercosmic.accesswidener")
 
 	mods {
-		"betterprisons" {
+		"bettercosmic" {
 			sourceSet sourceSets.main
 		}
 	}
 
 	runs {
-		// Client run for BetterPrisons. Uses this module's own `betterprisons/run` working
-		// directory, separate from the other modules' run dirs. Regenerate the IDE config with:
-		//   ./gradlew :betterprisons:genIntellijRuns
+		// Client run for BetterCosmic. Regenerate the IDE config with:
+		//   ./gradlew :bettercosmic:genIntellijRuns
 		client {
-			name = "BetterPrisons Client"
+			name = "BetterCosmic Client"
 			runDir "run"
 			ideConfigGenerated true
 		}
@@ -54,7 +54,7 @@ dependencies {
 	modLocalRuntime "com.terraformersmc:modmenu:${project.modmenu_version}"
 
 	// Shared library: `namedElements` gives the dev-mapped classes for compile/run; `include`
-	// bundles the remapped jar into the BetterPrisons jar as a Jar-in-Jar nested mod so that
+	// bundles the remapped jar into the BetterCosmic jar as a Jar-in-Jar nested mod so that
 	// bettercosmicshared's mixins and access-widener are applied at runtime.
 	implementation project(path: ":shared", configuration: "namedElements")
 	include project(":shared")
