@@ -50,6 +50,10 @@ public final class GeneralPanel {
 				() -> c.autoUpdateCheck,
 				v -> { c.autoUpdateCheck = v; c.save(); })
 				.tooltip("Check GitHub for a newer BetterCosmic on launch. No jar is downloaded."),
+			Options.toggle("Auto-install updates", d.autoUpdateApply,
+				() -> c.autoUpdateApply,
+				v -> { c.autoUpdateApply = v; c.save(); })
+				.tooltip("Download + verify a found update and install it on exit (replaces the jar)."),
 			Options.label(UpdateChecker::statusLine),
 			Options.link("Latest release", UpdateChecker.RELEASES_URL)
 		));

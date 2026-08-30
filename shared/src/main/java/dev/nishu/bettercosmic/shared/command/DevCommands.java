@@ -8,6 +8,7 @@ import dev.nishu.bettercosmic.shared.notification.ToastRenderer;
 import dev.nishu.bettercosmic.shared.render.FloatingTextRenderer;
 import dev.nishu.bettercosmic.shared.server.Network;
 import dev.nishu.bettercosmic.shared.server.ServerContext;
+import dev.nishu.bettercosmic.shared.update.UpdateApplier;
 import dev.nishu.bettercosmic.shared.update.UpdateChecker;
 import dev.nishu.bettercosmic.shared.update.UpdateState;
 import dev.nishu.bettercosmic.shared.util.TabListUtil;
@@ -125,6 +126,23 @@ public final class DevCommands {
 					}))
 					.then(ClientCommandManager.literal("demo").executes(ctx -> {
 						UpdateChecker.demoToast();
+						return 1;
+					}))
+					.then(ClientCommandManager.literal("apply").executes(ctx -> {
+						UpdateState s = UpdateChecker.state();
+						if (s == null || !s.available) {
+							ctx.getSource().sendFeedback(Component.literal(
+									"§eNo available update to stage. Point MANIFEST_URL at a newer version and §f/bcupdate check§e first."));
+							return 0;
+						}
+						if (!UpdateApplier.canSelfApply()) {
+							ctx.getSource().sendFeedback(Component.literal(
+									"§eSelf-apply unavailable here (dev / non-jar install). Test from an installed jar."));
+							return 0;
+						}
+						UpdateApplier.stageAsync(s);
+						ctx.getSource().sendFeedback(Component.literal(
+								"§7Staging update — watch latest.log and §f.bettercosmic-updates/apply.log§7. Installs on exit."));
 						return 1;
 					})));
 

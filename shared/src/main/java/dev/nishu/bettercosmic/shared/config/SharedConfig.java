@@ -56,6 +56,13 @@ public class SharedConfig extends BetterCosmicConfig {
 	 */
 	public boolean autoUpdateCheck = true;
 
+	/**
+	 * Automatically download, verify, and install updates (phase 2). Off by default. When on, a found
+	 * update is downloaded + SHA-256-verified, then a detached helper installs it on game exit (a running
+	 * JVM can't replace its own locked jar). See {@link dev.nishu.bettercosmic.shared.update.UpdateApplier}.
+	 */
+	public boolean autoUpdateApply = false;
+
 	/** Epoch millis of the last completed update check (for reference; checks run once per launch). */
 	public long lastUpdateCheckMillis = 0L;
 

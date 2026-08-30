@@ -68,6 +68,9 @@ public final class UpdateChecker {
 		}
 		initialized = true;
 
+		// Reconcile any update staged in a previous session (apply-on-exit re-armed / cleaned up).
+		UpdateApplier.resumePending();
+
 		// Show the toast when the player joins a world (the earliest point the HUD-based toast can
 		// render — the title screen has no HUD). Guarded so it fires at most once per session.
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> maybeShowToast(client));
@@ -100,6 +103,11 @@ public final class UpdateChecker {
 					"Update check: installed={} latest={} available={} (manifest {})",
 					result.installed, result.latest, result.available, MANIFEST_URL);
 			Minecraft.getInstance().execute(() -> maybeShowToast(Minecraft.getInstance()));
+
+			// Opt-in staged self-apply: download + verify + arm the on-exit installer.
+			if (result.available && SharedConfig.get().autoUpdateApply) {
+				UpdateApplier.stageAsync(result);
+			}
 		});
 	}
 
