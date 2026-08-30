@@ -7,6 +7,7 @@ import dev.nishu.bettercosmic.shared.ui.model.Option;
 import dev.nishu.bettercosmic.shared.ui.model.OptionGroup;
 import dev.nishu.bettercosmic.shared.ui.model.Options;
 import dev.nishu.bettercosmic.shared.ui.model.PanelIcon;
+import dev.nishu.bettercosmic.shared.update.UpdateChecker;
 
 import java.util.List;
 
@@ -44,6 +45,15 @@ public final class GeneralPanel {
 				.tooltip("1,234,567 instead of 1.2M.")
 		));
 
+		OptionGroup updates = new OptionGroup("Updates", List.of(
+			Options.toggle("Check for updates", d.autoUpdateCheck,
+				() -> c.autoUpdateCheck,
+				v -> { c.autoUpdateCheck = v; c.save(); })
+				.tooltip("Check GitHub for a newer BetterCosmic on launch. No jar is downloaded."),
+			Options.label(UpdateChecker::statusLine),
+			Options.link("Latest release", UpdateChecker.RELEASES_URL)
+		));
+
 		OptionGroup theme = new OptionGroup("Theme", List.of(
 			themeColor("Accent", d.themeAccent, () -> c.themeAccent, v -> c.themeAccent = v),
 			themeColor("Surface", d.themeSurface, () -> c.themeSurface, v -> c.themeSurface = v),
@@ -61,7 +71,7 @@ public final class GeneralPanel {
 		));
 
 		return ConfigPanel.of("general", "General", "Access, formatting & theme",
-			PanelIcon.GEAR, List.of(access, general, theme, links));
+			PanelIcon.GEAR, List.of(access, general, updates, theme, links));
 	}
 
 	private static Option themeColor(String label, int def,

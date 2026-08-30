@@ -76,12 +76,12 @@ public final class OptionRow extends UiElement {
 		int textY = y + (HEIGHT - RenderUtils.lineHeight()) / 2 + 1;
 
 		if (option.informational()) {
-			RenderUtils.text(g, option.label, x, textY, Theme.muted);
+			RenderUtils.text(g, option.displayLabel(), x, textY, Theme.muted);
 			resetShown = false;
 			return;
 		}
 
-		RenderUtils.text(g, option.label, x, textY, Theme.text);
+		RenderUtils.text(g, option.displayLabel(), x, textY, Theme.text);
 
 		int controlLeft;
 		if (widget != null) {

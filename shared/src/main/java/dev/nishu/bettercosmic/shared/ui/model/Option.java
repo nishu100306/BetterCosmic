@@ -30,6 +30,15 @@ public sealed abstract class Option
 		return this;
 	}
 
+	/**
+	 * The label text to render, resolved each frame. Defaults to the fixed {@link #label}; a
+	 * {@link LabelOption} built from a supplier overrides this so its text can reflect live state (e.g.
+	 * the update-check status) even though the panel is built once.
+	 */
+	public String displayLabel() {
+		return label;
+	}
+
 	/** Whether the value equals its default (drives the per-row reset glyph). */
 	public boolean isDefault() {
 		return true;

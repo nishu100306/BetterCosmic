@@ -47,6 +47,18 @@ public class SharedConfig extends BetterCosmicConfig {
 	/** Format large numbers with commas (1,234,567) instead of compact suffixes (1.2M). */
 	public boolean useCommaFormatting = false;
 
+	// ---- Auto-updater (phase 1: detect + notify) ----
+
+	/**
+	 * Check GitHub for a newer BetterCosmic build on launch and surface it (toast + config row +
+	 * ModMenu badge). On by default; a static-JSON read, no jar is downloaded. See
+	 * {@link dev.nishu.bettercosmic.shared.update.UpdateChecker}.
+	 */
+	public boolean autoUpdateCheck = true;
+
+	/** Epoch millis of the last completed update check (for reference; checks run once per launch). */
+	public long lastUpdateCheckMillis = 0L;
+
 	/**
 	 * The config profile (network) last viewed in the config screen, as a {@link
 	 * dev.nishu.bettercosmic.shared.server.Network} name. Used as the selector's default when the

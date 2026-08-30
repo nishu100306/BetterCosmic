@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BetterCosmic — update host</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font: 15px/1.6 system-ui, sans-serif; max-width: 44rem; margin: 3rem auto; padding: 0 1.25rem; }
+    code { background: color-mix(in srgb, currentColor 12%, transparent); padding: .1em .35em; border-radius: 4px; }
+    a { color: #2a7ae2; }
+    .muted { opacity: .7; }
+    hr { border: none; border-top: 1px solid color-mix(in srgb, currentColor 20%, transparent); margin: 2rem 0; }
+  </style>
+</head>
+<body>
+  <h1>BetterCosmic — update host</h1>
+  <p>This GitHub Pages site serves the auto-update manifest for the
+     <strong>BetterCosmic</strong> Fabric mod. It is machine-facing infrastructure, not a download page.</p>
+
+  <p>The mod's <code>UpdateChecker</code> reads the manifest on launch and compares its
+     <code>latest</code> field against the installed version:</p>
+  <p>👉 <a href="manifest.json"><code>manifest.json</code></a></p>
+
+  <p>Downloads live on the <a href="https://github.com/nishu100306/bettercosmic/releases">GitHub
+     Releases</a> page. Jars are immutable, versioned assets; this manifest only ever points at the
+     newest one.</p>
+
+  <hr>
+  <p class="muted">Maintainer notes: the manifest is regenerated and committed automatically by the
+     <code>release</code> workflow on every <code>v*</code> tag. To roll back, edit
+     <code>docs/manifest.json</code> to point <code>latest</code>/<code>url</code>/<code>sha256</code>
+     back to a previous release and push — the old jar is still hosted. Pages must be configured as
+     <em>Deploy from a branch → (default branch) → /docs</em>.</p>
+</body>
+</html>

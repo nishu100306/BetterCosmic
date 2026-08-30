@@ -3,6 +3,7 @@ package dev.nishu.bettercosmic.shared;
 import dev.nishu.bettercosmic.shared.command.DevCommands;
 import dev.nishu.bettercosmic.shared.config.SharedConfig;
 import dev.nishu.bettercosmic.shared.ui.ConfigUi;
+import dev.nishu.bettercosmic.shared.update.UpdateChecker;
 import dev.nishu.bettercosmic.shared.ui.GeneralPanel;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigRegistry;
 import net.fabricmc.api.ClientModInitializer;
@@ -38,6 +39,10 @@ public class BetterCosmicShared implements ClientModInitializer {
 		// Register the shared General panel once, as a global (all-profile) panel. Feature panels are
 		// registered by each mod under its own Network.
 		ConfigRegistry.register(GeneralPanel.create());
+
+		// Auto-updater (phase 1: detect + notify). Async manifest check; surfaces via toast, the
+		// General panel's Updates row, and the ModMenu badge. Fails soft.
+		UpdateChecker.init();
 
 		LOGGER.info("BetterCosmic Shared library initialized (config dir: {}).",
 				SharedConfig.configDir());

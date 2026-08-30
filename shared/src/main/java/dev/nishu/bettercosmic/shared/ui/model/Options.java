@@ -71,4 +71,9 @@ public final class Options {
 	public static LabelOption label(String text) {
 		return new LabelOption(text);
 	}
+
+	/** An informational label whose text is resolved live each frame (no control). */
+	public static LabelOption label(Supplier<String> text) {
+		return new LabelOption(text);
+	}
 }

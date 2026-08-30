@@ -1,0 +1,159 @@
+# Cuts a BetterCosmic release when a version tag is pushed.
+#
+#   git tag -a v1.1.0 -m "Fixed HUD flicker; added waypoint colors."
+#   git push origin v1.1.0
+#
+# It builds the mod, publishes the jar as a GitHub Release asset, then regenerates the auto-update
+# manifest (docs/manifest.json) and commits it to the default branch — which GitHub Pages serves as
+# the client's MANIFEST_URL. See planning/AUTO_UPDATER_PLAN.md §8.
+#
+# The annotated tag's message becomes the changelog. Add "[mandatory]" anywhere in that message to
+# flag the release as critical (a firmer in-game prompt); the marker is stripped from the changelog.
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Only one release pipeline at a time (the manifest commit must not race).
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write        # create the GitHub Release + upload the jar
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - name: checkout tag
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0      # need the tag object for its annotation (changelog)
+
+      - name: validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+
+      - name: setup jdk
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'microsoft'
+
+      - name: make gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: resolve versions
+        id: meta
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          tag_version="${tag#v}"
+          mod_version="$(grep -E '^bettercosmic_version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')"
+          mc_version="$(grep -E '^minecraft_version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')"
+
+          # The tag must match the version the jar is built as, or the download URL would 404.
+          if [ "$tag_version" != "$mod_version" ]; then
+            echo "::error::Tag $tag ($tag_version) does not match bettercosmic_version=$mod_version in gradle.properties"
+            exit 1
+          fi
+
+          echo "version=$mod_version"     >> "$GITHUB_OUTPUT"
+          echo "mc_version=$mc_version"    >> "$GITHUB_OUTPUT"
+          echo "jar=bettercosmic/build/libs/bettercosmic-${mod_version}.jar" >> "$GITHUB_OUTPUT"
+          echo "download_url=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/download/${tag}/bettercosmic-${mod_version}.jar" >> "$GITHUB_OUTPUT"
+
+      - name: build
+        run: ./gradlew :bettercosmic:build
+
+      - name: hash jar
+        id: hash
+        run: |
+          set -euo pipefail
+          jar="${{ steps.meta.outputs.jar }}"
+          test -f "$jar" || { echo "::error::Built jar not found at $jar"; ls -la bettercosmic/build/libs/ || true; exit 1; }
+          echo "sha256=$(sha256sum "$jar" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: extract changelog + mandatory flag
+        id: notes
+        run: |
+          set -euo pipefail
+          # Annotated-tag message body; empty for a lightweight tag.
+          body="$(git tag -l --format='%(contents)' "${GITHUB_REF_NAME}")"
+          mandatory=false
+          if printf '%s' "$body" | grep -qiF '[mandatory]'; then
+            mandatory=true
+          fi
+          # Strip the marker and trim; fall back to a generic line if empty.
+          changelog="$(printf '%s' "$body" | sed -E 's/\[[Mm]andatory\]//g' | sed -e 's/[[:space:]]*$//' -e '/^[[:space:]]*$/d')"
+          [ -n "$changelog" ] || changelog="See the release notes."
+
+          echo "mandatory=$mandatory" >> "$GITHUB_OUTPUT"
+          # Multi-line value for a later step.
+          {
+            echo "changelog<<CHANGELOG_EOF"
+            printf '%s\n' "$changelog"
+            echo "CHANGELOG_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: generate manifest
+        env:
+          VERSION:   ${{ steps.meta.outputs.version }}
+          MCVERSION: ${{ steps.meta.outputs.mc_version }}
+          URL:       ${{ steps.meta.outputs.download_url }}
+          SHA256:    ${{ steps.hash.outputs.sha256 }}
+          CHANGELOG: ${{ steps.notes.outputs.changelog }}
+          MANDATORY: ${{ steps.notes.outputs.mandatory }}
+        run: |
+          set -euo pipefail
+          chmod +x scripts/make-manifest.sh
+          ./scripts/make-manifest.sh > manifest.json
+          echo "--- generated manifest.json ---"; cat manifest.json
+
+      - name: publish github release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.meta.outputs.jar }}
+          body: ${{ steps.notes.outputs.changelog }}
+          fail_on_unmatched_files: true
+
+      - name: upload manifest artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: manifest
+          path: manifest.json
+
+  publish-manifest:
+    needs: release
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write        # commit docs/manifest.json back to the default branch
+    steps:
+      - name: checkout default branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: download manifest artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: manifest
+          path: .
+
+      - name: commit updated manifest
+        run: |
+          set -euo pipefail
+          mkdir -p docs
+          mv -f manifest.json docs/manifest.json
+          if git diff --quiet -- docs/manifest.json; then
+            echo "manifest unchanged; nothing to commit"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/manifest.json
+          git commit -m "Publish update manifest for ${{ needs.release.outputs.version }}"
+          git push

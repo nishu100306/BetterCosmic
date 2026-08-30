@@ -2,6 +2,7 @@ package dev.nishu.bettercosmic.prisons;
 
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
+import com.terraformersmc.modmenu.api.UpdateChecker;
 import dev.nishu.bettercosmic.shared.ui.ConfigUi;
 
 /**
@@ -15,5 +16,10 @@ public class ModMenuIntegration implements ModMenuApi {
 	@Override
 	public ConfigScreenFactory<?> getModConfigScreenFactory() {
 		return ConfigUi::create;
+	}
+
+	@Override
+	public UpdateChecker getUpdateChecker() {
+		return new ModMenuUpdateChecker();
 	}
 }
