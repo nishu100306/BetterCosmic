@@ -5,6 +5,6 @@
   "channel": "release",
   "url": "https://github.com/nishu100306/BetterCosmic/releases/download/v0.0.3/bettercosmic-0.0.3.jar",
   "sha256": "64c5967a991b5b96e4365b43a527eca2ec4db7ddf7416c7d7f76b79db64a23e0",
-  "changelog": "@\nReliable self-apply cleanup: the old jar is now retired to backups/ on the launch after an update. Removes the detached-helper machinery in favor of the in-session-move model, plus updater code cleanup.\n@",
+  "changelog": "Reliable self-apply cleanup: the old jar is now retired to backups/ on the launch after an update. Removes the detached-helper machinery in favor of the in-session-move model, plus updater code cleanup.",
   "mandatory": false
 }
