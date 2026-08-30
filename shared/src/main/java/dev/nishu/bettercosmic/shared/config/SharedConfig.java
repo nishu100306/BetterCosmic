@@ -63,9 +63,6 @@ public class SharedConfig extends BetterCosmicConfig {
 	 */
 	public boolean autoUpdateApply = false;
 
-	/** Epoch millis of the last completed update check (for reference; checks run once per launch). */
-	public long lastUpdateCheckMillis = 0L;
-
 	/**
 	 * The config profile (network) last viewed in the config screen, as a {@link
 	 * dev.nishu.bettercosmic.shared.server.Network} name. Used as the selector's default when the

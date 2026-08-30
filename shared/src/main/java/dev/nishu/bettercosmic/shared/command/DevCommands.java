@@ -132,7 +132,7 @@ public final class DevCommands {
 						UpdateState s = UpdateChecker.state();
 						if (s == null || !s.available) {
 							ctx.getSource().sendFeedback(Component.literal(
-									"§eNo available update to stage. Point MANIFEST_URL at a newer version and §f/bcupdate check§e first."));
+									"§eNo available update to install. Point MANIFEST_URL at a newer version and §f/bcupdate check§e first."));
 							return 0;
 						}
 						if (!UpdateApplier.canSelfApply()) {
@@ -140,9 +140,9 @@ public final class DevCommands {
 									"§eSelf-apply unavailable here (dev / non-jar install). Test from an installed jar."));
 							return 0;
 						}
-						UpdateApplier.stageAsync(s);
+						UpdateApplier.installAsync(s);
 						ctx.getSource().sendFeedback(Component.literal(
-								"§7Staging update — watch latest.log and §f.bettercosmic-updates/apply.log§7. Installs on exit."));
+								"§7Downloading + installing update into mods/ - watch latest.log. Active on next restart."));
 						return 1;
 					})));
 

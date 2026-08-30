@@ -23,6 +23,8 @@ public final class VersionCompare {
 			return false;
 		}
 		try {
+			// Cast to Version is load-bearing: SemanticVersion has a deprecated compareTo(SemanticVersion)
+			// overload, so this steers resolution to the current compareTo(Version).
 			return SemanticVersion.parse(candidate).compareTo((Version) SemanticVersion.parse(current)) > 0;
 		} catch (VersionParsingException e) {
 			try {

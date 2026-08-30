@@ -1,6 +1,7 @@
 package dev.nishu.bettercosmic.shared.update;
 
 import dev.nishu.bettercosmic.shared.BetterCosmicShared;
+import dev.nishu.bettercosmic.shared.config.BetterCosmicConfig;
 import dev.nishu.bettercosmic.shared.notification.Notifier;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
@@ -21,72 +22,84 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Phase 2 — opt-in staged self-apply. Downloads the new jar, verifies its SHA-256, stages it under
- * {@code mods/.bettercosmic-updates/}, and — because a running JVM can never replace its own loaded jar
- * (the file is OS-locked for the whole process lifetime; verified) — arms a shutdown hook that spawns
- * {@link UpdateHelper} as a <b>separate, detached JVM</b> on game close. That helper waits for this
- * process to exit and release the lock, then swaps the jar so the update is live on the next launch.
+ * Phase 2 — opt-in staged self-apply, in-session-move model (as used by ModMenuUpdater).
  *
- * <p>Gated behind {@code SharedConfig.autoUpdateApply} (default off). Integrity is mandatory: it
- * refuses to stage a jar the manifest doesn't provide a matching SHA-256 for. No-ops in dev / when the
- * mod isn't loaded from a single jar (nothing to swap). See {@code planning/AUTO_UPDATER_PLAN.md} §5B.
+ * <p>Fabric Loader loads the <em>newest</em> of two same-id jars in {@code mods/} and leaves the older
+ * one unselected — it does not crash on the duplicate. So the update can be dropped in live:
+ * <ol>
+ *   <li><b>This session:</b> download the new jar, verify its SHA-256, and {@code Files.move} it
+ *       straight into {@code mods/} under its versioned filename. The running (old) jar is left
+ *       untouched — no attempt to replace a file the OS has locked. Its path is recorded in a marker.</li>
+ *   <li><b>Next launch:</b> Fabric loads the new jar; the old one is never opened, so it isn't locked.
+ *       {@link #performCleanup()} (run at client init) moves the marker's old jar into
+ *       {@code config/bettercosmic/backups/} as a rollback point, leaving just the new jar.</li>
+ * </ol>
+ *
+ * <p>No detached process, no shutdown hook, no file-lock fight. Gated behind
+ * {@code SharedConfig.autoUpdateApply} (default off); no-ops in dev / when the mod isn't a single jar.
+ * Integrity is mandatory: it refuses to install a jar the manifest has no matching SHA-256 for. See
+ * {@code planning/AUTO_UPDATER_PLAN.md} §5B.
  */
 public final class UpdateApplier {
 
 	private static final String MOD_ID = "bettercosmic";
-	private static final String STAGING_DIR = ".bettercosmic-updates";
-	private static final String MARKER = "pending-update.properties";
+	private static final String TMP_DIR = ".bettercosmic-updates"; // download scratch (not scanned by Fabric)
+	private static final String MARKER = "pending-cleanup.properties";
+	private static final String BACKUPS = "backups";
 
 	private static HttpClient downloadClient;
-	private static volatile boolean staging = false;
-	private static volatile boolean hookArmed = false;
+	private static final AtomicBoolean installing = new AtomicBoolean(false);
 
 	private UpdateApplier() {}
 
-	/** True when the mod is a single jar in a writable dir — i.e., a swap is physically possible. */
+	/** True when the mod is a single jar in a writable dir — i.e., an in-place install is possible. */
 	public static boolean canSelfApply() {
 		Path jar = ownJar();
 		return jar != null && jar.getFileName().toString().endsWith(".jar") && Files.isRegularFile(jar);
 	}
 
 	/**
-	 * On client init: reconcile any previously staged update. If it was applied (or is stale), clean up;
-	 * if it's still pending and valid, re-arm the shutdown hook so it applies when the game next closes.
+	 * Run at client init: retire the jar a previous session upgraded away from. Identifies the old jar
+	 * by the marker (not a version-string match) and removes it whenever it isn't the jar we're actually
+	 * running now — so a single {@code bettercosmic} jar remains. Safe to call always; no-ops when
+	 * there's nothing pending.
 	 */
-	public static void resumePending() {
+	public static void performCleanup() {
 		try {
 			Path marker = markerPath();
 			if (marker == null || !Files.exists(marker)) {
 				return;
 			}
-			Properties p = load(marker);
-			String version = p.getProperty("version", "");
-			Path staged = Path.of(p.getProperty("stagedJar", ""));
-			String sha = p.getProperty("sha256", "");
-
-			if (!VersionCompare.isNewer(version, installedVersion())) {
-				cleanupStaging(); // already applied, or stale
-				BetterCosmicShared.LOGGER.info("Cleaned up applied/stale pending update ({}).", version);
+			Path oldJar = Path.of(load(marker).getProperty("oldJar", ""));
+			Path own = ownJar();
+			if (own == null) {
+				return; // can't tell what we're running (dev / non-jar) — leave the marker for a real launch
+			}
+			if (oldJar.toString().isEmpty() || !Files.exists(oldJar)) {
+				deleteQuietly(marker); // already gone
 				return;
 			}
-			if (Files.exists(staged) && !sha.isBlank() && sha.equalsIgnoreCase(sha256Of(staged))) {
-				armShutdownHook();
-				BetterCosmicShared.LOGGER.info("Pending update {} staged; will install on exit.", version);
-			} else {
-				BetterCosmicShared.LOGGER.warn("Pending update {} staged jar missing/corrupt; discarding.", version);
-				cleanupStaging();
+			if (isSameFile(oldJar, own)) {
+				// Fabric loaded the old jar (the new one hasn't taken yet) — keep the marker and retry.
+				BetterCosmicShared.LOGGER.info("Update pending: still running old jar {}; will retry next launch.",
+						oldJar.getFileName());
+				return;
 			}
+			backup(oldJar);
+			BetterCosmicShared.LOGGER.info("Update applied; retired old jar {} to backups/.", oldJar.getFileName());
+			deleteQuietly(marker);
 		} catch (Exception e) {
-			BetterCosmicShared.LOGGER.error("resumePending failed", e);
+			BetterCosmicShared.LOGGER.error("performCleanup failed", e);
 		}
 	}
 
-	/** Downloads + verifies + stages the update off-thread, then arms the on-exit swap. */
-	public static void stageAsync(UpdateState state) {
+	/** Downloads + verifies the update off-thread, then drops it into {@code mods/} for the next launch. */
+	public static void installAsync(UpdateState state) {
 		if (!canSelfApply()) {
-			BetterCosmicShared.LOGGER.info("Self-apply unavailable (dev / non-jar install); not staging.");
+			BetterCosmicShared.LOGGER.info("Self-apply unavailable (dev / non-jar install); not installing.");
 			return;
 		}
 		if (state.url == null || state.url.isBlank()) {
@@ -97,23 +110,34 @@ public final class UpdateApplier {
 			BetterCosmicShared.LOGGER.warn("Manifest has no sha256; refusing to auto-install an unverified jar.");
 			return;
 		}
-		if (staging) {
-			return;
+		if (!installing.compareAndSet(false, true)) {
+			return; // an install is already in flight
 		}
-		CompletableFuture.runAsync(() -> doStage(state));
+		CompletableFuture.runAsync(() -> {
+			try {
+				doInstall(state);
+			} finally {
+				installing.set(false);
+			}
+		});
 	}
 
-	private static void doStage(UpdateState state) {
-		staging = true;
+	private static void doInstall(UpdateState state) {
 		try {
-			if (hasValidPendingFor(state.latest)) {
-				armShutdownHook();
-				notifyStaged(state.latest);
-				return; // already downloaded this version
+			Path target = newJarPath(state.latest); // mods/bettercosmic-<latest>.jar
+			if (target == null) {
+				return;
 			}
-			Path stagingDir = stagingDir();
-			Files.createDirectories(stagingDir);
-			Path part = stagingDir.resolve("bettercosmic-" + state.latest + ".jar.part");
+			// Already dropped in this or a prior session (and verified)? Just (re)write the marker + notify.
+			if (Files.exists(target) && state.sha256.equalsIgnoreCase(sha256Of(target))) {
+				writeMarker();
+				notifyDownloaded(state.latest);
+				return;
+			}
+
+			Path tmpDir = tmpDir();
+			Files.createDirectories(tmpDir);
+			Path part = tmpDir.resolve("bettercosmic-" + state.latest + ".jar.part");
 
 			HttpResponse<Path> resp = downloadClient().send(
 					HttpRequest.newBuilder(URI.create(state.url)).timeout(Duration.ofMinutes(5)).GET().build(),
@@ -133,119 +157,38 @@ public final class UpdateApplier {
 				return;
 			}
 
-			Path staged = stagingDir.resolve("bettercosmic-" + state.latest + ".jar");
-			Files.move(part, staged, StandardCopyOption.REPLACE_EXISTING);
-			writeMarker(state, staged);
-			armShutdownHook();
-			BetterCosmicShared.LOGGER.info("Staged verified update {} for install on exit.", state.latest);
-			notifyStaged(state.latest);
+			// Drop the verified jar into mods/ under its versioned name. Fabric will load it (newest) next
+			// launch; the running old jar is left alone and retired by performCleanup() then.
+			Files.move(part, target, StandardCopyOption.REPLACE_EXISTING);
+			writeMarker();
+			BetterCosmicShared.LOGGER.info("Installed update {} into mods/ (active next launch).", state.latest);
+			notifyDownloaded(state.latest);
 		} catch (Exception e) {
-			BetterCosmicShared.LOGGER.error("Failed to stage update", e);
-		} finally {
-			staging = false;
-		}
-	}
-
-	// ---- shutdown hook / helper spawn ----
-
-	private static synchronized void armShutdownHook() {
-		if (hookArmed) {
-			return;
-		}
-		hookArmed = true;
-		Runtime.getRuntime().addShutdownHook(new Thread(UpdateApplier::spawnHelper, "bettercosmic-update-spawn"));
-	}
-
-	/**
-	 * Extracts {@link UpdateHelper} as a standalone class and launches it in its own JVM. Runs from the
-	 * shutdown hook, while our jar is still readable but about to be released. The helper must not depend
-	 * on anything but the JDK (see its javadoc), so a single extracted class file with no classpath runs.
-	 */
-	private static void spawnHelper() {
-		try {
-			Path marker = markerPath();
-			if (marker == null || !Files.exists(marker)) {
-				return;
-			}
-			Path tmp = Files.createTempDirectory("bc-updater");
-			Path clsDir = tmp.resolve("dev/nishu/bettercosmic/shared/update");
-			Files.createDirectories(clsDir);
-			try (InputStream in = UpdateApplier.class.getResourceAsStream(
-					"/dev/nishu/bettercosmic/shared/update/UpdateHelper.class")) {
-				if (in == null) {
-					BetterCosmicShared.LOGGER.error("Could not extract UpdateHelper.class; aborting self-apply.");
-					return;
-				}
-				Files.copy(in, clsDir.resolve("UpdateHelper.class"), StandardCopyOption.REPLACE_EXISTING);
-			}
-
-			String javaBin = Path.of(System.getProperty("java.home"), "bin",
-					isWindows() ? "java.exe" : "java").toString();
-			ProcessBuilder pb = new ProcessBuilder(javaBin, "-cp", tmp.toString(),
-					"dev.nishu.bettercosmic.shared.update.UpdateHelper", marker.toString());
-			pb.redirectErrorStream(true);
-			pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logPath().toFile()));
-			pb.start();
-			BetterCosmicShared.LOGGER.info("Launched detached update helper; it will install the new jar after exit.");
-		} catch (Exception e) {
-			BetterCosmicShared.LOGGER.error("Failed to spawn update helper", e);
+			BetterCosmicShared.LOGGER.error("Failed to install update", e);
 		}
 	}
 
 	// ---- helpers ----
 
-	private static void writeMarker(UpdateState state, Path staged) throws Exception {
+	/** Moves the retired jar into {@code config/bettercosmic/backups/} (one rollback copy per version). */
+	private static void backup(Path oldJar) throws Exception {
+		Path backups = configDir().resolve(BACKUPS);
+		Files.createDirectories(backups);
+		Files.move(oldJar, backups.resolve(oldJar.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+	}
+
+	/** Records the currently-running jar as the one to retire once the new jar is loaded next launch. */
+	private static void writeMarker() throws Exception {
 		Properties p = new Properties();
 		p.setProperty("oldJar", ownJar().toString());
-		p.setProperty("stagedJar", staged.toString());
-		p.setProperty("finalJar", finalJar(state.latest).toString());
-		p.setProperty("sha256", state.sha256);
-		p.setProperty("version", state.latest);
-		p.setProperty("logFile", logPath().toString());
+		Files.createDirectories(configDir());
 		try (OutputStream out = Files.newOutputStream(markerPath(),
 				StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
-			p.store(out, "BetterCosmic pending update — applied by UpdateHelper on next exit");
+			p.store(out, "BetterCosmic pending cleanup — old jar retired by performCleanup() next launch");
 		}
 	}
 
-	private static boolean hasValidPendingFor(String version) {
-		try {
-			Path marker = markerPath();
-			if (marker == null || !Files.exists(marker)) {
-				return false;
-			}
-			Properties p = load(marker);
-			if (!version.equals(p.getProperty("version"))) {
-				return false;
-			}
-			Path staged = Path.of(p.getProperty("stagedJar", ""));
-			String sha = p.getProperty("sha256", "");
-			return Files.exists(staged) && !sha.isBlank() && sha.equalsIgnoreCase(sha256Of(staged));
-		} catch (Exception e) {
-			return false;
-		}
-	}
-
-	private static void cleanupStaging() {
-		Path dir = stagingDir();
-		if (dir == null) {
-			return;
-		}
-		try {
-			if (Files.isDirectory(dir)) {
-				try (var stream = Files.newDirectoryStream(dir)) {
-					for (Path child : stream) {
-						deleteQuietly(child);
-					}
-				}
-			}
-			deleteQuietly(dir);
-		} catch (Exception ignored) {
-			// best-effort
-		}
-	}
-
-	private static void notifyStaged(String version) {
+	private static void notifyDownloaded(String version) {
 		Minecraft.getInstance().execute(() -> Notifier.toast(
 				Component.literal("BetterCosmic " + version + " downloaded"),
 				Component.literal("Restart to finish installing"), null, 8000L, "note_pling", 0.5f));
@@ -257,6 +200,15 @@ public final class UpdateApplier {
 			p.load(in);
 		}
 		return p;
+	}
+
+	private static boolean isSameFile(Path a, Path b) {
+		try {
+			return a != null && b != null && Files.isSameFile(a, b);
+		} catch (Exception e) {
+			return a != null && b != null
+					&& a.toAbsolutePath().normalize().equals(b.toAbsolutePath().normalize());
+		}
 	}
 
 	private static Path ownJar() {
@@ -272,24 +224,22 @@ public final class UpdateApplier {
 		return jar != null ? jar.getParent() : null;
 	}
 
-	private static Path stagingDir() {
+	private static Path newJarPath(String version) {
 		Path mods = modsDir();
-		return mods != null ? mods.resolve(STAGING_DIR) : null;
+		return mods != null ? mods.resolve("bettercosmic-" + version + ".jar") : null;
+	}
+
+	private static Path tmpDir() {
+		Path mods = modsDir();
+		return mods != null ? mods.resolve(TMP_DIR) : null;
+	}
+
+	private static Path configDir() {
+		return BetterCosmicConfig.configDir();
 	}
 
 	private static Path markerPath() {
-		Path dir = stagingDir();
-		return dir != null ? dir.resolve(MARKER) : null;
-	}
-
-	private static Path logPath() {
-		Path dir = stagingDir();
-		return dir != null ? dir.resolve("apply.log") : null;
-	}
-
-	private static Path finalJar(String version) {
-		Path mods = modsDir();
-		return mods != null ? mods.resolve("bettercosmic-" + version + ".jar") : null;
+		return configDir().resolve(MARKER);
 	}
 
 	private static synchronized HttpClient downloadClient() {
@@ -326,15 +276,5 @@ public final class UpdateApplier {
 		} catch (Exception ignored) {
 			// best-effort
 		}
-	}
-
-	private static boolean isWindows() {
-		return System.getProperty("os.name", "").toLowerCase().contains("win");
-	}
-
-	private static String installedVersion() {
-		return FabricLoader.getInstance().getModContainer(MOD_ID)
-				.map(c -> c.getMetadata().getVersion().getFriendlyString())
-				.orElse("unknown");
 	}
 }

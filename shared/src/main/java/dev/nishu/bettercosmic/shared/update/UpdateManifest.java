@@ -12,10 +12,10 @@ import com.google.gson.JsonParser;
  * <pre>
  * {
  *   "modId": "bettercosmic",
- *   "latest": "1.1.0",
+ *   "latest": "0.0.3",
  *   "minecraft": "1.21.11",
  *   "channel": "release",
- *   "url": "https://github.com/.../releases/download/v1.1.0/bettercosmic-1.1.0.jar",
+ *   "url": "https://github.com/.../releases/download/v0.0.3/bettercosmic-0.0.3.jar",
  *   "sha256": "9f2c…",
  *   "changelog": "…",
  *   "mandatory": false
@@ -31,7 +31,7 @@ public final class UpdateManifest {
 	public final String modId;
 	public final String latest;
 	public final String minecraft; // MC version this build targets, or null if unspecified
-	public final String channel;   // "release" (only channel for now)
+	public final String channel;   // "release"; reserved for a future beta channel (Phase 3), unused today
 	public final String url;       // direct jar download (used by phase 2), may be null
 	public final String sha256;    // lowercase hex, used by phase 2, may be null
 	public final String changelog; // short human text, may be null

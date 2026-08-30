@@ -2,6 +2,7 @@ package dev.nishu.bettercosmic.shared.update;
 
 import dev.nishu.bettercosmic.shared.BetterCosmicShared;
 import dev.nishu.bettercosmic.shared.config.SharedConfig;
+import dev.nishu.bettercosmic.shared.notification.Notifier;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
@@ -15,15 +16,16 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * The update-check engine (phase 1: detect + notify). On client init it asynchronously fetches the
- * update manifest, compares the newest published version against the installed one, and — if a newer,
- * Minecraft-compatible build exists — surfaces it three ways: an in-game toast on world join, a row in
- * the shared config screen (see {@code GeneralPanel}), and a ModMenu "update available" badge (see
- * {@code bettercosmic}'s {@code ModMenuUpdateChecker}).
+ * The update-check engine. On client init it asynchronously fetches the update manifest, compares the
+ * newest published version against the installed one, and — if a newer, Minecraft-compatible build
+ * exists — surfaces it three ways: an in-game toast on world join, a row in the shared config screen
+ * (see {@code GeneralPanel}), and a ModMenu "update available" badge (see {@code bettercosmic}'s
+ * {@code ModMenuUpdateChecker}). When the user has opted in ({@code autoUpdateApply}), it also hands
+ * an available update to {@link UpdateApplier} to download and install.
  *
  * <p>All network I/O runs off the render thread; results are marshalled back via
  * {@link Minecraft#execute}. Any failure fails soft — the feature simply goes quiet and the game is
- * unaffected. Nothing here downloads or replaces a jar; staged self-apply is phase 2.
+ * unaffected.
  *
  * <p>See {@code planning/AUTO_UPDATER_PLAN.md} for the full design and locked decisions.
  */
@@ -68,8 +70,8 @@ public final class UpdateChecker {
 		}
 		initialized = true;
 
-		// Reconcile any update staged in a previous session (apply-on-exit re-armed / cleaned up).
-		UpdateApplier.resumePending();
+		// Retire the old jar if a previous session installed a newer one that we're now running.
+		UpdateApplier.performCleanup();
 
 		// Show the toast when the player joins a world (the earliest point the HUD-based toast can
 		// render — the title screen has no HUD). Guarded so it fires at most once per session.
@@ -96,17 +98,14 @@ public final class UpdateChecker {
 	private static void startCheck() {
 		CompletableFuture.supplyAsync(UpdateChecker::fetchNow).thenAccept(result -> {
 			state = result;
-			SharedConfig cfg = SharedConfig.get();
-			cfg.lastUpdateCheckMillis = System.currentTimeMillis();
-			cfg.save();
 			BetterCosmicShared.LOGGER.info(
 					"Update check: installed={} latest={} available={} (manifest {})",
 					result.installed, result.latest, result.available, MANIFEST_URL);
 			Minecraft.getInstance().execute(() -> maybeShowToast(Minecraft.getInstance()));
 
-			// Opt-in staged self-apply: download + verify + arm the on-exit installer.
+			// Opt-in self-apply: download + verify + drop the new jar into mods/ for the next launch.
 			if (result.available && SharedConfig.get().autoUpdateApply) {
-				UpdateApplier.stageAsync(result);
+				UpdateApplier.installAsync(result);
 			}
 		});
 	}
@@ -116,7 +115,7 @@ public final class UpdateChecker {
 	 * previewing the toast's look in dev ({@code /bcupdate demo}) without a published manifest.
 	 */
 	public static void demoToast() {
-		dev.nishu.bettercosmic.shared.notification.Notifier.toast(
+		Notifier.toast(
 				Component.literal("BetterCosmic " + installedVersion() + "+1 available (demo)"),
 				Component.literal("Open config (I) to update"), null, 6000L, "note_pling", 0.5f);
 	}
@@ -132,6 +131,11 @@ public final class UpdateChecker {
 		try {
 			UpdateManifest m = fetchManifest();
 			if (m == null) {
+				return UpdateState.upToDate(installed);
+			}
+			// Ignore a manifest that isn't for this mod (guards against a misconfigured/wrong host).
+			if (m.modId != null && !m.modId.isBlank() && !m.modId.equals(MOD_ID)) {
+				BetterCosmicShared.LOGGER.warn("Manifest modId '{}' != '{}'; ignoring.", m.modId, MOD_ID);
 				return UpdateState.upToDate(installed);
 			}
 			// Only offer a build made for the Minecraft version we're actually running.
@@ -196,8 +200,7 @@ public final class UpdateChecker {
 						? trim(s.changelog, 48)
 						: "Open config (I) to update");
 		long duration = s.mandatory ? 8000L : 5000L;
-		dev.nishu.bettercosmic.shared.notification.Notifier.toast(
-				title, Component.literal(descText), null, duration, "note_pling", 0.5f);
+		Notifier.toast(title, Component.literal(descText), null, duration, "note_pling", 0.5f);
 	}
 
 	private static String trim(String s, int max) {
