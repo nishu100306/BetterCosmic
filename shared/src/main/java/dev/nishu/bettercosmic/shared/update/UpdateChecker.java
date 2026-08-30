@@ -32,9 +32,9 @@ public final class UpdateChecker {
 	public static final String MOD_ID = "bettercosmic";
 
 	// Update host — GitHub Pages for the manifest, GitHub Releases for the download page.
-	// NOTE: replace <owner>/repo if the published repository differs from this.
-	public static final String MANIFEST_URL = "https://nishu100306.github.io/bettercosmic/manifest.json";
-	public static final String RELEASES_URL = "https://github.com/nishu100306/bettercosmic/releases/latest";
+	// NOTE: the repo path is case-sensitive ("BetterCosmic"); the mod id and jar name stay lowercase.
+	public static final String MANIFEST_URL = "https://nishu100306.github.io/BetterCosmic/manifest.json";
+	public static final String RELEASES_URL = "https://github.com/nishu100306/BetterCosmic/releases/latest";
 
 	private static final Duration TIMEOUT = Duration.ofSeconds(5);
 	private static final int MAX_BYTES = 64 * 1024; // a manifest is tiny; cap hostile/huge responses
@@ -72,19 +72,45 @@ public final class UpdateChecker {
 		// render — the title screen has no HUD). Guarded so it fires at most once per session.
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> maybeShowToast(client));
 
-		SharedConfig cfg = SharedConfig.get();
-		if (!cfg.autoUpdateCheck) {
+		if (!SharedConfig.get().autoUpdateCheck) {
+			BetterCosmicShared.LOGGER.info("Update check skipped (autoUpdateCheck is off).");
 			return; // checks opted out
 		}
+		startCheck();
+	}
 
-		// Async fetch (once per launch). On completion, cache the result and, if already in-game,
-		// surface the toast immediately; otherwise the JOIN hook will.
+	/**
+	 * Re-runs the manifest check asynchronously and re-arms the session toast. Used by {@link #init}
+	 * and by the {@code /bcupdate check} dev command; ignores the {@code autoUpdateCheck} opt-out so a
+	 * developer can force a check.
+	 */
+	public static void recheck() {
+		toastShown = false;
+		startCheck();
+	}
+
+	/** Kicks off the async fetch + notify. On completion, logs the outcome and surfaces the toast. */
+	private static void startCheck() {
 		CompletableFuture.supplyAsync(UpdateChecker::fetchNow).thenAccept(result -> {
 			state = result;
+			SharedConfig cfg = SharedConfig.get();
 			cfg.lastUpdateCheckMillis = System.currentTimeMillis();
 			cfg.save();
+			BetterCosmicShared.LOGGER.info(
+					"Update check: installed={} latest={} available={} (manifest {})",
+					result.installed, result.latest, result.available, MANIFEST_URL);
 			Minecraft.getInstance().execute(() -> maybeShowToast(Minecraft.getInstance()));
 		});
+	}
+
+	/**
+	 * Shows a sample update toast immediately, bypassing the version/availability guards. For manually
+	 * previewing the toast's look in dev ({@code /bcupdate demo}) without a published manifest.
+	 */
+	public static void demoToast() {
+		dev.nishu.bettercosmic.shared.notification.Notifier.toast(
+				Component.literal("BetterCosmic " + installedVersion() + "+1 available (demo)"),
+				Component.literal("Open config (I) to update"), null, 6000L, "note_pling", 0.5f);
 	}
 
 	/**

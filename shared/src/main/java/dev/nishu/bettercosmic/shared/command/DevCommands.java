@@ -8,6 +8,8 @@ import dev.nishu.bettercosmic.shared.notification.ToastRenderer;
 import dev.nishu.bettercosmic.shared.render.FloatingTextRenderer;
 import dev.nishu.bettercosmic.shared.server.Network;
 import dev.nishu.bettercosmic.shared.server.ServerContext;
+import dev.nishu.bettercosmic.shared.update.UpdateChecker;
+import dev.nishu.bettercosmic.shared.update.UpdateState;
 import dev.nishu.bettercosmic.shared.util.TabListUtil;
 import dev.nishu.bettercosmic.shared.util.WorldUtil;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
@@ -110,6 +112,21 @@ public final class DevCommands {
 										Component.literal(StringArgumentType.getString(ctx, "message")));
 								return 1;
 							})));
+
+			// /bcupdate [check|demo] — inspect the auto-updater, force a re-check, or preview the toast.
+			dispatcher.register(ClientCommandManager.literal("bcupdate")
+					.requires(DevCommands::devModeEnabled)
+					.executes(DevCommands::reportUpdate)
+					.then(ClientCommandManager.literal("check").executes(ctx -> {
+						UpdateChecker.recheck();
+						ctx.getSource().sendFeedback(Component.literal(
+								"§7Re-checking for updates — see latest.log and §f/bcupdate§7."));
+						return 1;
+					}))
+					.then(ClientCommandManager.literal("demo").executes(ctx -> {
+						UpdateChecker.demoToast();
+						return 1;
+					})));
 
 			// /bcblock — coordinates and type of the block under the crosshair.
 			dispatcher.register(ClientCommandManager.literal("bcblock")
@@ -399,6 +416,25 @@ public final class DevCommands {
 		ctx.getSource().sendFeedback(Component.literal("§7  footer: §f" + previewComponent(footer)));
 		ctx.getSource().sendFeedback(Component.literal(
 				"§7  " + players.size() + " listed players (full dump in latest.log)."));
+		return 1;
+	}
+
+	/** Reports the current auto-updater state (installed / latest / available) to chat. */
+	private static int reportUpdate(CommandContext<FabricClientCommandSource> ctx) {
+		UpdateState s = UpdateChecker.state();
+		if (s == null) {
+			ctx.getSource().sendFeedback(Component.literal(
+					"§7Update check: §fstill running or checks are off§7. Try §f/bcupdate check§7."));
+			return 1;
+		}
+		ctx.getSource().sendFeedback(Component.literal("§6Auto-updater:"));
+		ctx.getSource().sendFeedback(Component.literal("§7  installed: §f" + s.installed));
+		ctx.getSource().sendFeedback(Component.literal("§7  latest:    §f" + s.latest));
+		ctx.getSource().sendFeedback(Component.literal(s.available
+				? "§7  status:    §aupdate available" + (s.mandatory ? " §c(mandatory)" : "")
+				: "§7  status:    §aup to date"));
+		ctx.getSource().sendFeedback(Component.literal(
+				"§8  (§f/bcupdate check§8 re-checks, §f/bcupdate demo§8 previews the toast)"));
 		return 1;
 	}
 
