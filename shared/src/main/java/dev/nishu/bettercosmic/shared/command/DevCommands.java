@@ -140,7 +140,7 @@ public final class DevCommands {
 									"§eSelf-apply unavailable here (dev / non-jar install). Test from an installed jar."));
 							return 0;
 						}
-						UpdateApplier.installAsync(s);
+						UpdateApplier.installAsync(s, null, null);
 						ctx.getSource().sendFeedback(Component.literal(
 								"§7Downloading + installing update into mods/ - watch latest.log. Active on next restart."));
 						return 1;

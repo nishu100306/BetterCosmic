@@ -2,6 +2,7 @@ package dev.nishu.bettercosmic.shared;
 
 import dev.nishu.bettercosmic.shared.command.DevCommands;
 import dev.nishu.bettercosmic.shared.config.SharedConfig;
+import dev.nishu.bettercosmic.shared.notification.ToastRenderer;
 import dev.nishu.bettercosmic.shared.ui.ConfigUi;
 import dev.nishu.bettercosmic.shared.update.UpdateChecker;
 import dev.nishu.bettercosmic.shared.ui.GeneralPanel;
@@ -40,8 +41,12 @@ public class BetterCosmicShared implements ClientModInitializer {
 		// registered by each mod under its own Network.
 		ConfigRegistry.register(GeneralPanel.create());
 
-		// Auto-updater (phase 1: detect + notify). Async manifest check; surfaces via toast, the
-		// General panel's Updates row, and the ModMenu badge. Fails soft.
+		// Toast system (HUD + over-screen render + button clicks). Idempotent — the mods may also
+		// call it; registering here keeps the shared updater's toast working on its own.
+		ToastRenderer.register();
+
+		// Auto-updater. Async manifest check; surfaces via a button toast, the General panel's Updates
+		// row, and the ModMenu badge. Opt-in self-apply. Fails soft.
 		UpdateChecker.init();
 
 		LOGGER.info("BetterCosmic Shared library initialized (config dir: {}).",

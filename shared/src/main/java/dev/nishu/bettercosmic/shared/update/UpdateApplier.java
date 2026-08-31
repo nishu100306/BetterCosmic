@@ -2,10 +2,8 @@ package dev.nishu.bettercosmic.shared.update;
 
 import dev.nishu.bettercosmic.shared.BetterCosmicShared;
 import dev.nishu.bettercosmic.shared.config.BetterCosmicConfig;
-import dev.nishu.bettercosmic.shared.notification.Notifier;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -22,7 +20,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Phase 2 — opt-in staged self-apply, in-session-move model (as used by ModMenuUpdater).
@@ -45,15 +43,44 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public final class UpdateApplier {
 
-	private static final String MOD_ID = "bettercosmic";
 	private static final String TMP_DIR = ".bettercosmic-updates"; // download scratch (not scanned by Fabric)
 	private static final String MARKER = "pending-cleanup.properties";
 	private static final String BACKUPS = "backups";
 
+	/** The install lifecycle. {@code FAILED} is retryable; {@code DOWNLOADED} awaits a restart. */
+	public enum State { IDLE, DOWNLOADING, DOWNLOADED, FAILED }
+
 	private static HttpClient downloadClient;
-	private static final AtomicBoolean installing = new AtomicBoolean(false);
+	private static final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
+	private static volatile boolean cancelRequested = false;
+	private static volatile CompletableFuture<HttpResponse<Path>> downloadFuture = null;
+	private static volatile Path installedJar = null; // new jar placed in mods/, kept for uninstall
+	private static volatile Path partFile = null;     // in-progress download file (for progress readout)
+	private static volatile long contentLength = -1;  // total download size in bytes, -1 if unknown
 
 	private UpdateApplier() {}
+
+	/** Current install lifecycle state. */
+	public static State state() {
+		return state.get();
+	}
+
+	/** Download progress in [0,1], or {@code -1} if not downloading / size unknown. */
+	public static double downloadProgress() {
+		if (state.get() != State.DOWNLOADING) {
+			return -1;
+		}
+		Path p = partFile;
+		long total = contentLength;
+		if (p == null || total <= 0) {
+			return -1;
+		}
+		try {
+			return Math.min(1.0, (double) Files.size(p) / total);
+		} catch (Exception e) {
+			return -1;
+		}
+	}
 
 	/** True when the mod is a single jar in a writable dir — i.e., an in-place install is possible. */
 	public static boolean canSelfApply() {
@@ -96,64 +123,127 @@ public final class UpdateApplier {
 		}
 	}
 
-	/** Downloads + verifies the update off-thread, then drops it into {@code mods/} for the next launch. */
-	public static void installAsync(UpdateState state) {
+	/**
+	 * Downloads + verifies the update off-thread, then drops it into {@code mods/} for the next launch.
+	 * The download is cancellable via {@link #cancel()}. {@code onDownloaded} runs on the client thread
+	 * once the verified jar is in place.
+	 */
+	public static void installAsync(UpdateState st, Runnable onDownloaded, Runnable onFailed) {
 		if (!canSelfApply()) {
 			BetterCosmicShared.LOGGER.info("Self-apply unavailable (dev / non-jar install); not installing.");
 			return;
 		}
-		if (state.url == null || state.url.isBlank()) {
+		if (st.url == null || st.url.isBlank()) {
 			BetterCosmicShared.LOGGER.warn("Manifest has no download URL; cannot self-apply.");
 			return;
 		}
-		if (state.sha256 == null || state.sha256.isBlank()) {
+		if (st.sha256 == null || st.sha256.isBlank()) {
 			BetterCosmicShared.LOGGER.warn("Manifest has no sha256; refusing to auto-install an unverified jar.");
 			return;
 		}
-		if (!installing.compareAndSet(false, true)) {
-			return; // an install is already in flight
+		// Start only from a clean/failed state; DOWNLOADING/DOWNLOADED already have this in hand.
+		if (!(state.compareAndSet(State.IDLE, State.DOWNLOADING)
+				|| state.compareAndSet(State.FAILED, State.DOWNLOADING))) {
+			return;
 		}
+		cancelRequested = false;
+		contentLength = -1;
 		CompletableFuture.runAsync(() -> {
 			try {
-				doInstall(state);
+				doInstall(st, onDownloaded, onFailed);
 			} finally {
-				installing.set(false);
+				downloadFuture = null;
+				partFile = null;
 			}
 		});
 	}
 
-	private static void doInstall(UpdateState state) {
+	/**
+	 * Cancels an in-progress download, or — if the new jar was already placed in {@code mods/} — removes
+	 * it and the cleanup marker so the update won't install on restart (a rollback to the running jar).
+	 */
+	public static void cancel() {
+		cancelRequested = true;
+		CompletableFuture<HttpResponse<Path>> f = downloadFuture;
+		if (f != null) {
+			f.cancel(true);
+		}
+		Path jar = installedJar;
+		if (jar != null) {
+			deleteQuietly(jar);
+			installedJar = null;
+		}
+		deleteQuietly(markerPath());
+		state.set(State.IDLE);
+		BetterCosmicShared.LOGGER.info("Update download cancelled / pending install removed.");
+	}
+
+	private static void doInstall(UpdateState st, Runnable onDownloaded, Runnable onFailed) {
 		try {
-			Path target = newJarPath(state.latest); // mods/bettercosmic-<latest>.jar
+			Path target = newJarPath(st.latest); // mods/bettercosmic-<latest>.jar
 			if (target == null) {
+				fail(onFailed);
 				return;
 			}
 			// Already dropped in this or a prior session (and verified)? Just (re)write the marker + notify.
-			if (Files.exists(target) && state.sha256.equalsIgnoreCase(sha256Of(target))) {
+			if (Files.exists(target) && st.sha256.equalsIgnoreCase(sha256Of(target))) {
 				writeMarker();
-				notifyDownloaded(state.latest);
+				installedJar = target;
+				state.set(State.DOWNLOADED);
+				fire(onDownloaded);
 				return;
 			}
 
 			Path tmpDir = tmpDir();
 			Files.createDirectories(tmpDir);
-			Path part = tmpDir.resolve("bettercosmic-" + state.latest + ".jar.part");
+			Path part = tmpDir.resolve(jarName(st.latest) + ".part");
+			partFile = part;
 
-			HttpResponse<Path> resp = downloadClient().send(
-					HttpRequest.newBuilder(URI.create(state.url)).timeout(Duration.ofMinutes(5)).GET().build(),
-					HttpResponse.BodyHandlers.ofFile(part, StandardOpenOption.CREATE,
-							StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING));
+			// Custom BodyHandler: capture Content-Length (for the progress readout) at response start,
+			// then stream the body straight to the file with the built-in file subscriber.
+			downloadFuture = downloadClient().sendAsync(
+					HttpRequest.newBuilder(URI.create(st.url)).timeout(Duration.ofMinutes(5)).GET().build(),
+					info -> {
+						contentLength = info.headers().firstValueAsLong("Content-Length").orElse(-1L);
+						return HttpResponse.BodySubscribers.ofFile(part, StandardOpenOption.CREATE,
+								StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+					});
+			HttpResponse<Path> resp;
+			try {
+				resp = downloadFuture.join();
+			} catch (Exception cancelledOrFailed) {
+				deleteQuietly(part);
+				if (cancelRequested) {
+					state.set(State.IDLE); // user cancelled — quiet
+				} else {
+					BetterCosmicShared.LOGGER.warn("Update download error: {}", cancelledOrFailed.toString());
+					fail(onFailed);
+				}
+				return;
+			}
+			if (cancelRequested) {
+				deleteQuietly(part);
+				state.set(State.IDLE);
+				return;
+			}
 			if (resp.statusCode() != 200) {
 				BetterCosmicShared.LOGGER.warn("Update download failed (HTTP {}).", resp.statusCode());
 				deleteQuietly(part);
+				fail(onFailed);
 				return;
 			}
 
 			String actual = sha256Of(part);
-			if (!state.sha256.equalsIgnoreCase(actual)) {
+			if (!st.sha256.equalsIgnoreCase(actual)) {
 				BetterCosmicShared.LOGGER.error(
-						"Downloaded jar hash mismatch (expected {}, got {}); discarding.", state.sha256, actual);
+						"Downloaded jar hash mismatch (expected {}, got {}); discarding.", st.sha256, actual);
 				deleteQuietly(part);
+				fail(onFailed);
+				return;
+			}
+			if (cancelRequested) {
+				deleteQuietly(part);
+				state.set(State.IDLE);
 				return;
 			}
 
@@ -161,10 +251,31 @@ public final class UpdateApplier {
 			// launch; the running old jar is left alone and retired by performCleanup() then.
 			Files.move(part, target, StandardCopyOption.REPLACE_EXISTING);
 			writeMarker();
-			BetterCosmicShared.LOGGER.info("Installed update {} into mods/ (active next launch).", state.latest);
-			notifyDownloaded(state.latest);
+			installedJar = target;
+			if (cancelRequested) { // cancelled during the final move — undo it
+				deleteQuietly(target);
+				deleteQuietly(markerPath());
+				installedJar = null;
+				state.set(State.IDLE);
+				return;
+			}
+			state.set(State.DOWNLOADED);
+			BetterCosmicShared.LOGGER.info("Installed update {} into mods/ (active next launch).", st.latest);
+			fire(onDownloaded);
 		} catch (Exception e) {
 			BetterCosmicShared.LOGGER.error("Failed to install update", e);
+			fail(onFailed);
+		}
+	}
+
+	private static void fail(Runnable onFailed) {
+		state.set(State.FAILED);
+		fire(onFailed);
+	}
+
+	private static void fire(Runnable action) {
+		if (action != null) {
+			Minecraft.getInstance().execute(action);
 		}
 	}
 
@@ -188,12 +299,6 @@ public final class UpdateApplier {
 		}
 	}
 
-	private static void notifyDownloaded(String version) {
-		Minecraft.getInstance().execute(() -> Notifier.toast(
-				Component.literal("BetterCosmic " + version + " downloaded"),
-				Component.literal("Restart to finish installing"), null, 8000L, "note_pling", 0.5f));
-	}
-
 	private static Properties load(Path marker) throws Exception {
 		Properties p = new Properties();
 		try (InputStream in = Files.newInputStream(marker)) {
@@ -212,7 +317,7 @@ public final class UpdateApplier {
 	}
 
 	private static Path ownJar() {
-		return FabricLoader.getInstance().getModContainer(MOD_ID)
+		return FabricLoader.getInstance().getModContainer(UpdateChecker.MOD_ID)
 				.map(c -> c.getOrigin().getPaths())
 				.filter(paths -> paths.size() == 1)
 				.map(List::getFirst)
@@ -226,7 +331,12 @@ public final class UpdateApplier {
 
 	private static Path newJarPath(String version) {
 		Path mods = modsDir();
-		return mods != null ? mods.resolve("bettercosmic-" + version + ".jar") : null;
+		return mods != null ? mods.resolve(jarName(version)) : null;
+	}
+
+	/** The versioned jar filename for {@code version}, derived from the mod id (single source of truth). */
+	private static String jarName(String version) {
+		return UpdateChecker.MOD_ID + "-" + version + ".jar";
 	}
 
 	private static Path tmpDir() {

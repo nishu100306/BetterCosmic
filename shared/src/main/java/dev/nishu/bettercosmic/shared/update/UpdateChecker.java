@@ -2,11 +2,9 @@ package dev.nishu.bettercosmic.shared.update;
 
 import dev.nishu.bettercosmic.shared.BetterCosmicShared;
 import dev.nishu.bettercosmic.shared.config.SharedConfig;
-import dev.nishu.bettercosmic.shared.notification.Notifier;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -18,14 +16,13 @@ import java.util.concurrent.CompletableFuture;
 /**
  * The update-check engine. On client init it asynchronously fetches the update manifest, compares the
  * newest published version against the installed one, and — if a newer, Minecraft-compatible build
- * exists — surfaces it three ways: an in-game toast on world join, a row in the shared config screen
- * (see {@code GeneralPanel}), and a ModMenu "update available" badge (see {@code bettercosmic}'s
- * {@code ModMenuUpdateChecker}). When the user has opted in ({@code autoUpdateApply}), it also hands
- * an available update to {@link UpdateApplier} to download and install.
+ * exists — surfaces it three ways: a persistent, clickable in-game toast (a button {@link ToastRenderer}
+ * toast), a row in the shared config screen (see {@code GeneralPanel}), and a ModMenu badge (see
+ * {@code bettercosmic}'s {@code ModMenuUpdateChecker}). When the user has opted in
+ * ({@code autoUpdateApply}), it also hands an available update to {@link UpdateApplier} to download.
  *
- * <p>All network I/O runs off the render thread; results are marshalled back via
- * {@link Minecraft#execute}. Any failure fails soft — the feature simply goes quiet and the game is
- * unaffected.
+ * <p>All network I/O runs off the render thread; results are published to volatile state that the UI
+ * reads. Any failure fails soft — the feature simply goes quiet and the game is unaffected.
  *
  * <p>See {@code planning/AUTO_UPDATER_PLAN.md} for the full design and locked decisions.
  */
@@ -45,7 +42,7 @@ public final class UpdateChecker {
 
 	private static volatile boolean initialized = false;
 	private static volatile UpdateState state = null; // null until the first check completes
-	private static volatile boolean toastShown = false; // one toast per session
+	private static volatile boolean shownThisSession = false; // notified once per session, on world join
 
 	private UpdateChecker() {}
 
@@ -63,7 +60,7 @@ public final class UpdateChecker {
 		return s.available ? "Update available: " + s.latest : "Up to date (" + s.installed + ")";
 	}
 
-	/** Registers the async check and the join-toast hook. Call once from the shared client init. */
+	/** Registers cleanup, the update toast, and the async check. Call once from the shared client init. */
 	public static void init() {
 		if (initialized) {
 			return;
@@ -73,9 +70,8 @@ public final class UpdateChecker {
 		// Retire the old jar if a previous session installed a newer one that we're now running.
 		UpdateApplier.performCleanup();
 
-		// Show the toast when the player joins a world (the earliest point the HUD-based toast can
-		// render — the title screen has no HUD). Guarded so it fires at most once per session.
-		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> maybeShowToast(client));
+		// The update toast appears on world join (not at launch / the title screen).
+		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> tryShowNotification());
 
 		if (!SharedConfig.get().autoUpdateCheck) {
 			BetterCosmicShared.LOGGER.info("Update check skipped (autoUpdateCheck is off).");
@@ -90,34 +86,80 @@ public final class UpdateChecker {
 	 * developer can force a check.
 	 */
 	public static void recheck() {
-		toastShown = false;
+		shownThisSession = false;
 		startCheck();
 	}
 
-	/** Kicks off the async fetch + notify. On completion, logs the outcome and surfaces the toast. */
+	/** Kicks off the async fetch. On completion, logs the outcome; notification happens on world join. */
 	private static void startCheck() {
 		CompletableFuture.supplyAsync(UpdateChecker::fetchNow).thenAccept(result -> {
 			state = result;
 			BetterCosmicShared.LOGGER.info(
 					"Update check: installed={} latest={} available={} (manifest {})",
 					result.installed, result.latest, result.available, MANIFEST_URL);
-			Minecraft.getInstance().execute(() -> maybeShowToast(Minecraft.getInstance()));
-
-			// Opt-in self-apply: download + verify + drop the new jar into mods/ for the next launch.
-			if (result.available && SharedConfig.get().autoUpdateApply) {
-				UpdateApplier.installAsync(result);
-			}
+			// If the check finishes while already in a world (e.g. a re-check), notify now.
+			Minecraft.getInstance().execute(UpdateChecker::tryShowNotification);
 		});
 	}
 
 	/**
-	 * Shows a sample update toast immediately, bypassing the version/availability guards. For manually
-	 * previewing the toast's look in dev ({@code /bcupdate demo}) without a published manifest.
+	 * Shows the update notification once per session, when in a world and the updater is enabled. When
+	 * auto-install is on, starts the download; otherwise shows an "available" toast. A <em>mandatory</em>
+	 * update re-shows on every world join. Client-thread only.
 	 */
+	private static void tryShowNotification() {
+		if (shownThisSession) {
+			return;
+		}
+		UpdateState s = state;
+		if (s == null || !s.available) {
+			return;
+		}
+		if (Minecraft.getInstance().player == null || !SharedConfig.get().autoUpdateCheck) {
+			return; // only in a world, and only while the updater is enabled
+		}
+		shownThisSession = !s.mandatory; // mandatory updates keep nagging each join
+		if (SharedConfig.get().autoUpdateApply && UpdateApplier.canSelfApply()) {
+			startDownload(s);
+		} else {
+			UpdateNotifier.showAvailable(s.latest, s.changelog, s.mandatory);
+		}
+	}
+
+	/** Shows the downloading toast and kicks off the cancellable download, wiring result callbacks. */
+	private static void startDownload(UpdateState s) {
+		// If a prior trigger already finished the download (e.g. a mandatory re-show), reflect that.
+		if (UpdateApplier.state() == UpdateApplier.State.DOWNLOADED) {
+			UpdateNotifier.showDownloaded(s.mandatory);
+			return;
+		}
+		UpdateNotifier.showDownloading(s.mandatory);
+		UpdateApplier.installAsync(s,
+				() -> UpdateNotifier.showDownloaded(s.mandatory),
+				UpdateNotifier::showFailed);
+	}
+
+	/** Re-attempts the download after a failure (the failed toast's Retry button). */
+	public static void retryDownload() {
+		UpdateState s = state;
+		if (s != null && s.available) {
+			startDownload(s);
+		}
+	}
+
+	/** Shows a sample toast for previewing in dev ({@code /bcupdate demo}). Does not download. */
 	public static void demoToast() {
-		Notifier.toast(
-				Component.literal("BetterCosmic " + installedVersion() + "+1 available (demo)"),
-				Component.literal("Open config (I) to update"), null, 6000L, "note_pling", 0.5f);
+		UpdateNotifier.showDownloading(false);
+	}
+
+	/** Disables the updater, cancels any pending update, and confirms with a toast. */
+	public static void disableUpdater() {
+		SharedConfig cfg = SharedConfig.get();
+		cfg.autoUpdateCheck = false;
+		cfg.autoUpdateApply = false;
+		cfg.save();
+		UpdateApplier.cancel();
+		UpdateNotifier.showDisabled();
 	}
 
 	/**
@@ -180,32 +222,6 @@ public final class UpdateChecker {
 					.build();
 		}
 		return httpClient;
-	}
-
-	/** Shows the update toast once per session, if an update is available and the player is in-game. */
-	private static void maybeShowToast(Minecraft client) {
-		if (toastShown || client == null || client.player == null) {
-			return;
-		}
-		UpdateState s = state;
-		if (s == null || !s.available) {
-			return;
-		}
-		toastShown = true;
-
-		Component title = Component.literal("BetterCosmic " + s.latest + " available");
-		String descText = s.mandatory
-				? "Important update — open config (I) to update"
-				: (s.changelog != null && !s.changelog.isBlank()
-						? trim(s.changelog, 48)
-						: "Open config (I) to update");
-		long duration = s.mandatory ? 8000L : 5000L;
-		Notifier.toast(title, Component.literal(descText), null, duration, "note_pling", 0.5f);
-	}
-
-	private static String trim(String s, int max) {
-		s = s.strip();
-		return s.length() <= max ? s : s.substring(0, max - 1) + "…";
 	}
 
 	private static String installedVersion() {
