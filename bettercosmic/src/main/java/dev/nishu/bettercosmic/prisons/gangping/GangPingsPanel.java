@@ -72,8 +72,8 @@ public final class GangPingsPanel {
 				Options.slider("Text scale", d.gangPingTextScale, 0.5, 3.0, 0.1,
 						() -> (double) c.gangPingTextScale, v -> { c.gangPingTextScale = v.floatValue(); c.save(); })));
 
-		return ConfigPanel.of("prisons-gangpings", "Gang Pings",
-				"Gang ping markers", PanelIcon.SPARKLE,
+		return ConfigPanel.of("prisons-gangpings", "Gang pings",
+				"Gang ping markers", PanelIcon.MARKER,
 				List.of(general, icon, beams, sound, text));
 	}
 }

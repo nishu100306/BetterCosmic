@@ -3,13 +3,16 @@ package dev.nishu.bettercosmic.shared.ui.model;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**
- * The small monochrome glyph shown on a {@link ConfigPanel} card. Drawn with primitive fills so the
- * framework carries no texture assets yet; Phase 7 may swap these for 16×16 PNG sprites (see the
- * icons subplan in {@code CONFIG_UI_PLAN.md} §3.2). Each glyph is drawn tinted to a single color
- * inside a {@code size}×{@code size} box at ({@code x},{@code y}).
+ * The small monochrome glyph shown on a {@link ConfigPanel} card. Two kinds coexist: the original
+ * <em>parametric</em> glyphs are drawn with primitive fills that scale to any {@code size}; the newer
+ * icons carry a hand-authored 16×16 bitmap (a {@code String[16]} of {@code '#'}/{@code '.'} rows,
+ * traced from the matching Minecraft item texture where one exists) and are nearest-neighbor scaled
+ * into the {@code size}×{@code size} box. Every glyph is tinted to a single {@code color} at
+ * ({@code x},{@code y}).
  */
 public enum PanelIcon {
-	/** Potion flask — trinkets. */
+	// ---- parametric glyphs (scale to any size) ----
+	/** Potion flask — legacy trinkets icon (superseded by {@link #POTION}). */
 	FLASK,
 	/** Gear — general/settings. */
 	GEAR,
@@ -17,14 +20,99 @@ public enum PanelIcon {
 	LOCK,
 	/** Eye — inventory/overlay views (EasyView). */
 	EYE,
-	/** Pouch — satchels. */
+	/** Pouch — legacy satchel icon (superseded by {@link #BUNDLE}). */
 	SATCHEL,
 	/** Bar chart — stats/tracking. */
 	CHART,
-	/** Sparkle/star — enchants & auras. */
-	SPARKLE;
+	/** Sparkle/star — legacy enchant/alert icon (superseded by feature-specific icons). */
+	SPARKLE,
+
+	// ---- 16×16 bitmap glyphs (traced from / styled after Minecraft item textures) ----
+	/** Splash potion — trinket charge overlay. */
+	POTION(
+		"................", "................", "...........##...", "..........###...",
+		".........####...", "........#####...", ".......#####....", "......#####.....",
+		".....#######....", "....#########...", "....#########...", "....#########...",
+		"....#########...", ".....#######....", "......#####.....", "................"),
+	/** Bundle — satchel tracking. */
+	BUNDLE(
+		"................", "................", "....###.........", "...#######......",
+		"..###########...", "..############..", ".#############..", ".##############.",
+		".###############", "################", "################", "################",
+		"################", ".##############.", "..############..", "....########...."),
+	/** Beacon beam — waypoints & beams. */
+	BEACON(
+		"....########....", ".....######.....", "......####......", "......####......",
+		"......####......", "......####......", "......####......", "......####......",
+		".##############.", ".##############.", ".##############.", ".##############.",
+		".##############.", ".##############.", ".##############.", ".##############."),
+	/** Angled falling block + streaks — events (meteors). */
+	METEOR(
+		".........#......", "..........#.#...", "...........#.#..", "..........#...#.",
+		"...........#....", ".....#......#...", "....###.........", "...#####........",
+		"..#######.......", ".#########......", "..#######.......", "...#####........",
+		"....###.........", ".....#..........", "................", "................"),
+	/** Magnifying glass — chest search. */
+	MAGNIFIER(
+		"................", ".....###........", "...#######......", "..#########.....",
+		"..##.....##.....", ".###.....###....", ".###.....###....", ".###.....###....",
+		"..##.....##.....", "..#########.....", "...#########....", ".....###..###...",
+		"...........###..", "............###.", ".............###", "..............##"),
+	/** Diamond pickaxe — peaceful mining. */
+	PICKAXE(
+		"................", "................", "......#####.....", ".....#########..",
+		"......########..", "..........####..", ".........######.", "........###.###.",
+		".......###..###.", "......###...###.", ".....###....###.", "....###......#..",
+		"...###..........", "..###...........", "..##............", "................"),
+	/** Diamond sword — enchants & auras. */
+	SWORD(
+		".............###", "............####", "...........#####", "..........#####.",
+		".........#####..", "........#####...", "..##...#####....", "..###.#####.....",
+		"...#######......", "...######.......", "....####........", "...######.......",
+		"..###.####......", "####....##......", "###.............", "###............."),
+	/** Clock — command & ability cooldowns. */
+	CLOCK(
+		"................", "......####......", "....########....", "...###....###...",
+		"..##....#...##..", "..##....#...##..", ".##.....#....##.", ".##....##....##.",
+		".##....##....##.", ".##......##..##.", "..##.......###..", "..##........##..",
+		"...###....###...", "....########....", "......####......", "................"),
+	/** Bell — notifications. */
+	BELL(
+		"................", ".......##.......", ".......##.......", "......####......",
+		".....######.....", ".....######.....", "....########....", "....########....",
+		"....########....", "....########....", "...##########...", "...##########...",
+		"..############..", "..############..", "......####......", "......####......"),
+	/** Map pin — gang pings. */
+	MARKER(
+		"......####......", "....########....", "...##########...", "..############..",
+		"..####....####..", "..###......###..", "..####....####..", "..############..",
+		"...##########...", "...##########...", "....########....", ".....######.....",
+		"......####......", ".......##.......", ".......##.......", "................"),
+	/** Speech bubble — item tooltips. */
+	BUBBLE(
+		"................", "................", "...##########...", "..############..",
+		".##############.", ".##############.", ".##############.", ".##############.",
+		".##############.", "..############..", "...##########...", "....#####.......",
+		"....####........", "....###.........", "....##..........", "....#..........."),
+	/** Sliders — quality of life. */
+	SLIDERS(
+		"................", "................", "....###.........", "....###.........",
+		"..############..", "....###.........", "....###..###....", ".........###....",
+		"..############..", ".........###....", "......######....", "......###.......",
+		"..############..", "......###.......", "......###.......", "................");
+
+	/** 16×16 glyph bitmap, or {@code null} for a parametric glyph (drawn by {@link #draw}'s switch). */
+	private final String[] bits;
+
+	PanelIcon(String... bits) {
+		this.bits = bits.length == 0 ? null : bits;
+	}
 
 	public void draw(GuiGraphics g, int x, int y, int size, int color) {
+		if (bits != null) {
+			bitmap(g, x, y, size, color, bits);
+			return;
+		}
 		switch (this) {
 			case FLASK -> flask(g, x, y, size, color);
 			case GEAR -> gear(g, x, y, size, color);
@@ -33,6 +121,20 @@ public enum PanelIcon {
 			case SATCHEL -> satchel(g, x, y, size, color);
 			case CHART -> chart(g, x, y, size, color);
 			case SPARKLE -> sparkle(g, x, y, size, color);
+			default -> { /* bitmap glyphs handled above */ }
+		}
+	}
+
+	/** Nearest-neighbor scales a 16×16 {@code '#'}/{@code '.'} bitmap into the size×size box. */
+	private static void bitmap(GuiGraphics g, int x, int y, int size, int color, String[] rows) {
+		for (int dy = 0; dy < size; dy++) {
+			String row = rows[dy * 16 / size];
+			for (int dx = 0; dx < size; dx++) {
+				int sx = dx * 16 / size;
+				if (sx < row.length() && row.charAt(sx) == '#') {
+					g.fill(x + dx, y + dy, x + dx + 1, y + dy + 1, color);
+				}
+			}
 		}
 	}
 

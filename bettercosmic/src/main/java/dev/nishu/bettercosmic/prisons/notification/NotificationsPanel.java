@@ -40,6 +40,6 @@ public final class NotificationsPanel {
 		}
 
 		return ConfigPanel.of("prisons-notifications", "Notifications",
-				"Sounds & alerts for messages, mentions, and more", PanelIcon.SPARKLE, groups);
+				"Sounds & alerts for messages, mentions, and more", PanelIcon.BELL, groups);
 	}
 }

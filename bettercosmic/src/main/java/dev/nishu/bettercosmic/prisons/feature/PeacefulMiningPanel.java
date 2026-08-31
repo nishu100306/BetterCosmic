@@ -19,7 +19,7 @@ public final class PeacefulMiningPanel {
 		PrisonsConfig d = new PrisonsConfig();
 		PrisonsConfig c = BetterPrisonsClient.config;
 
-		OptionGroup general = new OptionGroup("Peaceful mining", List.<Option>of(
+		OptionGroup general = new OptionGroup("General", List.<Option>of(
 				Options.toggle("Enabled", d.peacefulMiningEnabled,
 						() -> c.peacefulMiningEnabled, v -> { c.peacefulMiningEnabled = v; c.save(); })
 						.tooltip("Ghost nearby players and mine through them while holding a mining tool."),
@@ -40,8 +40,8 @@ public final class PeacefulMiningPanel {
 						() -> c.peacefulMiningDisableOnCombat, v -> { c.peacefulMiningDisableOnCombat = v; c.save(); })
 						.tooltip("Turn peaceful mining off when you enter combat, back on when it ends.")));
 
-		return ConfigPanel.of("prisons-peaceful", "Peaceful Mining",
-				"See and mine through nearby players", PanelIcon.GEAR,
+		return ConfigPanel.of("prisons-peaceful", "Peaceful mining",
+				"See and mine through nearby players", PanelIcon.PICKAXE,
 				List.of(general));
 	}
 }

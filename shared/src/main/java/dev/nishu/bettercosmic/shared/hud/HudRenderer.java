@@ -1,6 +1,7 @@
 package dev.nishu.bettercosmic.shared.hud;
 
 import dev.nishu.bettercosmic.shared.server.ServerContext;
+import dev.nishu.bettercosmic.shared.ui.core.Theme;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.Minecraft;
@@ -24,6 +25,8 @@ public final class HudRenderer {
 			if (client.player == null || client.options.hideGui) {
 				return;
 			}
+			// Keep the shared tokens (and the server-following accent) fresh for in-world HUDs/toasts.
+			Theme.load();
 			for (HudRegistry.Entry entry : HudRegistry.entries()) {
 				if (entry.hud.enabled && ServerContext.isActive(entry.network)) {
 					entry.hud.render(context, client);

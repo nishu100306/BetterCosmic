@@ -45,10 +45,10 @@ public final class CooldownHudPanel {
 				PrisonOptions.colorRgb("tpa color", d.tpaColor, () -> c.tpaColor, v -> { c.tpaColor = v; c.save(); }),
 				Options.toggle("tpahere", d.tpahereEnabled, () -> c.tpahereEnabled, v -> { c.tpahereEnabled = v; c.save(); }),
 				PrisonOptions.colorRgb("tpahere color", d.tpahereColor, () -> c.tpahereColor, v -> { c.tpahereColor = v; c.save(); }),
-				Options.toggle("Dangle", d.dangleEnabled, () -> c.dangleEnabled, v -> { c.dangleEnabled = v; c.save(); }),
-				PrisonOptions.colorRgb("Dangle color", d.dangleColor, () -> c.dangleColor, v -> { c.dangleColor = v; c.save(); }),
-				Options.toggle("Adangle", d.adangleEnabled, () -> c.adangleEnabled, v -> { c.adangleEnabled = v; c.save(); }),
-				PrisonOptions.colorRgb("Adangle color", d.adangleColor, () -> c.adangleColor, v -> { c.adangleColor = v; c.save(); }),
+				Options.toggle("dangle", d.dangleEnabled, () -> c.dangleEnabled, v -> { c.dangleEnabled = v; c.save(); }),
+				PrisonOptions.colorRgb("dangle color", d.dangleColor, () -> c.dangleColor, v -> { c.dangleColor = v; c.save(); }),
+				Options.toggle("adangle", d.adangleEnabled, () -> c.adangleEnabled, v -> { c.adangleEnabled = v; c.save(); }),
+				PrisonOptions.colorRgb("adangle color", d.adangleColor, () -> c.adangleColor, v -> { c.adangleColor = v; c.save(); }),
 				Options.toggle("Near", d.nearEnabled, () -> c.nearEnabled, v -> { c.nearEnabled = v; c.save(); }),
 				PrisonOptions.colorRgb("Near color", d.nearColor, () -> c.nearColor, v -> { c.nearColor = v; c.save(); }),
 				Options.toggle("Pulse", d.pulseEnabled, () -> c.pulseEnabled, v -> { c.pulseEnabled = v; c.save(); }),
@@ -67,7 +67,7 @@ public final class CooldownHudPanel {
 						() -> c.cooldownBorderThickness, v -> { c.cooldownBorderThickness = v; c.save(); })));
 
 		return ConfigPanel.of("prisons-cooldown", "Cooldown HUD",
-				"Command & ability cooldown timers", PanelIcon.GEAR,
+				"Command & ability cooldown timers", PanelIcon.CLOCK,
 				List.of(general, commands, style));
 	}
 }

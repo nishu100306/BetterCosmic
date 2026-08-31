@@ -62,7 +62,7 @@ public class BetterSkyClient implements ClientModInitializer {
 						.tooltip("Used only when Source is Custom.")
 		));
 		ConfigRegistry.register(ConfigPanel.of("trinkets", "Trinkets",
-				"Potion trinket charge overlay", PanelIcon.FLASK, List.of(overlayGroup, colorGroup)),
+				"Potion trinket charge overlay", PanelIcon.POTION, List.of(overlayGroup, colorGroup)),
 				Network.SKY);
 
 		BetterSky.LOGGER.info("Loaded configs: {} and {}",

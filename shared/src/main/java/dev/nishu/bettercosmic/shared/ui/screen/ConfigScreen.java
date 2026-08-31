@@ -82,7 +82,7 @@ public final class ConfigScreen extends Screen {
 
 	@Override
 	protected void init() {
-		Theme.load();
+		Theme.setProfile(profile); // pin accent to the viewed profile (orange = Prisons, yellow = Sky)
 		overlay.clear(); // drop any popup left open across a resize
 		x0 = (this.width - W) / 2;
 		y0 = (this.height - H) / 2;
@@ -120,6 +120,7 @@ public final class ConfigScreen extends Screen {
 		}
 		UiSounds.click();
 		profile = network;
+		Theme.setProfile(profile); // repaint in the new profile's accent
 		SharedConfig c = SharedConfig.get();
 		c.lastConfigProfile = network.name();
 		c.save();
@@ -336,6 +337,7 @@ public final class ConfigScreen extends Screen {
 
 	@Override
 	public void onClose() {
+		Theme.setProfile(null); // release the pin so the in-world accent follows the connected server
 		this.minecraft.setScreen(parent);
 	}
 

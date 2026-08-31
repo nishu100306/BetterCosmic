@@ -61,11 +61,7 @@ import dev.nishu.bettercosmic.shared.render.FloatingTextRenderer;
 import dev.nishu.bettercosmic.shared.render.WaypointRenderer;
 import dev.nishu.bettercosmic.shared.render.WorldSpaceTransform;
 import dev.nishu.bettercosmic.shared.server.Network;
-import dev.nishu.bettercosmic.shared.ui.model.ConfigPanel;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigRegistry;
-import dev.nishu.bettercosmic.shared.ui.model.OptionGroup;
-import dev.nishu.bettercosmic.shared.ui.model.Options;
-import dev.nishu.bettercosmic.shared.ui.model.PanelIcon;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
@@ -73,8 +69,6 @@ import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
-
-import java.util.List;
 
 /**
  * Client entrypoint for BetterPrisons.
@@ -356,47 +350,22 @@ public class BetterPrisonsClient implements ClientModInitializer {
 	 * in Phase C.
 	 */
 	private void registerPanels() {
-		PrisonsConfig def = new PrisonsConfig(); // code defaults, so reset restores these
-
-		OptionGroup qol = new OptionGroup("Quality of life", List.of(
-				Options.toggle("Auto-trade", def.autoTradeEnabled,
-						() -> config.autoTradeEnabled,
-						v -> { config.autoTradeEnabled = v; config.save(); })
-						.tooltip("Shift-right-click a player to send /trade <name>."),
-				Options.toggle("Bold XP/Energy popups", def.boldXpEnergyTitles,
-						() -> config.boldXpEnergyTitles,
-						v -> { config.boldXpEnergyTitles = v; config.save(); })
-						.tooltip("Bold the server's +XP / +Energy title popups."),
-				Options.toggle("PrisonBreak texture pack", def.prisonbreakTexturePackEnabled,
-						() -> config.prisonbreakTexturePackEnabled,
-						v -> { config.prisonbreakTexturePackEnabled = v; config.save(); })
-						.tooltip("Auto-apply the bundled ore pack in the PrisonBreak world.")));
-
-		OptionGroup search = new OptionGroup("Search", List.of(
-				Options.toggle("Chest search", def.chestSearchEnabled,
-						() -> config.chestSearchEnabled,
-						v -> { config.chestSearchEnabled = v; config.save(); })
-						.tooltip("Search bar + filter sidebar in containers."),
-				Options.toggle("Clue scroll sorting", def.clueScrollSortingEnabled,
-						() -> config.clueScrollSortingEnabled,
-						v -> { config.clueScrollSortingEnabled = v; config.save(); })
-						.tooltip("Show each clue scroll's step number on the item.")));
-
-		ConfigRegistry.register(ConfigPanel.of("prisons-misc", "Misc",
-				"General BetterPrisons features", PanelIcon.GEAR, List.of(qol, search)), Network.PRISONS);
-
-		ConfigRegistry.register(EasyViewPanel.create(), Network.PRISONS);
-		ConfigRegistry.register(SatchelHudPanel.create(), Network.PRISONS);
+		// Ordered by the config re-categorization sections: HUD overlays, then world & waypoints,
+		// inventory & items, gameplay, and alerts. (Auto-trade, bold popups, and the texture pack — the
+		// former "Misc" panel — now live on the Quality of life panel; chest search / clue scrolls live
+		// on the Search panel. The global General panel is registered by the shared library.)
 		ConfigRegistry.register(StatsHudPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(SatchelHudPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(CooldownHudPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(EnchantHudPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(EventsHudPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(WaypointsPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(GangPingsPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(EasyViewPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(SearchPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(TooltipsPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(PeacefulMiningPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(QolPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(NotificationsPanel.create(), Network.PRISONS);
-		ConfigRegistry.register(SearchPanel.create(), Network.PRISONS);
-		ConfigRegistry.register(PeacefulMiningPanel.create(), Network.PRISONS);
 	}
 }

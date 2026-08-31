@@ -69,7 +69,7 @@ public final class SatchelHudPanel {
 						() -> c.satchelBorderThickness, v -> { c.satchelBorderThickness = v; c.save(); })));
 
 		return ConfigPanel.of("prisons-satchel", "Satchel HUD",
-				"Satchel fill tracking overlay", PanelIcon.SATCHEL,
+				"Satchel fill tracking overlay", PanelIcon.BUNDLE,
 				List.of(general, display, thresholds, style));
 	}
 }

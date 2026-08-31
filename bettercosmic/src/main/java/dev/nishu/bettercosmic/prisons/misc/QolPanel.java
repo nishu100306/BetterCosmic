@@ -13,9 +13,10 @@ import java.util.List;
 
 /**
  * Config panel for the quality-of-life render/interaction tweaks: first-person held-item scaling,
- * pickaxe drop protection, and the Blink-trinket destination overlay. (Auto-trade, bold XP/Energy
- * titles, and the texture pack live on the Misc panel.) Bound to {@link PrisonsConfig} via the shared
- * {@code Options} lambdas.
+ * interactions (use-item-while-mining, auto-trade), pickaxe drop protection, the Blink-trinket
+ * destination overlay, and extras (bold XP/Energy popups, the PrisonBreak texture pack). The extras
+ * and auto-trade moved here from the removed "Misc" panel. Bound to {@link PrisonsConfig} via the
+ * shared {@code Options} lambdas.
  */
 public final class QolPanel {
 
@@ -38,7 +39,10 @@ public final class QolPanel {
 		OptionGroup interactions = new OptionGroup("Interactions", List.<Option>of(
 				Options.toggle("Use items while mining", d.useItemWhileMiningEnabled,
 						() -> c.useItemWhileMiningEnabled, v -> { c.useItemWhileMiningEnabled = v; c.save(); })
-						.tooltip("Allow right-click item use while actively breaking a block.")));
+						.tooltip("Allow right-click item use while actively breaking a block."),
+				Options.toggle("Auto-trade", d.autoTradeEnabled,
+						() -> c.autoTradeEnabled, v -> { c.autoTradeEnabled = v; c.save(); })
+						.tooltip("Shift-right-click a player to send /trade <name>.")));
 
 		OptionGroup pickaxeDrop = new OptionGroup("Pickaxe drop protection", List.<Option>of(
 				Options.toggle("Confirm before dropping", d.pickaxeDropConfirmationEnabled,
@@ -62,8 +66,16 @@ public final class QolPanel {
 				Options.intSlider("Outline thickness", d.blinkOverlayOutlineThickness, 0, 6, 1,
 						() -> c.blinkOverlayOutlineThickness, v -> { c.blinkOverlayOutlineThickness = v; c.save(); })));
 
-		return ConfigPanel.of("prisons-qol", "Quality of Life",
-				"Held-item scale, drop protection, Blink overlay", PanelIcon.GEAR,
-				List.of(heldItem, interactions, pickaxeDrop, blink));
+		OptionGroup extras = new OptionGroup("Popups & packs", List.<Option>of(
+				Options.toggle("Bold XP/Energy popups", d.boldXpEnergyTitles,
+						() -> c.boldXpEnergyTitles, v -> { c.boldXpEnergyTitles = v; c.save(); })
+						.tooltip("Bold the server's +XP / +Energy title popups."),
+				Options.toggle("PrisonBreak texture pack", d.prisonbreakTexturePackEnabled,
+						() -> c.prisonbreakTexturePackEnabled, v -> { c.prisonbreakTexturePackEnabled = v; c.save(); })
+						.tooltip("Auto-apply the bundled ore pack in the PrisonBreak world.")));
+
+		return ConfigPanel.of("prisons-qol", "Quality of life",
+				"Item scale, interactions, drop protection & extras", PanelIcon.SLIDERS,
+				List.of(heldItem, interactions, pickaxeDrop, blink, extras));
 	}
 }

@@ -75,8 +75,8 @@ public final class WaypointsPanel {
 				Options.slider("Off-screen icon scale", d.customWaypointOffScreenScale, 0.1, 3.0, 0.1,
 						() -> (double) c.customWaypointOffScreenScale, v -> { c.customWaypointOffScreenScale = v.floatValue(); c.save(); })));
 
-		return ConfigPanel.of("prisons-waypoints", "Waypoints",
-				"Screen markers & beacon beams", PanelIcon.GEAR,
+		return ConfigPanel.of("prisons-waypoints", "Waypoints & beams",
+				"Screen markers & beacon beams", PanelIcon.BEACON,
 				List.of(general, types, beams, custom));
 	}
 }

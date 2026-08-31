@@ -39,7 +39,7 @@ public final class SearchPanel {
 						.tooltip("Add a tooltip flagging clue step types the mod doesn't recognize yet.")));
 
 		return ConfigPanel.of("prisons-search", "Search",
-				"Chest search & clue scroll sorting", PanelIcon.EYE,
+				"Chest search & clue scroll sorting", PanelIcon.MAGNIFIER,
 				List.of(chest, clue));
 	}
 }

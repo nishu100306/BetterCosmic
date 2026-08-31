@@ -71,17 +71,22 @@ public class SharedConfig extends BetterCosmicConfig {
 	public String lastConfigProfile = null;
 
 	// ---- UI theme (compact token set, shared + persisted) ----
-	// The config UI derives its entire look from these eight ARGB tokens; see
+	// The config UI derives its entire look from these ARGB tokens; see
 	// dev.nishu.bettercosmic.shared.ui.core.Theme, which copies them into static fields at load and
 	// re-reads them when a token is edited in the General panel (live repaint). On/off, selection,
-	// and focus states all derive from `themeAccent`, so there are deliberately no separate
-	// per-widget colors. Defaults are the approved cosmic-sky palette.
+	// and focus states all derive from the accent, so there are deliberately no separate per-widget
+	// colors.
 	public int themeGround = 0xE6070810;       // screen dim / deepest ground
 	public int themeSurface = 0xB80E121C;       // panels, cards, popup bodies
 	public int themeSurfaceHover = 0xC8151B2A;  // hovered card / widget background
 	public int themeLine = 0x2996ACD2;          // 1px hairline borders
-	public int themeAccent = 0xFF57D4E6;        // on-states, selection, focus, slider fill
 	public int themeText = 0xFFE7ECF4;          // primary text
 	public int themeMuted = 0xFF8B95A9;         // secondary text / labels
 	public int themeFaint = 0xFF545D70;         // disabled / placeholders
+
+	// The accent (on-states, selection, focus, slider fill) is per-network so each mod has its own
+	// identity: warm orange on Cosmic Prisons, golden yellow on Cosmic Sky. Theme picks the field for
+	// the active/viewed profile; the General panel exposes both so either can be recolored.
+	public int themeAccentPrisons = 0xFFF08A2B; // Prisons — orange
+	public int themeAccentSky = 0xFFF2C21E;      // Sky — yellow
 }

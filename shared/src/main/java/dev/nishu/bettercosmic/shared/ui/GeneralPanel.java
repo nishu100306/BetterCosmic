@@ -59,7 +59,8 @@ public final class GeneralPanel {
 		));
 
 		OptionGroup theme = new OptionGroup("Theme", List.of(
-			themeColor("Accent", d.themeAccent, () -> c.themeAccent, v -> c.themeAccent = v),
+			themeColor("Accent · Prisons", d.themeAccentPrisons, () -> c.themeAccentPrisons, v -> c.themeAccentPrisons = v),
+			themeColor("Accent · Sky", d.themeAccentSky, () -> c.themeAccentSky, v -> c.themeAccentSky = v),
 			themeColor("Surface", d.themeSurface, () -> c.themeSurface, v -> c.themeSurface = v),
 			themeColor("Surface hover", d.themeSurfaceHover, () -> c.themeSurfaceHover, v -> c.themeSurfaceHover = v),
 			themeColor("Ground", d.themeGround, () -> c.themeGround, v -> c.themeGround = v),

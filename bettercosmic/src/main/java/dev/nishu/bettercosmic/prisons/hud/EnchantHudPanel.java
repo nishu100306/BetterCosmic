@@ -23,7 +23,7 @@ public final class EnchantHudPanel {
 		PrisonsConfig d = new PrisonsConfig();
 		PrisonsConfig c = BetterPrisonsClient.config;
 
-		OptionGroup hud = new OptionGroup("Enchant HUD", List.<Option>of(
+		OptionGroup hud = new OptionGroup("General", List.<Option>of(
 				Options.toggle("Enchant HUD", d.enchantHudEnabled,
 						() -> c.enchantHudEnabled, v -> { c.enchantHudEnabled = v; c.save(); }),
 				Options.intSlider("Scale", d.enchantHudScale, 50, 150, 5,
@@ -77,7 +77,7 @@ public final class EnchantHudPanel {
 						() -> c.superBreakerTimerOffsetY, v -> { c.superBreakerTimerOffsetY = v; c.save(); })));
 
 		return ConfigPanel.of("prisons-enchant", "Enchant HUD",
-				"Active enchants, Powerball alert & Super Breaker aura", PanelIcon.SPARKLE,
+				"Active enchants, Powerball alert & Super Breaker aura", PanelIcon.SWORD,
 				List.of(hud, style, powerball, aura));
 	}
 }

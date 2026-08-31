@@ -37,8 +37,8 @@ public final class TooltipsPanel {
 				PrisonOptions.colorRgb("Expiry text color", d.gangPointExpiryColor,
 						() -> c.gangPointExpiryColor, v -> { c.gangPointExpiryColor = v; c.save(); })));
 
-		return ConfigPanel.of("prisons-tooltips", "Tooltips",
-				"Enchant book costs & gang point expiry", PanelIcon.CHART,
+		return ConfigPanel.of("prisons-tooltips", "Item tooltips",
+				"Enchant book costs & gang point expiry", PanelIcon.BUBBLE,
 				List.of(enchantBooks, gangPoints));
 	}
 }

@@ -24,7 +24,7 @@ public final class EventsHudPanel {
 		PrisonsConfig d = new PrisonsConfig();
 		PrisonsConfig c = BetterPrisonsClient.config;
 
-		OptionGroup general = new OptionGroup("Toggle & Title", List.<Option>of(
+		OptionGroup general = new OptionGroup("General", List.<Option>of(
 				Options.toggle("Events HUD", d.eventsHudEnabled,
 						() -> c.eventsHudEnabled, v -> { c.eventsHudEnabled = v; BetterPrisonsClient.eventsHud.enabled = v; c.save(); }),
 				Options.toggle("Show title", d.showEventsHudTitle,
@@ -99,7 +99,7 @@ public final class EventsHudPanel {
 				Options.intSlider("Sound volume", d.meteoriteShowerSoundVolume, 0, 100, 5,
 						() -> c.meteoriteShowerSoundVolume, v -> { c.meteoriteShowerSoundVolume = v; c.save(); })));
 
-		OptionGroup box = new OptionGroup("Background & Border", List.<Option>of(
+		OptionGroup box = new OptionGroup("Background & border", List.<Option>of(
 				PrisonOptions.colorRgb("Background", d.eventsBgColor,
 						() -> c.eventsBgColor, v -> { c.eventsBgColor = v; c.save(); }),
 				Options.intSlider("Background opacity", d.eventsBgOpacity, 0, 255, 5,
@@ -112,7 +112,7 @@ public final class EventsHudPanel {
 						() -> c.eventsBorderThickness, v -> { c.eventsBorderThickness = v; c.save(); })));
 
 		return ConfigPanel.of("prisons-events", "Events HUD",
-				"Meteors, merchants, bandit rushes & showers", PanelIcon.SPARKLE,
+				"Meteors, merchants, bandit rushes & showers", PanelIcon.METEOR,
 				List.of(general, meteors, merchants, bandit, shower, box));
 	}
 }
