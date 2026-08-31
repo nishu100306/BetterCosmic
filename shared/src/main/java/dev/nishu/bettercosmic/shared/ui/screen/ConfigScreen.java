@@ -37,6 +37,9 @@ public final class ConfigScreen extends Screen {
 	private static final int PAD = 13;
 	private static final int HEADER = 26;
 	private static final int FOOTER = 26;
+	private static final int LOGO = 16;              // brand helmet mark (square)
+	private static final int LOGO_GAP = 6;           // gap between the helmet and the name
+	private static final int VISOR = 0xFFFF4660;     // helmet visor glow (fixed, profile-independent)
 
 	private final Screen parent;
 
@@ -90,7 +93,7 @@ public final class ConfigScreen extends Screen {
 		buildGrid();
 
 		// Header profile selector ("Prisons" / "Sky"), just right of the brand name.
-		int selX = x0 + PAD + 12 + RenderUtils.textWidth("BetterCosmic") + 10;
+		int selX = x0 + PAD + LOGO + LOGO_GAP + RenderUtils.textWidth("BetterCosmic") + 10;
 		prisonsX = selX;
 		prisonsW = RenderUtils.textWidth(Network.PRISONS.displayName());
 		skyX = prisonsX + prisonsW + 12; // gap holds the divider dot
@@ -184,10 +187,10 @@ public final class ConfigScreen extends Screen {
 		int cy = y0 + HEADER / 2;
 		int textY = cy - 4;
 
-		// accent diamond mark
-		diamond(g, x0 + PAD + 3, cy, 5, Theme.accent);
+		// brand helmet mark — body tinted to the profile accent, glowing visor fixed
+		helmet(g, x0 + PAD, y0 + (HEADER - LOGO) / 2, LOGO, Theme.accent, VISOR);
 
-		int nameX = x0 + PAD + 12;
+		int nameX = x0 + PAD + LOGO + LOGO_GAP;
 		RenderUtils.text(g, "BetterCosmic", nameX, textY, Theme.text);
 
 		// Profile selector: the active network in accent, the other muted/hovered. Clicking switches.
@@ -348,10 +351,41 @@ public final class ConfigScreen extends Screen {
 
 	// ---- helpers ----
 
-	private static void diamond(GuiGraphics g, int cx, int cy, int r, int color) {
-		for (int i = -r; i <= r; i++) {
-			int half = r - Math.abs(i);
-			g.fill(cx - half, cy + i, cx + half + 1, cy + i + 1, color);
+	/**
+	 * The BetterCosmic brand mark: a sci-fi helmet with a glowing visor. {@code body} tints the shell
+	 * (the profile accent), {@code visor} the glowing slit. The 16×16 bitmap is nearest-neighbor scaled
+	 * into the {@code size}×{@code size} box at ({@code x},{@code y}).
+	 */
+	private static final String[] HELMET = {
+		"......BBBB......",
+		"....BBBBBBBB....",
+		"...BBBBBBBBBB...",
+		"..BBBBBBBBBBBB..",
+		"..BBBBBBBBBBBB..",
+		"..BBBBBBBBBBBB..",
+		"BBBVVVVVVVVVVBBB",
+		"BBBVVVVVVVVVVBBB",
+		"BBBVVVVVVVVVVBBB",
+		"..BBBBBBBBBBBB..",
+		"..BBBBBBBBBBBB..",
+		"...BBBBBBBBBB...",
+		"....BBBBBBBB....",
+		"....BBBBBBBB....",
+		".....BBBBBB.....",
+		"......BBBB......",
+	};
+
+	private static void helmet(GuiGraphics g, int x, int y, int size, int body, int visor) {
+		for (int dy = 0; dy < size; dy++) {
+			String row = HELMET[dy * 16 / size];
+			for (int dx = 0; dx < size; dx++) {
+				char ch = row.charAt(dx * 16 / size);
+				if (ch == 'B') {
+					g.fill(x + dx, y + dy, x + dx + 1, y + dy + 1, body);
+				} else if (ch == 'V') {
+					g.fill(x + dx, y + dy, x + dx + 1, y + dy + 1, visor);
+				}
+			}
 		}
 	}
 }
