@@ -2,6 +2,8 @@ package dev.nishu.bettercosmic.shared.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import dev.nishu.bettercosmic.shared.BetterCosmicShared;
 import net.fabricmc.loader.api.FabricLoader;
 
@@ -12,6 +14,8 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Base class for all BetterCosmic config files.
@@ -28,6 +32,12 @@ import java.nio.file.StandardCopyOption;
  * ignored, and any field missing from the file keeps its in-code default — so adding a new setting
  * never breaks an existing config. A corrupt file is backed up to {@code <name>.bak} and replaced
  * with defaults rather than crashing the client.
+ *
+ * <p><b>Only overrides are persisted.</b> {@link #save()} writes just the fields whose value differs
+ * from a fresh default instance; a field left at its default is omitted from the file entirely. Since
+ * an absent field falls back to the in-code default on load, a setting the player never changed
+ * automatically tracks the current default — so shipping a new default (e.g. a new accent color)
+ * updates every untouched config the next time it loads, while explicit overrides are preserved.
  *
  * <p>Unlike BetterPrisons' original single 800-field config that copied every field by hand on
  * load, subclasses here declare only their fields; (de)serialization and file management are
@@ -105,7 +115,7 @@ public abstract class BetterCosmicConfig {
 		try {
 			Files.createDirectories(configDir());
 			try (Writer writer = Files.newBufferedWriter(tmp)) {
-				GSON.toJson(this, writer);
+				GSON.toJson(overridesOnly(), writer);
 			}
 			try {
 				Files.move(tmp, target,
@@ -121,6 +131,29 @@ public abstract class BetterCosmicConfig {
 				// best-effort cleanup of the temp file
 			}
 		}
+	}
+
+	/**
+	 * The JSON tree of this config with every field left at its default omitted, so the file records
+	 * only the player's overrides. Built by diffing this instance against a fresh default one; if a
+	 * default instance can't be constructed, the full tree is returned rather than risk losing data.
+	 */
+	private JsonObject overridesOnly() {
+		JsonObject current = GSON.toJsonTree(this).getAsJsonObject();
+		BetterCosmicConfig defaults;
+		try {
+			defaults = this.getClass().getDeclaredConstructor().newInstance();
+		} catch (ReflectiveOperationException e) {
+			return current; // no usable default instance — persist everything
+		}
+		JsonObject defs = GSON.toJsonTree(defaults).getAsJsonObject();
+		for (String key : new ArrayList<>(current.keySet())) {
+			JsonElement def = defs.get(key);
+			if (def != null && def.equals(current.get(key))) {
+				current.remove(key); // unchanged from default — omit so it tracks future defaults
+			}
+		}
+		return current;
 	}
 
 	private static void backup(Path path) {
