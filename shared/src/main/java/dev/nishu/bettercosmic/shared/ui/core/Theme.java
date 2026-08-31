@@ -32,7 +32,7 @@ public final class Theme {
 	/** 1px hairline borders. */
 	public static int line = 0x2996ACD2;
 	/** On-states, selection, focus, slider fill. Resolved per {@link #profile} at {@link #load()}. */
-	public static int accent = 0xFFF08A2B;
+	public static int accent = 0xFFFF6F00;
 	/** Primary text. */
 	public static int text = 0xFFE7ECF4;
 	/** Secondary text / labels. */

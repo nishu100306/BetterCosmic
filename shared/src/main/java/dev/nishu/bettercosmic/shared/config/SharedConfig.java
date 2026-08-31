@@ -87,6 +87,6 @@ public class SharedConfig extends BetterCosmicConfig {
 	// The accent (on-states, selection, focus, slider fill) is per-network so each mod has its own
 	// identity: warm orange on Cosmic Prisons, golden yellow on Cosmic Sky. Theme picks the field for
 	// the active/viewed profile; the General panel exposes both so either can be recolored.
-	public int themeAccentPrisons = 0xFFF08A2B; // Prisons — orange
-	public int themeAccentSky = 0xFFF2C21E;      // Sky — yellow
+	public int themeAccentPrisons = 0xFFFF6F00; // Prisons — orange
+	public int themeAccentSky = 0xFFF1C40F;      // Sky — yellow
 }
