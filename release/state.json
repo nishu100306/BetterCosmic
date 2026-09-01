@@ -1,1 +1,10 @@
-{}
+{
+  "discordChangelogVersion": "1.9.4",
+  "fullDescMessageIds": [
+    "1544406624213409894",
+    "1544406626394439822"
+  ],
+  "discordFullHash": "28f4b617b7e544e2674ec2af01bc9a023f25f48c7d34579551b1f404fba1b352",
+  "shortDescMessageId": "1544406627581689929",
+  "discordShortHash": "e86efb5a051de946c0b768861af6fa9cda9bc128f13c59f99a7f0ca7651eba1c"
+}
