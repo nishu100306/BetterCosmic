@@ -60,16 +60,22 @@ public final class ToastRenderer {
 	private ToastRenderer() {}
 
 	/**
-	 * A labeled button on a toast; {@code onClick} runs when clicked, then the toast is dismissed. A
+	 * A labeled button on a toast; {@code onClick} runs when clicked. By default clicking also dismisses
+	 * the toast — use {@link #keepOpen()} for an action that shouldn't (e.g. opening a link). A
 	 * {@code secondary} button is drawn dimmer to de-emphasize it (e.g. a destructive "Disable").
 	 */
-	public record ToastButton(Component label, Runnable onClick, boolean secondary) {
+	public record ToastButton(Component label, Runnable onClick, boolean secondary, boolean dismisses) {
 		public static ToastButton primary(Component label, Runnable onClick) {
-			return new ToastButton(label, onClick, false);
+			return new ToastButton(label, onClick, false, true);
 		}
 
 		public static ToastButton secondary(Component label, Runnable onClick) {
-			return new ToastButton(label, onClick, true);
+			return new ToastButton(label, onClick, true, true);
+		}
+
+		/** A copy of this button that leaves the toast open when clicked. */
+		public ToastButton keepOpen() {
+			return new ToastButton(label, onClick, secondary, false);
 		}
 	}
 
@@ -347,10 +353,12 @@ public final class ToastRenderer {
 			}
 			for (int i = 0; i < t.buttons.size(); i++) {
 				if (mx >= t.bx[i] && mx < t.bx[i] + t.bw[i] && my >= t.by[i] && my < t.by[i] + BTN_H) {
-					active.remove(t);
-					Runnable action = t.buttons.get(i).onClick();
-					if (action != null) {
-						action.run();
+					ToastButton btn = t.buttons.get(i);
+					if (btn.dismisses()) {
+						active.remove(t);
+					}
+					if (btn.onClick() != null) {
+						btn.onClick().run();
 					}
 					return true;
 				}

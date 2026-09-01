@@ -122,7 +122,15 @@ public final class UpdateChecker {
 		if (SharedConfig.get().autoUpdateApply && UpdateApplier.canSelfApply()) {
 			startDownload(s);
 		} else {
-			UpdateNotifier.showAvailable(s.latest, s.changelog, s.mandatory);
+			UpdateNotifier.showAvailable(s.latest, s.changelog, s.mandatory, UpdateApplier.canSelfApply());
+		}
+	}
+
+	/** Manually installs the available update (the "available" toast's Install button). */
+	public static void installNow() {
+		UpdateState s = state;
+		if (s != null && s.available) {
+			startDownload(s);
 		}
 	}
 

@@ -38,12 +38,16 @@ final class UpdateNotifier {
 				List.of(notes(), undo(), ok(), disable()));
 	}
 
-	static void showAvailable(String version, String changelog, boolean mandatory) {
+	/**
+	 * "Available" toast, shown when auto-install is off. Offers a one-time <b>Install update</b> when a
+	 * self-install is possible (a real jar), otherwise falls back to the <b>Disable Updater</b> action.
+	 */
+	static void showAvailable(String version, String changelog, boolean mandatory, boolean canInstall) {
 		Component desc = (changelog != null && !changelog.isBlank())
 				? Component.literal(changelog) : Component.literal("A new version is available.");
 		ToastRenderer.showButtons(KEY,
 				title("BetterCosmic " + version + " available", mandatory), desc, 0L,
-				List.of(notes(), config(), ok(), disable()));
+				List.of(notes(), config(), ok(), canInstall ? install() : disable()));
 	}
 
 	static void showFailed() {
@@ -95,10 +99,16 @@ final class UpdateNotifier {
 		});
 	}
 
-	/** Opens the release page (full changelog) behind the vanilla link confirmation. */
+	/** Opens the release page (full changelog) behind the vanilla link confirmation. Keeps the toast open. */
 	private static ToastButton notes() {
 		return ToastButton.primary(Component.literal("Notes"), () ->
-				ConfirmLinkScreen.confirmLinkNow(Minecraft.getInstance().screen, URI.create(UpdateChecker.RELEASES_URL)));
+				ConfirmLinkScreen.confirmLinkNow(Minecraft.getInstance().screen, URI.create(UpdateChecker.RELEASES_URL)))
+				.keepOpen();
+	}
+
+	/** One-time manual install of the available update (used when auto-install is off). */
+	private static ToastButton install() {
+		return ToastButton.primary(Component.literal("Install update"), UpdateChecker::installNow);
 	}
 
 	/** Destructive, de-emphasized: turns the updater off entirely. */
