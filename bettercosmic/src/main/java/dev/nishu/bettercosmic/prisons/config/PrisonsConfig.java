@@ -127,7 +127,7 @@ public class PrisonsConfig extends BetterCosmicConfig {
 	public boolean easyViewPagesEnabled = true;
 	public boolean easyViewPrestigeTokenEnabled = true;
 	public boolean easyViewXpBottleEnabled = true;
-	public int easyViewEnergyColor = 0xFFFFFF;
+	public int easyViewEnergyColor = 0x008080;
 	public int easyViewMoneyColor = 0x00FF00;
 	public int easyViewGangPointsColor = 65535;
 	public int easyViewBlackScrollColor = 0xFF00FF;
@@ -152,7 +152,7 @@ public class PrisonsConfig extends BetterCosmicConfig {
 	public boolean easyViewPickaxesBold = true;
 	public boolean easyViewDustBold = true;
 	public boolean easyViewPagesBold = true;
-	public boolean easyViewPagesTierColor = false;
+	public boolean easyViewPagesTierColor = true;
 	public boolean easyViewPrestigeTokenBold = true;
 	public boolean easyViewXpBottleBold = true;
 	public boolean easyViewXpBottleTierColor = true;
@@ -215,11 +215,11 @@ public class PrisonsConfig extends BetterCosmicConfig {
 	public int eventsBorderThickness = 2;
 
 	// ---- Stats HUD element toggles ----
-	public boolean statsShowCurrentXP = true;
+	public boolean statsShowCurrentXP = false;
 	public boolean statsShowXPPerHour = true;
 	public boolean statsShowXPPerMinute = true;
 	public boolean statsShowSessionXP = true;
-	public boolean statsShowCurrentCE = true;
+	public boolean statsShowCurrentCE = false;
 	public boolean statsShowCEPerHour = true;
 	public boolean statsShowCEPerMinute = true;
 	public boolean statsShowSessionCE = true;
@@ -350,7 +350,7 @@ public class PrisonsConfig extends BetterCosmicConfig {
 	public boolean waypointMerchantsEdgeEnabled = true;
 	public boolean waypointCustomEdgeEnabled = true;
 	public boolean beaconBeamsEnabled = true;
-	public boolean beaconBeamThroughWalls = true;
+	public boolean beaconBeamThroughWalls = false;
 	public int meteorBeamOpacity = 160;
 	public int merchantBeamOpacity = 160;
 	public int customWaypointDefaultOpacity = 255;

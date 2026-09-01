@@ -12,7 +12,7 @@ import dev.nishu.bettercosmic.shared.update.UpdateChecker;
 import java.util.List;
 
 /**
- * The shared <b>General</b> config panel — dev mode, number formatting, and the compact UI theme —
+ * The shared <b>General</b> config panel — access, number formatting, updates, theme, and links —
  * bound to {@link SharedConfig}. Lives in {@code :shared} so both mods expose the same panel; each
  * mod registers it via {@link #create()}. Theme color options save and reload {@link Theme} so edits
  * repaint the UI immediately.
@@ -31,10 +31,6 @@ public final class GeneralPanel {
 		));
 
 		OptionGroup general = new OptionGroup("General", List.of(
-			Options.toggle("Developer mode", d.developerMode,
-				() -> c.developerMode,
-				v -> { c.developerMode = v; c.save(); })
-				.tooltip("Enables the shared dev commands (/bcitem)."),
 			Options.toggle("Restrict to server", d.restrictFeaturesToServer,
 				() -> c.restrictFeaturesToServer,
 				v -> { c.restrictFeaturesToServer = v; c.save(); })
@@ -53,7 +49,7 @@ public final class GeneralPanel {
 			Options.toggle("Auto-install updates", d.autoUpdateApply,
 				() -> c.autoUpdateApply,
 				v -> { c.autoUpdateApply = v; c.save(); })
-				.tooltip("Download + verify a found update and install it on exit (replaces the jar)."),
+				.tooltip("Download + verify a found update and install it for the next launch."),
 			Options.label(UpdateChecker::statusLine),
 			Options.link("Latest release", UpdateChecker.RELEASES_URL)
 		));
@@ -71,8 +67,7 @@ public final class GeneralPanel {
 		));
 
 		OptionGroup links = new OptionGroup("Links", List.of(
-			// Placeholder link (opens behind the vanilla confirm) — swap for the real Discord/Modrinth.
-			Options.link("Fabric", "https://fabricmc.net/")
+			Options.link("Discord", "https://discord.gg/vJaH4Yr5Dq")
 		));
 
 		return ConfigPanel.of("general", "General", "Access, formatting & theme",

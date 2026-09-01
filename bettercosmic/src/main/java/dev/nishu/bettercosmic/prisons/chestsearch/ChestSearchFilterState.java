@@ -74,7 +74,8 @@ public final class ChestSearchFilterState {
 	 * Returns a highlight color, or 0 for no match. OR mode: the first matching active rule's color.
 	 * AND mode: the first active rule's color, but only if every active rule matches.
 	 */
-	public static int evaluate(String name, List<String> lore, ChestSearchFilterRule.BookAttributes book) {
+	public static int evaluate(String name, List<String> lore, ChestSearchFilterRule.BookAttributes book,
+			Integer clueStep) {
 		if (matchAll) {
 			int firstColor = 0;
 			boolean anyActive = false;
@@ -83,7 +84,7 @@ public final class ChestSearchFilterState {
 					continue;
 				}
 				anyActive = true;
-				if (!r.matches(name, lore, book)) {
+				if (!r.matches(name, lore, book, clueStep)) {
 					return 0;
 				}
 				if (firstColor == 0) {
@@ -93,7 +94,7 @@ public final class ChestSearchFilterState {
 			return anyActive ? firstColor : 0;
 		}
 		for (ChestSearchFilterRule r : rules) {
-			if (r.matches(name, lore, book)) {
+			if (r.matches(name, lore, book, clueStep)) {
 				return r.color;
 			}
 		}

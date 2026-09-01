@@ -10,7 +10,8 @@ import java.util.List;
  *
  * <p>Types: NAME (name/lore contains value), SUCCESS_RATE / DESTROY_RATE (enchant-book % compare,
  * optional leading operator, default {@code >=} / {@code <=}), ENERGY_COST (book cost ceiling, value
- * accepts k/m/b/t suffixes).
+ * accepts k/m/b/t suffixes), CLUE_STEP (clue scroll's assigned step number, optional leading
+ * operator, default {@code =}).
  */
 public class ChestSearchFilterRule {
 
@@ -18,7 +19,8 @@ public class ChestSearchFilterRule {
 		NAME("name"),
 		SUCCESS_RATE("succ% >"),
 		DESTROY_RATE("dest% <"),
-		ENERGY_COST("nrg cost <");
+		ENERGY_COST("nrg cost <"),
+		CLUE_STEP("clue #");
 
 		public final String label;
 
@@ -40,8 +42,12 @@ public class ChestSearchFilterRule {
 		return value != null && !value.isEmpty();
 	}
 
-	/** @param book book attributes, or null if the stack is not an enchant book. */
-	public boolean matches(String name, List<String> lore, BookAttributes book) {
+	/**
+	 * @param book     book attributes, or null if the stack is not an enchant book.
+	 * @param clueStep the clue scroll's assigned step number, or null if the stack is not an
+	 *                 in-progress clue scroll.
+	 */
+	public boolean matches(String name, List<String> lore, BookAttributes book, Integer clueStep) {
 		if (!isActive()) {
 			return false;
 		}
@@ -72,6 +78,8 @@ public class ChestSearchFilterRule {
 				}
 				return book.energyCost <= ceiling;
 			}
+			case CLUE_STEP:
+				return clueStep != null && compare(value, clueStep, "=");
 			default:
 				return false;
 		}

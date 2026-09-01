@@ -83,7 +83,8 @@ All mod-added tooltip lines are clearly prefixed so they're easy to spot.
 
 - **Chest & book search** — Open any container to get a search bar and a filter-rule sidebar that
   highlights matching items, with per-rule colors and Any/All matching. Enchant books can be filtered
-  by success rate, destroy rate, or energy cost.
+  by success rate, destroy rate, or energy cost, and clue scrolls by their current step number (type
+  the number in the search bar, or add a "clue #" filter rule).
 - **Clue scroll sorting** — Shows each clue scroll's current step number large on the item, in
   containers and the hotbar, so a chest of scrolls sorts at a glance.
 

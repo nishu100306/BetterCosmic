@@ -57,11 +57,12 @@ public class SharedConfig extends BetterCosmicConfig {
 	public boolean autoUpdateCheck = true;
 
 	/**
-	 * Automatically download, verify, and install updates (phase 2). Off by default. When on, a found
-	 * update is downloaded + SHA-256-verified, then a detached helper installs it on game exit (a running
-	 * JVM can't replace its own locked jar). See {@link dev.nishu.bettercosmic.shared.update.UpdateApplier}.
+	 * Automatically download, verify, and install updates. On by default. When on, a found update is
+	 * downloaded + SHA-256-verified and dropped into {@code mods/} under its versioned name; Fabric
+	 * loads it on the next launch and the old jar is retired then. See
+	 * {@link dev.nishu.bettercosmic.shared.update.UpdateApplier}.
 	 */
-	public boolean autoUpdateApply = false;
+	public boolean autoUpdateApply = true;
 
 	/**
 	 * The config profile (network) last viewed in the config screen, as a {@link

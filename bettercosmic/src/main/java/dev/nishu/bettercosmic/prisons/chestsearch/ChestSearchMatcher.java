@@ -28,19 +28,24 @@ public final class ChestSearchMatcher {
 		if (stack == null || stack.isEmpty()) {
 			return NO_MATCH;
 		}
+		Integer clueStep = ClueScrollProvider.displayedStep(stack);
 		if (ChestSearchFilterState.sidebarOpen && ChestSearchFilterState.hasActiveRules()) {
 			String name = stack.getHoverName().getString();
-			return ChestSearchFilterState.evaluate(name, loreLines(stack), bookAttributes(stack));
+			return ChestSearchFilterState.evaluate(name, loreLines(stack), bookAttributes(stack), clueStep);
 		}
 		String query = ChestSearchState.query;
 		if (query == null || query.isEmpty()) {
 			return NO_MATCH;
 		}
-		return matchesSimple(stack, query) ? DEFAULT_COLOR : NO_MATCH;
+		return matchesSimple(stack, query, clueStep) ? DEFAULT_COLOR : NO_MATCH;
 	}
 
-	private static boolean matchesSimple(ItemStack stack, String query) {
+	private static boolean matchesSimple(ItemStack stack, String query, Integer clueStep) {
 		String q = query.toLowerCase();
+		// A bare-number query highlights clue scrolls whose assigned step number matches.
+		if (clueStep != null && isDigits(q) && Integer.toString(clueStep).equals(q)) {
+			return true;
+		}
 		if (stack.getHoverName().getString().toLowerCase().contains(q)) {
 			return true;
 		}
@@ -50,6 +55,18 @@ public final class ChestSearchMatcher {
 			}
 		}
 		return false;
+	}
+
+	private static boolean isDigits(String s) {
+		if (s.isEmpty()) {
+			return false;
+		}
+		for (int i = 0; i < s.length(); i++) {
+			if (!Character.isDigit(s.charAt(i))) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private static List<String> loreLines(ItemStack stack) {

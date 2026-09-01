@@ -44,6 +44,7 @@ public final class ClueScrollProvider implements ItemOverlayProvider {
 		TYPE_TO_STEP.put("TINKER_ENCHANT_GEAR", 4);
 		TYPE_TO_STEP.put("MINE_ORE_REFINED", 5);
 		TYPE_TO_STEP.put("MINE_ORE_REGULAR", 5);
+		TYPE_TO_STEP.put("MINE_ORE_BLOCK", 5);
 		TYPE_TO_STEP.put("MINE_METEORITE_ORE", 6);
 		TYPE_TO_STEP.put("MINE_METEOR_BLOCK", 7);
 		TYPE_TO_STEP.put("MINE_METEOR_CONTRABAND", 8);
@@ -57,10 +58,12 @@ public final class ClueScrollProvider implements ItemOverlayProvider {
 		TYPE_TO_STEP.put("JACKPOT_BUY", 15);
 		TYPE_TO_STEP.put("CF_WIN", 16);
 		TYPE_TO_STEP.put("CF_LOSE", 16);
+		TYPE_TO_STEP.put("CF_JOIN", 16);
 		TYPE_TO_STEP.put("ENCHANTER_REPAIR_GEAR", 17);
 		TYPE_TO_STEP.put("ENCHANT_DUST", 18);
 		TYPE_TO_STEP.put("ENCHANTER_ENCHANT_PICKAXE", 19);
 		TYPE_TO_STEP.put("ENCHANTER_LEVELUP_PICKAXE", 19);
+		TYPE_TO_STEP.put("ENCHANTER_APPLY_PICKAXE", 19);
 		TYPE_TO_STEP.put("ENCHANTER_FAIL_PICKAXE", 20);
 		TYPE_TO_STEP.put("TELEPORT_KOTH", 21);
 		TYPE_TO_STEP.put("LOCATION_VISIT_ZONE", 22);
@@ -93,6 +96,19 @@ public final class ClueScrollProvider implements ItemOverlayProvider {
 	/** The displayed step number for a clue NBT step type, or {@code null} if unmapped (used by dev tools). */
 	public static Integer getStep(String type) {
 		return TYPE_TO_STEP.get(type);
+	}
+
+	/**
+	 * The clue scroll's currently-displayed step number, for chest search, or {@code null} if the stack
+	 * isn't an in-progress clue scroll with a mapped step (a completed scroll shows a check, not a
+	 * number, so it too returns {@code null}).
+	 */
+	public static Integer displayedStep(ItemStack stack) {
+		ClueData data = parse(stack);
+		if (data == null || data.completed || data.currentType == null) {
+			return null;
+		}
+		return TYPE_TO_STEP.get(data.currentType);
 	}
 
 	@Override
