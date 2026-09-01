@@ -69,6 +69,9 @@ public final class GangPingsPanel {
 						() -> c.gangPingShowHp, v -> { c.gangPingShowHp = v; c.save(); }),
 				Options.toggle("Facing", d.gangPingShowFacing,
 						() -> c.gangPingShowFacing, v -> { c.gangPingShowFacing = v; c.save(); }),
+				Options.toggle("Text shadow", d.gangPingTextShadow,
+						() -> c.gangPingTextShadow, v -> { c.gangPingTextShadow = v; c.save(); })
+						.tooltip("Draw a drop shadow behind the ping text."),
 				Options.slider("Text scale", d.gangPingTextScale, 0.5, 3.0, 0.1,
 						() -> (double) c.gangPingTextScale, v -> { c.gangPingTextScale = v.floatValue(); c.save(); })));
 

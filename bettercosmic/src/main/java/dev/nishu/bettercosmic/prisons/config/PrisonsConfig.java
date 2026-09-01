@@ -127,7 +127,7 @@ public class PrisonsConfig extends BetterCosmicConfig {
 	public boolean easyViewPagesEnabled = true;
 	public boolean easyViewPrestigeTokenEnabled = true;
 	public boolean easyViewXpBottleEnabled = true;
-	public int easyViewEnergyColor = 0x008080;
+	public int easyViewEnergyColor = 0x6EDDDD;
 	public int easyViewMoneyColor = 0x00FF00;
 	public int easyViewGangPointsColor = 65535;
 	public int easyViewBlackScrollColor = 0xFF00FF;
@@ -371,6 +371,7 @@ public class PrisonsConfig extends BetterCosmicConfig {
 	public boolean gangPingShowCoords = true;
 	public boolean gangPingShowHp = false;
 	public boolean gangPingShowFacing = false;
+	public boolean gangPingTextShadow = false;
 	public float gangPingTextScale = 1.0f;
 	public float gangPingIconMinScale = 0.5f;
 	public float gangPingIconMaxScale = 1.5f;

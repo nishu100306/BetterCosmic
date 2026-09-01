@@ -225,7 +225,7 @@ public final class GangPingRenderer {
 			ms.pushMatrix();
 			ms.translate(ix, lineY);
 			ms.scale(textScale, textScale);
-			ctx.drawString(font, Component.literal(line), -w / 2, 0, textArgb, true);
+			ctx.drawString(font, Component.literal(line), -w / 2, 0, textArgb, c.gangPingTextShadow);
 			ms.popMatrix();
 			lineY += lineSpacing;
 		}
