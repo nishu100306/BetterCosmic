@@ -1,1 +1,3 @@
-A one- or two-sentence summary of the mod. Optional — updates only when changed. Keep it under ~256 characters (Modrinth's short-description limit).
+BetterCosmic is a client-side quality-of-life mod for Cosmic Prisons. It adds a suite of customizable on-screen HUDs — cooldowns, session stats, satchels, active enchants, and a live tracker for meteors, ore merchants, and bandit rushes — with screen-edge waypoints and beacon beams so you never lose track of what's happening.
+
+On top of that it packs gang pings, EasyView inventory value overlays, peaceful mining, and quality-of-life tools like DM sound alerts, pickaxe drop protection, and shift-click auto-trade. Everything is toggleable and fully configurable from a custom in-game menu — no external mods required.

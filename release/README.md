@@ -16,8 +16,11 @@ The auto-update manifest (`docs/manifest.json`) is also regenerated, as before.
 | File | Required? | Used for |
 |---|---|---|
 | `changelog.md` | **yes** — build fails if empty | GitHub body, manifest, Modrinth version changelog, Discord changelog message |
-| `description-full.md` | optional | Modrinth project **body** + Discord full-description embed |
-| `description-short.md` | optional | Modrinth project **description** (≤256 chars) + Discord short-description embed |
+| `description-full.md` | optional | Discord full-description embed **only** (not published to Modrinth) |
+| `description-short.md` | optional | Modrinth project **body** + Discord short-description embed |
+
+> The Modrinth **summary** (the short one-line field) is left untouched by CI — set it manually on
+> Modrinth. The full description lives only on Discord; Modrinth's project page uses the short one.
 | `config.json` | — | non-secret IDs (Modrinth project, Discord channels). Fill the `REPLACE_*` values. |
 | `state.json` | — | **auto-managed by CI — do not hand-edit.** Discord message ids + per-target description hashes. |
 

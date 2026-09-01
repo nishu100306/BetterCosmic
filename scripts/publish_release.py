@@ -5,8 +5,9 @@ GitHub Releases are handled by the `release` job in release.yml; this covers the
 the three targets. Content comes from files in `release/`:
 
   changelog.md          required — the release notes (fails if empty)
-  description-full.md    optional — Modrinth project body + Discord full-description embed
-  description-short.md   optional — Modrinth project description + Discord short-description embed
+  description-full.md    optional — Discord full-description embed (NOT published to Modrinth)
+  description-short.md   optional — Modrinth project body + Discord short-description embed
+                         (the Modrinth summary field is left untouched — set it manually)
   config.json           non-secret IDs (Modrinth project, Discord channels); REPLACE_* = skip that bit
   state.json            auto-managed: Discord message ids + description hashes (committed back by CI)
 
@@ -62,7 +63,7 @@ def configured(value) -> bool:
 
 # ---------------------------------------------------------------- Modrinth
 
-def publish_modrinth(cfg, version, jar_path, changelog, full_desc, short_desc, state, token):
+def publish_modrinth(cfg, version, jar_path, changelog, short_desc, state, token):
     m = cfg.get("modrinth", {})
     project = m.get("projectId")
     if not configured(token) or not configured(project):
@@ -102,26 +103,19 @@ def publish_modrinth(cfg, version, jar_path, changelog, full_desc, short_desc, s
             raise RuntimeError(f"version create HTTP {r.status_code}: {r.text}")
         print(f"Modrinth: published version {version}.")
 
-    # Project body/description — only the field(s) whose source text changed since Modrinth last got
-    # them. Per-target hashes (not shared with Discord) advance only on a successful push, so adding a
-    # platform later re-sends and a skipped/failed run retries.
-    patch = {}
-    if full_desc and sha(full_desc) != state.get("modrinthBodyHash"):
-        patch["body"] = full_desc
-    if short_desc and sha(short_desc) != state.get("modrinthDescHash"):
-        patch["description"] = short_desc
-    if patch:
+    # The Modrinth project BODY is set from the SHORT description. The full description is intentionally
+    # not published to Modrinth (it lives on Discord only), and the Modrinth summary (the short
+    # 'description' field) is left untouched — set that manually on Modrinth. Only pushes when the short
+    # description changed since Modrinth last got it; the hash advances only on a successful push.
+    if short_desc and sha(short_desc) != state.get("modrinthBodyHash"):
         r = requests.patch(
             f"{MODRINTH_API}/project/{project}",
             headers={**headers, "Content-Type": "application/json"},
-            data=json.dumps(patch), timeout=30)
+            data=json.dumps({"body": short_desc}), timeout=30)
         if r.status_code >= 300:
             raise RuntimeError(f"project patch HTTP {r.status_code}: {r.text}")
-        if "body" in patch:
-            state["modrinthBodyHash"] = sha(full_desc)
-        if "description" in patch:
-            state["modrinthDescHash"] = sha(short_desc)
-        print(f"Modrinth: updated project {sorted(patch)}.")
+        state["modrinthBodyHash"] = sha(short_desc)
+        print("Modrinth: updated project body from the short description.")
 
 
 # ---------------------------------------------------------------- Discord
@@ -203,7 +197,7 @@ def main():
 
     failures = []
     try:
-        publish_modrinth(cfg, args.version, args.jar, changelog, full_desc, short_desc, state,
+        publish_modrinth(cfg, args.version, args.jar, changelog, short_desc, state,
                          os.environ.get("MODRINTH_TOKEN", ""))
     except Exception as e:  # noqa: BLE001 — keep platforms independent
         failures.append(f"Modrinth: {e}")
