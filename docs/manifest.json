@@ -1,10 +1,10 @@
 {
   "modId": "bettercosmic",
-  "latest": "0.0.4",
+  "latest": "1.9.0",
   "minecraft": "1.21.11",
   "channel": "release",
-  "url": "https://github.com/nishu100306/BetterCosmic/releases/download/v0.0.4/bettercosmic-0.0.4.jar",
-  "sha256": "f284273d3e274c44ea11f3e146951e5f42e31d14c223d13c7ed6325da4d0d343",
-  "changelog": "testv0.0.4",
+  "url": "https://github.com/nishu100306/BetterCosmic/releases/download/v1.9.0/bettercosmic-1.9.0.jar",
+  "sha256": "e8ff013efe516f14896af8d386c903c90035ba82581ef988a23ff0db840a39d1",
+  "changelog": "BetterPrisons is now BetterCosmic — rebuilt from the ground up. Your old settings carry over.\nThe big changes: a brand-new config menu, an auto-updater that can install updates for you, on-screen toast notifications, and features that only turn on while you're on CosmicPrisons.\nNew: separate natural/summoned meteor toggles, name-mention chat alerts, satchel backpack support, per-satchel toggles, \"only show full satchels\", full-satchel toasts, White Scroll indicators, clue-scroll search by step number, a completed-clue indicator, more clue steps, a Blink trinket preview, and use-item-while-mining toggles.\nImprovements: compact Satchel HUD, outlined clue numbers, updated PrisonBreak texture pack. Fixed enchant book costs.",
   "mandatory": false
 }
