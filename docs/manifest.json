@@ -1,10 +1,10 @@
 {
   "modId": "bettercosmic",
-  "latest": "1.9.1",
+  "latest": "1.9.2",
   "minecraft": "1.21.11",
   "channel": "release",
-  "url": "https://github.com/nishu100306/BetterCosmic/releases/download/v1.9.1/bettercosmic-1.9.1.jar",
-  "sha256": "1fdad8883f7a982cc3ff8d9f560725d051321ecf9030ddc134f95495b7b06e41",
-  "changelog": "Version bump only — no feature or behavior changes since 1.9.0.",
+  "url": "https://github.com/nishu100306/BetterCosmic/releases/download/v1.9.2/bettercosmic-1.9.2.jar",
+  "sha256": "adaabc26b08e5bac805b07c357844916e8201db8aafe1ede37550e1b273bbfc9",
+  "changelog": "Gang ping text shadow is now an optional toggle (off by default), and the Cosmic Energy overlay color default was refreshed.",
   "mandatory": false
 }
