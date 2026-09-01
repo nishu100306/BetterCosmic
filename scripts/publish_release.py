@@ -85,6 +85,7 @@ def publish_modrinth(cfg, version, jar_path, changelog, short_desc, state, token
             "game_versions": m.get("gameVersions", []),
             "loaders": m.get("loaders", ["fabric"]),
             "version_type": m.get("versionType", "release"),
+            "featured": False,  # required by the API; let Modrinth auto-feature the latest
             "dependencies": [
                 {k: v for k, v in dep.items() if not k.startswith("_")}
                 for dep in m.get("dependencies", [])
@@ -152,17 +153,21 @@ def publish_discord(cfg, version, changelog, full_desc, short_desc, state, token
     headers = {"Authorization": f"Bot {token}", "Content-Type": "application/json", "User-Agent": USER_AGENT}
     color = d.get("embedColor", 0xF1C40F)
 
-    # Changelog: a new message in the changelog channel each release.
+    # Changelog: a new message in the changelog channel, once per release version. Guarded by the last
+    # posted version so a re-run of the same release doesn't post a duplicate changelog.
     ch = d.get("changelogChannelId")
-    if configured(ch):
+    if not configured(ch):
+        print("Discord: changelog channel not configured — skipping changelog message.")
+    elif state.get("discordChangelogVersion") == version:
+        print(f"Discord: changelog for {version} already posted — skipping.")
+    else:
         _discord_post(headers, ch, {
             "title": f"BetterCosmic {version}",
             "description": clip(changelog, EMBED_LIMIT),
             "color": color,
         })
+        state["discordChangelogVersion"] = version
         print("Discord: posted changelog.")
-    else:
-        print("Discord: changelog channel not configured — skipping changelog message.")
 
     # Full / short description: edit the existing embed in each channel, only when the text changed
     # since Discord last got it. Per-target hash advances only after a successful post/edit.

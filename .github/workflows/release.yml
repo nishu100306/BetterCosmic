@@ -202,6 +202,7 @@ jobs:
           python scripts/publish_release.py --version "${{ needs.release.outputs.version }}" --jar "$jar"
 
       - name: commit updated release state
+        if: always()   # persist partial progress (e.g. Discord ids) even if a platform failed
         run: |
           set -euo pipefail
           if git diff --quiet -- release/state.json; then
