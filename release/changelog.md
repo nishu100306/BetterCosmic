@@ -1,6 +1,6 @@
 # BetterCosmic 1.9.5 Changelog
 
-**BetterPrisons is now BetterCosmic** — rebuilt from the ground up. All your BetterPrisons features are here, plus a lot of new ones. Your old settings carry over.
+**BetterPrisons is now BetterCosmic** — rebuilt from the ground up. All your BetterPrisons features are here, plus a lot of new ones. Note that your config will have been reset
 
 ## The Big Changes
 
@@ -13,7 +13,8 @@
 - **Server-aware** — features now only turn on while you're actually on CosmicPrisons, so nothing clutters your screen anywhere else.
 
 ## New Features
-
+- **Blink trinket preview** — see where your Blink trinket will drop you before you use it.
+- 
 - **Meteor toggles** — show or hide **natural** and **summoned** meteors separately on the Events HUD.
 
 - **Name mention alerts** — get a notification when someone says your name in chat.
@@ -26,17 +27,15 @@
 
 - **Full-satchel toasts** — get a toast notification the moment a satchel fills up.
 
-- **White Scroll indicators** — the Satchel HUD now shows your White Scroll status.
+- **White Scroll indicators** — the Satchel HUD now shows the White Scroll status of your satchels.
 
 - **Clue scroll search** — search any chest for clue scrolls by their step number (type the number in the search bar, or add a "clue #" filter rule).
 
 - **Clue scroll completed indicator** — finished clue scrolls now show a check instead of a step number.
 
-- **More clue steps** — Teleport Mine and KOTH Lootbag steps are now recognized.
+- **More clue steps** — Some of the new clue scroll steps that were previously unmapped have been added (please lmk if you have unmapped clue scrolls)
 
-- **Blink trinket preview** — see where your Blink trinket will drop you before you use it.
-
-- **Use-item-while-mining toggles** — fine-grained control over using items mid-swing.
+- **Use-item-while-mining toggles** — being able to hold right click while mining was a previous feature, a toggle option has been added to enable/disable this.
 
 ## Improvements
 

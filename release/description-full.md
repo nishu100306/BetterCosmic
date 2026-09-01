@@ -8,8 +8,6 @@ no external libraries required.
 Everything is optional and independently toggleable. HUDs can be dragged, scaled, recolored, and
 faded; overlays and features each have their own settings; and nothing is forced on you.
 
-> Client-side only — install it on your own client. Nothing is required on the server.
-
 ---
 
 ## On-screen HUDs
@@ -19,30 +17,24 @@ independently, recolor (background, border, opacity, title), and toggle on its o
 
 - **Cooldown HUD** — live timers for server commands and abilities, each with an optional icon and its
   own color. Tracks `/jet`, `/feed`, `/fix`, `/home`, `/tpa`, `/tpahere`, `/dangle`, `/adangle`,
-  `/near`, `/pulse`, and a combat timer. `/adangle` is applied optimistically and auto-cancels if the
-  server reports it failed.
+  `/near`, `/pulse`, and a combat timer.
 - **Satchel HUD** — detects satchels in your inventory and shows fill vs. capacity, read from each
   satchel's data so it stays correct even when renamed. Covers every ore-satchel variant (regular,
   Deepslate, Block-of) plus Shard, Contraband, and Clue Scroll satchels. Optionally combines satchels
   of the same type, shows percent or raw numbers, and highlights nearly-full/empty ones by color.
 - **Stats HUD** — current XP, XP per hour, Cosmic Energy, and session totals, with an estimated time to
-  your next level and a clear paused indicator. Choose which stats to show and compact (1.2M) vs. comma
-  (1,234,567) formatting.
+  your next level.
 - **Enchant HUD** — lists active timed enchants/effects with remaining time. Supports **Super Breaker**
-  and **Powerball**, including a customizable on-screen alert (with optional sound) the moment Powerball
-  comes off cooldown.
+  and **Powerball**, including a notification when Powerball comes off cooldown.
 - **Events HUD** — a live tracker for server events:
-  - **Meteors** with coordinates, a natural/player-spawned heading, and a landing countdown (7 min for
-    natural, 1 min for summoned) that rolls into `(Imminent)` and then `[Crashed]`.
+  - **Meteors** with coordinates, a natural/player-spawned heading, and a landing countdown.
   - **Meteorite Showers** with their own countdown, waypoint, and beacon beam.
   - **Ore Merchants** with tier, coordinates, and distance, plus per-tier toggles (Coal → Emerald).
-  - **Bandit Rushes** in the Badlands, filtered to your current sub-world region.
+  - **Bandit Rushes** in the Badlands, filtered to your current badlands instance.
 
 ## Waypoints & navigation
 
-- Screen-edge indicators for every active meteor, merchant, bandit rush, and meteorite shower — a
-  colored diamond when the target is on screen, or an arrow clamped to the edge pointing the right way
-  when it's off screen.
+- Screen-edge indicators for all waypoints 
 - Optional 3D **beacon beam** pillars drawn in the world at each event location, visible from any
   distance and render-distance-safe.
 - A waypoints screen (bindable key) for managing your own custom waypoints alongside the automatic ones.
@@ -50,17 +42,16 @@ independently, recolor (background, border, opacity, title), and toggle on its o
 
 ## Gang Pings
 
-- Press **G** to broadcast your position, HP, and facing to gang chat; a second (unbound) key sends a
-  ping at the exact block you're looking at (raycast up to 200 blocks) so you can mark a spot without
-  walking to it.
+- Press **G** to broadcast your position, HP, and facing to gang chat; a second key sends a
+  ping at the exact block you're looking at.
 - Received pings render as player-head icons at the sender's location with optional beacon beams,
   distance fade, and configurable info lines (name, countdown, coordinates + distance, HP, facing) —
   each line individually toggleable, with adjustable scale and readability backgrounds.
-- A sound plays when a ping arrives in your world, with a short client-side anti-spam cooldown.
+- A sound plays when a ping arrives in your world.
 
 ## Super Breaker Aura
 
-- A centered ring timer (WeakAura-style) for your Super Breaker duration, with adjustable colors,
+- A centered ring timer for your Super Breaker duration, with adjustable colors,
   opacity, size, X/Y offset, and an optional countdown number.
 
 ## EasyView — inventory value overlays
@@ -89,20 +80,15 @@ own with a configurable color.
 
 For mining in crowded areas without accidentally targeting other players:
 
-- Nearby players turn translucent while you hold a pickaxe or mace (each has its own toggle), and stay
-  ghosted the whole time in the PrisonBreak world.
-- Block-breaking progress still renders *through* the ghosted players, so you can always see what you're
-  mining.
+- Nearby players turn translucent while you hold a pickaxe.
 - All interaction with other players is disabled while active, preventing accidental hits or clicks.
 - Adjustable opacity and radius, plus optional auto-disable when you enter combat (re-enabling after).
 
 ## Quality-of-life tools
 
-- **Message notifications** — a sound alert when you get a DM, with 7 selectable sounds and a volume
-  slider.
-- **Held item scaling** — resize items in your hand (pickaxes, swords, axes, other) from 25–150%.
-- **Pickaxe drop protection** — a double-press confirmation before dropping a pickaxe, with optional
-  full block on dropping and on dragging pickaxes out of your inventory.
+- **Message notifications** — a sound alert when you get a DM.
+- **Held item scaling** — resize items in your hand from 25–150%.
+- **Pickaxe drop protection** — a double-press confirmation before dropping a pickaxe.
 - **Auto trade** — shift-right-click a player to send `/trade <name>` automatically.
 - **Powerball ready alert** — a customizable title + optional sound when Powerball is ready again.
 - **Bold XP/Energy popups** — optionally bold the server's `+XP` / `+Energy` mining popups.
@@ -123,17 +109,6 @@ re-download. Fully optional; toggle it in the config menu.
   live scale slider), full HSV color pickers with hex input, a per-setting reset, and a reset-all.
 - Theme customization, including a per-server accent color.
 - Settings persist between sessions; the in-game menu is the recommended way to change them.
-
-## Keybinds
-
-| Key | Action |
-|---|---|
-| **I** | Open the config screen |
-| **R** | Reset Stats HUD tracking |
-| **B** | Pause / resume Stats HUD tracking |
-| **G** | Send a gang ping |
-| *(unbound)* | Gang ping the block you're looking at |
-| *(unbound)* | Open the waypoints screen |
 
 ---
 
