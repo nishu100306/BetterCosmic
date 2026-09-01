@@ -1,4 +1,4 @@
-# BetterCosmic 1.9.4 Changelog
+# BetterCosmic 1.9.5 Changelog
 
 **BetterPrisons is now BetterCosmic** — rebuilt from the ground up. All your BetterPrisons features are here, plus a lot of new ones. Your old settings carry over.
 
