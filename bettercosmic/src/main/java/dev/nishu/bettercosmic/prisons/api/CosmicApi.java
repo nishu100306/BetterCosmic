@@ -48,14 +48,9 @@ public final class CosmicApi {
 
 	private static final List<String> REQUESTED_SCOPES = List.of(
 			"events:read",
-			"server.merchants:read",
-			"server.meteors:read",
 			"player.effects:read");
 	private static final List<String> REQUESTED_HOOKS = List.of(
 			"server.event.schedule.changed",
-			"server.meteor.landing.changed",
-			"server.merchant.spawned",
-			"server.merchant.despawned",
 			"player.enchant_proc",
 			"player.effects.changed");
 
@@ -151,17 +146,13 @@ public final class CosmicApi {
 			handleScheduleChanged(payload.getAsJsonObject());
 		}
 
-		if ("player.enchant_proc".equals(eventType)) {
-			BetterPrisons.LOGGER.info("[CosmicApi] ENCHANT PROC eventType={} payload={}", eventType, payload);
-			if (payload != null && payload.isJsonObject()) {
-				handleEnchantProc(payload.getAsJsonObject());
-			}
+		if ("player.enchant_proc".equals(eventType) && payload != null && payload.isJsonObject()) {
+			handleEnchantProc(payload.getAsJsonObject());
 		}
 
 		if ("player.effects.changed".equals(eventType) && payload != null && payload.isJsonObject()) {
 			handleEffectsChanged(payload.getAsJsonObject());
 		}
-		// TODO: server.merchant.spawned / server.meteor.landing.changed wiring.
 	}
 
 	/**
@@ -326,7 +317,7 @@ public final class CosmicApi {
 	}
 
 	private static String modVersion() {
-		return FabricLoader.getInstance().getModContainer(MOD_ID)
+		return FabricLoader.getInstance().getModContainer(BetterPrisons.FABRIC_MOD_ID)
 				.map(c -> c.getMetadata().getVersion().getFriendlyString()).orElse("unknown");
 	}
 }

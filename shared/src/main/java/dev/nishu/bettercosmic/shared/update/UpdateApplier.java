@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Phase 2 — opt-in staged self-apply, in-session-move model (as used by ModMenuUpdater).
+ * Opt-in staged self-apply using an in-session-move model.
  *
  * <p>Fabric Loader loads the <em>newest</em> of two same-id jars in {@code mods/} and leaves the older
  * one unselected — it does not crash on the duplicate. So the update can be dropped in live:
@@ -38,8 +38,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * <p>No detached process, no shutdown hook, no file-lock fight. Gated behind
  * {@code SharedConfig.autoUpdateApply} (default off); no-ops in dev / when the mod isn't a single jar.
- * Integrity is mandatory: it refuses to install a jar the manifest has no matching SHA-256 for. See
- * {@code planning/AUTO_UPDATER_PLAN.md} §5B.
+ * Integrity is mandatory: it refuses to install a jar the manifest has no matching SHA-256 for.
  */
 public final class UpdateApplier {
 

@@ -35,7 +35,7 @@ public final class PrisonbreakTexturePack {
 
 	/** Registers the bundled pack so the game can load it from inside the jar. Call once at init. */
 	public static void register() {
-		ModContainer mod = FabricLoader.getInstance().getModContainer(BetterPrisons.MOD_ID).orElse(null);
+		ModContainer mod = FabricLoader.getInstance().getModContainer(BetterPrisons.FABRIC_MOD_ID).orElse(null);
 		if (mod == null) {
 			BetterPrisons.LOGGER.warn("Could not find mod container; PrisonBreak texture pack not registered");
 			return;

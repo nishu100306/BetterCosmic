@@ -74,9 +74,9 @@ import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
  * Client entrypoint for BetterPrisons.
  *
  * <p>Loads configs and stands up the shared services BetterPrisons builds on ({@link HudRenderer},
- * {@link ToastRenderer}). Feature systems (HUDs, EasyView providers, waypoints, CosmicApi, ...) are
- * registered here as they are ported in during Phase C; today this wires the config pipeline and one
- * real feature panel so the shared config screen shows a BetterPrisons tab.
+ * {@link ToastRenderer}), then registers every feature system — HUDs, EasyView providers, waypoints,
+ * gang pings, peaceful mining, tooltips, and the quality-of-life features — each gated at runtime to
+ * the Cosmic Prisons network.
  */
 public class BetterPrisonsClient implements ClientModInitializer {
 
@@ -86,7 +86,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 	/** BetterPrisons' own config (config/bettercosmic/betterprisons.json). */
 	public static PrisonsConfig config;
 
-	// ---- Feature systems (populated as they are ported in Phase C) ----
+	// ---- Feature systems ----
 	public static SatchelHud satchelHud;
 	public static StatsHud statsHud;
 	public static CooldownHud cooldownHud;
@@ -346,8 +346,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 	}
 
 	/**
-	 * Registers the BetterPrisons config panels. Per-feature panels are added alongside their features
-	 * in Phase C.
+	 * Registers the BetterPrisons config panels, one per feature area, under the Prisons profile.
 	 */
 	private void registerPanels() {
 		// Ordered by the config re-categorization sections: HUD overlays, then world & waypoints,

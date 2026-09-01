@@ -23,8 +23,6 @@ import java.util.concurrent.CompletableFuture;
  *
  * <p>All network I/O runs off the render thread; results are published to volatile state that the UI
  * reads. Any failure fails soft — the feature simply goes quiet and the game is unaffected.
- *
- * <p>See {@code planning/AUTO_UPDATER_PLAN.md} for the full design and locked decisions.
  */
 public final class UpdateChecker {
 

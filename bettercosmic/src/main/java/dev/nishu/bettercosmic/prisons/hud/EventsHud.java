@@ -204,7 +204,6 @@ public class EventsHud extends BaseHud {
 				long now = System.currentTimeMillis();
 				long duration = (type == MeteorType.NATURAL) ? NATURAL_METEOR_DURATION_MS : SUMMONED_METEOR_DURATION_MS;
 				activeMeteors.add(new MeteorInfo(x, y, z, now, now + duration, createMeteorIcon(), type));
-				BetterPrisons.LOGGER.info("Meteor detected at: {}, {}, {} (type: {})", x, y, z, type);
 				String name = (type == MeteorType.NATURAL) ? "Natural Meteor" : "Summoned Meteor";
 				int color = (type == MeteorType.NATURAL)
 						? cfg().eventsNaturalHeadingColor : cfg().eventsSummonedHeadingColor;
@@ -226,7 +225,6 @@ public class EventsHud extends BaseHud {
 				for (MeteorInfo m : activeMeteors) {
 					if (m.x == x && m.y == y && m.z == z && m.crashTime == null) {
 						m.crashTime = System.currentTimeMillis();
-						BetterPrisons.LOGGER.info("Meteor marked as crashed at: {}, {}, {}", x, y, z);
 						return;
 					}
 				}
@@ -235,7 +233,6 @@ public class EventsHud extends BaseHud {
 				MeteorInfo crashed = new MeteorInfo(x, y, z, now, now, createMeteorIcon(), type);
 				crashed.crashTime = now;
 				activeMeteors.add(crashed);
-				BetterPrisons.LOGGER.info("Meteor crash registered (no prior falling) at: {}, {}, {} (type: {})", x, y, z, type);
 				String name = (type == MeteorType.NATURAL) ? "Natural Meteor" : "Summoned Meteor";
 				int color = (type == MeteorType.NATURAL)
 						? cfg().eventsNaturalHeadingColor : cfg().eventsSummonedHeadingColor;
@@ -266,7 +263,6 @@ public class EventsHud extends BaseHud {
 		}
 		ItemStack icon = new ItemStack(itemOrDefault("minecraft:" + type.getDefaultIconId(), "coal"));
 		activeMerchants.add(new MerchantInfo(x, y, z, System.currentTimeMillis(), icon, type));
-		BetterPrisons.LOGGER.info("Merchant detected: {} at {}, {}, {}", type, x, y, z);
 		String name = type.getDisplayName();
 		int color = type.getHeadingColor(cfg());
 		String eventKey = "MERCHANT_" + type.name();
@@ -277,8 +273,6 @@ public class EventsHud extends BaseHud {
 		for (MerchantInfo m : activeMerchants) {
 			if (m.x == x && m.z == z && m.slainTime == null) {
 				m.slainTime = System.currentTimeMillis();
-				BetterPrisons.LOGGER.info("Merchant marked as slain: {} at {}, {}, {} (spawn Y was {})",
-						tierName, x, y, z, m.y);
 				return;
 			}
 		}
@@ -296,7 +290,6 @@ public class EventsHud extends BaseHud {
 		BadlandsRegion rushRegion = BadlandsRegion.fromCoords(x, z);
 		BadlandsRegion playerRegion = BadlandsRegion.getPlayerRegion();
 		if (rushRegion == null || playerRegion == null || rushRegion != playerRegion) {
-			BetterPrisons.LOGGER.info("Bandit rush at {}, {}, {} ignored (different badlands region)", x, y, z);
 			return;
 		}
 		for (BanditRushInfo b : activeBanditRushes) {
@@ -306,7 +299,6 @@ public class EventsHud extends BaseHud {
 		}
 		ItemStack icon = new ItemStack(itemOrDefault(cfg().banditRushIconItemId, "iron_sword"));
 		activeBanditRushes.add(new BanditRushInfo(x, y, z, System.currentTimeMillis(), icon, tier));
-		BetterPrisons.LOGGER.info("Bandit rush detected: {} at {}, {}, {}", tier, x, y, z);
 
 		int color = cfg().banditRushHeadingColor;
 		String name = tier + " Bandit Rush";
@@ -335,8 +327,6 @@ public class EventsHud extends BaseHud {
 				BadlandsRegion rushRegion = BadlandsRegion.fromCoords(b.x, b.z);
 				if (wonRegion != null && wonRegion == rushRegion) {
 					BetterPrisonsClient.waypointManager.removeEventWaypoint(b.x, b.y, b.z);
-					BetterPrisons.LOGGER.info("Bandit rush {} won in {} region — removed from {}, {}, {}",
-							tier, wonRegion, b.x, b.y, b.z);
 					return true;
 				}
 			}
@@ -374,7 +364,6 @@ public class EventsHud extends BaseHud {
 				if (s.x == x && s.y == y && s.z == z) {
 					if (crashed && s.crashTime == null) {
 						s.crashTime = now;
-						BetterPrisons.LOGGER.info("Meteorite shower crashed at {}, {}, {}", x, y, z);
 					}
 					return;
 				}
@@ -385,7 +374,6 @@ public class EventsHud extends BaseHud {
 				info.crashTime = now;
 			}
 			activeMeteoriteShowers.add(info);
-			BetterPrisons.LOGGER.info("Meteorite shower detected at {}, {}, {} (zone: {}, crashed: {})", x, y, z, zone, crashed);
 
 			int color = cfg().meteoriteShowerHeadingColor;
 			BetterPrisonsClient.waypointManager.addEventWaypoint(x, y, z, color, "Meteorite Shower", "METEORITE_SHOWER");

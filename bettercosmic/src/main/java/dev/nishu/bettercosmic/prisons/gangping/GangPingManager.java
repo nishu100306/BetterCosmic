@@ -1,6 +1,5 @@
 package dev.nishu.bettercosmic.prisons.gangping;
 
-import dev.nishu.bettercosmic.prisons.BetterPrisons;
 import dev.nishu.bettercosmic.prisons.waypoint.WaypointManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -106,7 +105,6 @@ public class GangPingManager {
 			float hp, float maxHp, String facing) {
 		GangPingInfo info = new GangPingInfo(playerName, x, y, z, world, hp, maxHp, facing);
 		activePings.put(playerName, info);
-		BetterPrisons.LOGGER.info("Gang ping from {} at {}, {}, {} ({})", playerName, x, y, z, world);
 	}
 
 	// ---- Tick — expire old pings ----

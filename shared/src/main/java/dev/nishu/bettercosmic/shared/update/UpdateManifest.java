@@ -8,7 +8,7 @@ import com.google.gson.JsonParser;
  * declares the newest published build; the client compares its {@link #latest} against the installed
  * version and, if newer <em>and</em> built for the running Minecraft version, surfaces an update.
  *
- * <p>Shape (see {@code planning/AUTO_UPDATER_PLAN.md} §4):
+ * <p>Shape:
  * <pre>
  * {
  *   "modId": "bettercosmic",
@@ -22,18 +22,18 @@ import com.google.gson.JsonParser;
  * }
  * </pre>
  *
- * <p>Parsing is deliberately defensive (same posture as {@code prisons.api.CosmicApi}): a malformed
- * or hostile response yields {@code null} rather than throwing, and every field is optional except
- * {@link #latest}. Network responses are untrusted data and must never crash the client.
+ * <p>Parsing is deliberately defensive: a malformed or hostile response yields {@code null} rather
+ * than throwing, and every field is optional except {@link #latest}. Network responses are untrusted
+ * data and must never crash the client.
  */
 public final class UpdateManifest {
 
 	public final String modId;
 	public final String latest;
 	public final String minecraft; // MC version this build targets, or null if unspecified
-	public final String channel;   // "release"; reserved for a future beta channel (Phase 3), unused today
-	public final String url;       // direct jar download (used by phase 2), may be null
-	public final String sha256;    // lowercase hex, used by phase 2, may be null
+	public final String channel;   // "release"; reserved for a future beta channel, unused today
+	public final String url;       // direct jar download for self-apply, may be null
+	public final String sha256;    // lowercase hex, verifies the downloaded jar, may be null
 	public final String changelog; // short human text, may be null
 	public final boolean mandatory;
 

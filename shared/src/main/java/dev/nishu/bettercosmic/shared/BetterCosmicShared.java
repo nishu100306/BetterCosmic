@@ -16,10 +16,8 @@ import org.slf4j.LoggerFactory;
  *
  * <p>This module is a user-invisible <em>library mod</em>: it exposes reusable client
  * infrastructure (UI framework, HUD system, render utilities, config persistence, ...) that the
- * consuming mods — BetterSky and, later, BetterPrisons — build their features on top of. It must
+ * consuming feature sets — BetterSky and BetterPrisons — build their features on top of. It must
  * never reference server-specific content; it provides mechanisms, the mods provide content.
- *
- * <p>See {@code ARCHITECTURE.md} at the repo root for the full design.
  */
 public class BetterCosmicShared implements ClientModInitializer {
 	public static final String MOD_ID = "bettercosmicshared";

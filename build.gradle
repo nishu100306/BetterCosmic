@@ -5,4 +5,3 @@
 //                    Cosmic network at runtime), which depends on and bundles :shared
 //
 // Common versions live in gradle.properties. Each module applies fabric-loom itself.
-// See ARCHITECTURE.md for the full design.
