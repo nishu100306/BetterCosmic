@@ -77,25 +77,26 @@ jobs:
           test -f "$jar" || { echo "::error::Built jar not found at $jar"; ls -la bettercosmic/build/libs/ || true; exit 1; }
           echo "sha256=$(sha256sum "$jar" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
-      - name: extract changelog + mandatory flag
+      - name: read changelog + mandatory flag
         id: notes
         run: |
           set -euo pipefail
-          # Annotated-tag message body; empty for a lightweight tag.
-          body="$(git tag -l --format='%(contents)' "${GITHUB_REF_NAME}")"
+          # Changelog comes from release/changelog.md (required for every release). The [mandatory]
+          # marker still comes from the annotated tag message.
+          changelog_file="release/changelog.md"
+          if [ ! -s "$changelog_file" ]; then
+            echo "::error::$changelog_file is missing or empty — a changelog is required for every release."
+            exit 1
+          fi
           mandatory=false
-          if printf '%s' "$body" | grep -qiF '[mandatory]'; then
+          if printf '%s' "$(git tag -l --format='%(contents)' "${GITHUB_REF_NAME}")" | grep -qiF '[mandatory]'; then
             mandatory=true
           fi
-          # Strip the marker and trim; fall back to a generic line if empty.
-          changelog="$(printf '%s' "$body" | sed -E 's/\[[Mm]andatory\]//g' | sed -e 's/[[:space:]]*$//' -e '/^[[:space:]]*$/d')"
-          [ -n "$changelog" ] || changelog="See the release notes."
-
           echo "mandatory=$mandatory" >> "$GITHUB_OUTPUT"
-          # Multi-line value for a later step.
           {
             echo "changelog<<CHANGELOG_EOF"
-            printf '%s\n' "$changelog"
+            cat "$changelog_file"
+            echo
             echo "CHANGELOG_EOF"
           } >> "$GITHUB_OUTPUT"
 
@@ -125,6 +126,12 @@ jobs:
         with:
           name: manifest
           path: manifest.json
+
+      - name: upload jar artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: jar
+          path: ${{ steps.meta.outputs.jar }}
 
   publish-manifest:
     needs: release
@@ -156,4 +163,53 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/manifest.json
           git commit -m "Publish update manifest for ${{ needs.release.outputs.version }}"
+          git push
+
+  # Publish the jar + changelog to Modrinth and Discord (GitHub Releases is the `release` job above).
+  # Runs after publish-manifest so its state.json commit can't race the manifest commit's push.
+  publish-modrinth-discord:
+    needs: [release, publish-manifest]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write        # commit release/state.json (Discord message ids + description hashes)
+    steps:
+      - name: checkout default branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: install deps
+        run: pip install requests
+
+      - name: download jar artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: jar
+          path: dist
+
+      - name: publish to Modrinth + Discord
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        run: |
+          set -euo pipefail
+          jar="$(ls dist/*.jar | head -1)"
+          python scripts/publish_release.py --version "${{ needs.release.outputs.version }}" --jar "$jar"
+
+      - name: commit updated release state
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- release/state.json; then
+            echo "release/state.json unchanged; nothing to commit"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add release/state.json
+          git commit -m "Update release state for ${{ needs.release.outputs.version }}"
           git push

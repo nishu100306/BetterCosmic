@@ -1,0 +1,18 @@
+{
+  "_comment": "Non-secret release config. Tokens live in GitHub Actions secrets (MODRINTH_TOKEN, DISCORD_BOT_TOKEN). Fill the REPLACE_* values. Placeholders are treated as 'not configured' and that platform is skipped.",
+  "modrinth": {
+    "projectId": "VTKts9H2",
+    "gameVersions": ["1.21.11"],
+    "loaders": ["fabric"],
+    "versionType": "release",
+    "dependencies": [
+      { "project_id": "P7dR8mSH", "dependency_type": "required", "_note": "Fabric API" }
+    ]
+  },
+  "discord": {
+    "changelogChannelId": "1469886528305234113",
+    "fullDescriptionChannelId": "1544375323330617366",
+    "shortDescriptionChannelId": "1544375358286077972",
+    "embedColor": 15844367
+  }
+}
