@@ -8,7 +8,7 @@
 		"nishu06"
 	],
 	"license": "ARR",
-	"icon": "assets/betterprisons/icon.png",
+	"icon": "assets/bettercosmic/icon.png",
 	"accessWidener": "bettercosmic.accesswidener",
 	"environment": "client",
 	"entrypoints": {
