@@ -57,9 +57,15 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 
 	// geometry, resolved in the constructor
 	private final int px, py, popupH;
-	private final int bodyTop, bodyVisibleH, contentH, maxScroll;
-	private final boolean scrollbar;
+	private final int bodyTop, bodyVisibleH;
+	private int contentH, maxScroll;   // recomputed when a section is collapsed/expanded
+	private boolean scrollbar;
 	private int scroll = 0;
+
+	// collapsible sections: a clickable header + its option rows per group, each with a collapsed flag
+	private final boolean[] collapsed;
+	private final List<GroupLabel> headers = new ArrayList<>();
+	private final List<List<OptionRow>> rowGroups = new ArrayList<>();
 
 	// ✕ hit-rect, captured at render
 	private int closeX, closeY;
@@ -75,24 +81,23 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 		this.screenW = screenW;
 		this.screenH = screenH;
 
-		int cH = 0;
-		for (OptionGroup group : panel.groups) {
-			GroupLabel gl = new GroupLabel(group.label);
-			items.add(gl);
-			cH += GroupLabel.HEIGHT;
+		// Build a collapsible section per group: a clickable header + its option rows.
+		this.collapsed = new boolean[panel.groups.size()];
+		for (int i = 0; i < panel.groups.size(); i++) {
+			OptionGroup group = panel.groups.get(i);
+			final int gi = i;
+			headers.add(new GroupLabel(group.label, () -> collapsed[gi], () -> toggle(gi)));
+			List<OptionRow> rows = new ArrayList<>();
 			for (Option opt : group.options) {
-				items.add(new OptionRow(opt, this, screenH));
-				cH += OptionRow.HEIGHT;
+				rows.add(new OptionRow(opt, this, screenH));
 			}
+			rowGroups.add(rows);
 		}
-		this.contentH = cH;
 
 		// Fixed "full size": height is a fraction of the screen; the body fills what's left after the
-		// header/padding. Content top-aligns and scrolls only if it ever exceeds the (large) body.
+		// header/padding. Content top-aligns and scrolls only if it exceeds the body.
 		this.popupH = Math.round(screenH * POPUP_HEIGHT_FRACTION);
 		this.bodyVisibleH = Math.max(0, popupH - HEADER - INNER_TOP - PAD_BOTTOM);
-		this.maxScroll = Math.max(0, contentH - bodyVisibleH);
-		this.scrollbar = maxScroll > 0;
 
 		// Right edge stays where a base-width centered popup's would be; the extra width extends left.
 		int rightEdge = (screenW + POP_W_BASE) / 2;
@@ -100,12 +105,44 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 		this.py = (screenH - popupH) / 2;
 		this.bodyTop = py + HEADER + INNER_TOP;
 
+		// Populate the visible item list + scroll metrics from the initial (all-expanded) state.
+		rebuildLayout();
+
 		// UiElement bounds cover the popup box (used for outside-click hit testing)
 		bounds(px, py, POP_W, popupH);
 	}
 
 	public void setOnClose(Runnable onClose) {
 		this.onClose = onClose;
+	}
+
+	/** Toggles a section open/closed and relays out the body. */
+	private void toggle(int groupIndex) {
+		collapsed[groupIndex] = !collapsed[groupIndex];
+		rebuildLayout();
+	}
+
+	/**
+	 * Rebuilds the visible {@link #items} list — every section header, plus a section's option rows only
+	 * while it is expanded — and recomputes the content height, scrollbar, and clamped scroll.
+	 */
+	private void rebuildLayout() {
+		items.clear();
+		int cH = 0;
+		for (int i = 0; i < headers.size(); i++) {
+			items.add(headers.get(i));
+			cH += GroupLabel.HEIGHT;
+			if (!collapsed[i]) {
+				for (OptionRow row : rowGroups.get(i)) {
+					items.add(row);
+					cH += OptionRow.HEIGHT;
+				}
+			}
+		}
+		contentH = cH;
+		maxScroll = Math.max(0, contentH - bodyVisibleH);
+		scrollbar = maxScroll > 0;
+		scroll = Math.max(0, Math.min(scroll, maxScroll));
 	}
 
 	@Override
@@ -230,7 +267,8 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 			close(); // click outside the box closes the popup
 			return true;
 		}
-		for (UiElement item : items) {
+		// Snapshot: a header's click toggles its section, which rebuilds `items` mid-loop.
+		for (UiElement item : new ArrayList<>(items)) {
 			if (item.mouseClicked(mouseX, mouseY, button)) {
 				return true;
 			}
