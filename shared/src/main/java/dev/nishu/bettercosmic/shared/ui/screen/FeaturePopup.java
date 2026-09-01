@@ -81,8 +81,10 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 		this.screenW = screenW;
 		this.screenH = screenH;
 
-		// Build a collapsible section per group: a clickable header + its option rows.
+		// Build a collapsible section per group: a clickable header + its option rows. Sections start
+		// collapsed so a panel opens as a compact list of headers the player expands as needed.
 		this.collapsed = new boolean[panel.groups.size()];
+		java.util.Arrays.fill(collapsed, true);
 		for (int i = 0; i < panel.groups.size(); i++) {
 			OptionGroup group = panel.groups.get(i);
 			final int gi = i;
@@ -131,7 +133,7 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 		int cH = 0;
 		for (int i = 0; i < headers.size(); i++) {
 			items.add(headers.get(i));
-			cH += GroupLabel.HEIGHT;
+			cH += headers.get(i).preferredHeight(); // includes the collapsed-section gap
 			if (!collapsed[i]) {
 				for (OptionRow row : rowGroups.get(i)) {
 					items.add(row);

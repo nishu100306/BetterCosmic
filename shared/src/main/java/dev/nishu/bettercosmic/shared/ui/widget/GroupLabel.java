@@ -18,6 +18,8 @@ import java.util.function.BooleanSupplier;
 public final class GroupLabel extends UiElement {
 
 	public static final int HEIGHT = 15;
+	/** Extra space left below a collapsed header, so stacked collapsed sections read as separate. */
+	public static final int COLLAPSED_GAP = 6;
 
 	private final String text;
 	private final BooleanSupplier collapsed;
@@ -31,7 +33,7 @@ public final class GroupLabel extends UiElement {
 
 	@Override
 	public int preferredHeight() {
-		return HEIGHT;
+		return HEIGHT + (collapsed.getAsBoolean() ? COLLAPSED_GAP : 0);
 	}
 
 	@Override
