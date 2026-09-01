@@ -53,3 +53,7 @@ replay_*.log
 
 # planning / design docs (local only)
 planning/
+
+# Python
+__pycache__/
+*.pyc

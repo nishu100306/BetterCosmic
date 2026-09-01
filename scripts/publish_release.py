@@ -129,11 +129,8 @@ def _discord_post(headers, channel, embed):
     return r.json().get("id")
 
 
-def _discord_upsert(headers, state, key, channel, embed):
-    """Edit the tracked embed message, or post + record it the first time (or if it was deleted)."""
-    if not configured(channel):
-        raise RuntimeError(f"channel for {key} not configured")
-    mid = state.get(key)
+def _discord_edit_or_post(headers, channel, mid, embed):
+    """Edit message `mid` in place, or post a new one if `mid` is None / was deleted. Returns the id."""
     if mid:
         r = requests.patch(f"{DISCORD_API}/channels/{channel}/messages/{mid}",
                            headers=headers, data=json.dumps({"embeds": [embed]}), timeout=30)
@@ -141,8 +138,46 @@ def _discord_upsert(headers, state, key, channel, embed):
             mid = None  # message was deleted — repost below
         elif r.status_code >= 300:
             raise RuntimeError(f"edit message HTTP {r.status_code}: {r.text}")
-    if not mid:
-        state[key] = _discord_post(headers, channel, embed)
+        else:
+            return mid
+    return _discord_post(headers, channel, embed)
+
+
+def _discord_delete(headers, channel, mid):
+    """Best-effort delete of a leftover message (ignores 404 / errors)."""
+    try:
+        requests.delete(f"{DISCORD_API}/channels/{channel}/messages/{mid}", headers=headers, timeout=30)
+    except Exception:  # noqa: BLE001 — cleanup is best-effort
+        pass
+
+
+def _discord_upsert(headers, state, key, channel, embed):
+    """Edit the tracked embed message, or post + record it the first time (or if it was deleted)."""
+    if not configured(channel):
+        raise RuntimeError(f"channel for {key} not configured")
+    state[key] = _discord_edit_or_post(headers, channel, state.get(key), embed)
+
+
+def split_embed(text, limit):
+    """Split `text` into chunks no longer than `limit`, preferring paragraph/line/word boundaries."""
+    text = text.strip()
+    if len(text) <= limit:
+        return [text]
+    chunks, rest = [], text
+    while len(rest) > limit:
+        window = rest[:limit]
+        cut = window.rfind("\n\n")
+        if cut < limit // 2:
+            cut = window.rfind("\n")
+        if cut < limit // 2:
+            cut = window.rfind(" ")
+        if cut <= 0:
+            cut = limit
+        chunks.append(rest[:cut].strip())
+        rest = rest[cut:].strip()
+    if rest:
+        chunks.append(rest)
+    return chunks
 
 
 def publish_discord(cfg, version, changelog, full_desc, short_desc, state, token):
@@ -169,13 +204,31 @@ def publish_discord(cfg, version, changelog, full_desc, short_desc, state, token
         state["discordChangelogVersion"] = version
         print("Discord: posted changelog.")
 
-    # Full / short description: edit the existing embed in each channel, only when the text changed
-    # since Discord last got it. Per-target hash advances only after a successful post/edit.
-    if full_desc and sha(full_desc) != state.get("discordFullHash"):
-        _discord_upsert(headers, state, "fullDescMessageId", d.get("fullDescriptionChannelId"),
-                        {"title": "BetterCosmic", "description": clip(full_desc, EMBED_LIMIT), "color": color})
+    # Full description: split across as many single-embed messages as needed (Discord caps one embed at
+    # 4096 chars), editing existing messages in place and deleting any that are no longer needed. Only
+    # when the text changed since Discord last got it.
+    fch = d.get("fullDescriptionChannelId")
+    if full_desc and not configured(fch):
+        print("Discord: full-description channel not configured — skipping.")
+    elif full_desc and sha(full_desc) != state.get("discordFullHash"):
+        chunks = split_embed(full_desc, EMBED_LIMIT)
+        # Migrate the old single-id form, then reuse existing messages in order.
+        ids = list(state.get("fullDescMessageIds")
+                   or ([state["fullDescMessageId"]] if state.get("fullDescMessageId") else []))
+        new_ids = []
+        for i, chunk in enumerate(chunks):
+            embed = {"description": chunk, "color": color}
+            if i == 0:
+                embed["title"] = "BetterCosmic"
+            new_ids.append(_discord_edit_or_post(headers, fch, ids[i] if i < len(ids) else None, embed))
+        for stale in ids[len(chunks):]:  # fewer chunks than before — remove the extras
+            _discord_delete(headers, fch, stale)
+        state["fullDescMessageIds"] = new_ids
+        state.pop("fullDescMessageId", None)  # superseded by the list form
         state["discordFullHash"] = sha(full_desc)
-        print("Discord: updated full-description embed.")
+        print(f"Discord: updated full-description ({len(chunks)} embed message(s)).")
+
+    # Short description: a single embed (it always fits).
     if short_desc and sha(short_desc) != state.get("discordShortHash"):
         _discord_upsert(headers, state, "shortDescMessageId", d.get("shortDescriptionChannelId"),
                         {"title": "BetterCosmic", "description": clip(short_desc, EMBED_LIMIT), "color": color})
