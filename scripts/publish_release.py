@@ -253,16 +253,18 @@ def main():
     if not changelog:
         sys.exit("release/changelog.md is empty — a changelog is required for every release.")
 
+    # Strip the tokens — a stray newline/space in a pasted secret otherwise yields a 401.
+    modrinth_token = os.environ.get("MODRINTH_TOKEN", "").strip()
+    discord_token = os.environ.get("DISCORD_BOT_TOKEN", "").strip()
+
     failures = []
     try:
-        publish_modrinth(cfg, args.version, args.jar, changelog, short_desc, state,
-                         os.environ.get("MODRINTH_TOKEN", ""))
+        publish_modrinth(cfg, args.version, args.jar, changelog, short_desc, state, modrinth_token)
     except Exception as e:  # noqa: BLE001 — keep platforms independent
         failures.append(f"Modrinth: {e}")
         print(f"::error::Modrinth publish failed: {e}")
     try:
-        publish_discord(cfg, args.version, changelog, full_desc, short_desc, state,
-                        os.environ.get("DISCORD_BOT_TOKEN", ""))
+        publish_discord(cfg, args.version, changelog, full_desc, short_desc, state, discord_token)
     except Exception as e:  # noqa: BLE001
         failures.append(f"Discord: {e}")
         print(f"::error::Discord publish failed: {e}")
