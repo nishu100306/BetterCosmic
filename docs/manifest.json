@@ -1,10 +1,10 @@
 {
   "modId": "bettercosmic",
-  "latest": "0.0.3",
+  "latest": "0.0.4",
   "minecraft": "1.21.11",
   "channel": "release",
-  "url": "https://github.com/nishu100306/BetterCosmic/releases/download/v0.0.3/bettercosmic-0.0.3.jar",
-  "sha256": "64c5967a991b5b96e4365b43a527eca2ec4db7ddf7416c7d7f76b79db64a23e0",
-  "changelog": "Reliable self-apply cleanup: the old jar is now retired to backups/ on the launch after an update. Removes the detached-helper machinery in favor of the in-session-move model, plus updater code cleanup.",
+  "url": "https://github.com/nishu100306/BetterCosmic/releases/download/v0.0.4/bettercosmic-0.0.4.jar",
+  "sha256": "f284273d3e274c44ea11f3e146951e5f42e31d14c223d13c7ed6325da4d0d343",
+  "changelog": "testv0.0.4",
   "mandatory": false
 }
