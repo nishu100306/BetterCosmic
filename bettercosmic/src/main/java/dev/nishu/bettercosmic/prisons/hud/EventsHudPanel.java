@@ -112,7 +112,7 @@ public final class EventsHudPanel {
 						() -> c.eventsBorderThickness, v -> { c.eventsBorderThickness = v; c.save(); })));
 
 		return ConfigPanel.of("prisons-events", "Events HUD",
-				"Meteors, merchants, bandit rushes & showers", PanelIcon.METEOR,
+				"Meteors, merchants, bandit rushes & showers", PanelIcon.EXCLAMATION,
 				List.of(general, meteors, merchants, bandit, shower, box));
 	}
 }

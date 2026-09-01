@@ -77,7 +77,7 @@ public final class EnchantHudPanel {
 						() -> c.superBreakerTimerOffsetY, v -> { c.superBreakerTimerOffsetY = v; c.save(); })));
 
 		return ConfigPanel.of("prisons-enchant", "Enchant HUD",
-				"Active enchants, Powerball alert & Super Breaker aura", PanelIcon.SWORD,
+				"Active enchants, Powerball alert & Super Breaker aura", PanelIcon.BOOK,
 				List.of(hud, style, powerball, aura));
 	}
 }

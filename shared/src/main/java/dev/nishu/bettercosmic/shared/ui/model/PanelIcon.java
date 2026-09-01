@@ -3,19 +3,16 @@ package dev.nishu.bettercosmic.shared.ui.model;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**
- * The small glyph shown on a {@link ConfigPanel} card. Three kinds coexist: <em>parametric</em>
- * glyphs are drawn with primitive fills that scale to any {@code size}; <em>bitmap</em> glyphs carry a
- * hand-authored 16×16 {@code '#'}/{@code '.'} mask and are tinted to the passed {@code color}; and
- * <em>colored</em> glyphs ({@link #BUNDLE}, {@link #BEACON}) carry their own multi-color palette traced
- * from the Minecraft item texture and ignore the tint. All are nearest-neighbor scaled into the
- * {@code size}×{@code size} box at ({@code x},{@code y}).
+ * The small glyph shown on a {@link ConfigPanel} card. Two kinds coexist: <em>parametric</em> glyphs
+ * are drawn with primitive fills that scale to any {@code size}; <em>bitmap</em> glyphs carry a
+ * hand-authored 16×16 {@code '#'}/{@code '.'} mask (traced from / styled after Minecraft item
+ * textures) and are nearest-neighbor scaled into the box. Every glyph is tinted to a single
+ * {@code color} at ({@code x},{@code y}).
  */
 public enum PanelIcon {
 	// ---- parametric glyphs (scale to any size) ----
 	/** Potion flask — legacy trinkets icon (superseded by {@link #POTION}). */
 	FLASK,
-	/** Gear — general/settings. */
-	GEAR,
 	/** Padlock — locked "coming soon" placeholders. */
 	LOCK,
 	/** Eye — inventory/overlay views (EasyView). */
@@ -34,10 +31,18 @@ public enum PanelIcon {
 		".........####...", "........#####...", ".......#####....", "......#####.....",
 		".....#######....", "....#########...", "....#########...", "....#########...",
 		"....#########...", ".....#######....", "......#####.....", "................"),
-	/** Bundle — satchel tracking. Colored (traced from the vanilla texture); see {@link #draw}. */
-	BUNDLE,
-	/** Beacon — waypoints & beams. Colored (glass cube + glow + obsidian base); see {@link #draw}. */
-	BEACON,
+	/** Bundle — satchel tracking (folded-flap leather pouch, redrawn from the texture). */
+	BUNDLE(
+		"................", "..############..", "..############..", "..############..",
+		"...##########...", ".##############.", ".##############.", ".##############.",
+		".##############.", ".##############.", ".##############.", "..############..",
+		"..############..", "...##########...", "....########....", "................"),
+	/** Beacon — waypoints & beams (glass frame + glowing core, redrawn from the item). */
+	BEACON(
+		"................", "..############..", "..#..........#..", "..#..........#..",
+		"..#..........#..", "..#..........#..", "..#...####...#..", "..#...####...#..",
+		"..#...####...#..", "..#...####...#..", "..#..........#..", "..#..........#..",
+		"..#..........#..", "..#..........#..", "..############..", "................"),
 	/** Angled falling block + streaks — events (meteors). */
 	METEOR(
 		".........#......", "..........#.#...", "...........#.#..", "..........#...#.",
@@ -68,12 +73,12 @@ public enum PanelIcon {
 		"..##....#...##..", "..##....#...##..", ".##.....#....##.", ".##....##....##.",
 		".##....##....##.", ".##......##..##.", "..##.......###..", "..##........##..",
 		"...###....###...", "....########....", "......####......", "................"),
-	/** Bell — notifications. */
+	/** Bell — notifications (mounting bar + hanging bell). */
 	BELL(
-		"................", ".......##.......", ".......##.......", "......####......",
-		".....######.....", ".....######.....", "....########....", "....########....",
-		"....########....", "....########....", "...##########...", "...##########...",
-		"..############..", "..############..", "......####......", "......####......"),
+		"..############..", "..############..", "......####......", ".....######.....",
+		"....########....", "...##########...", "...##########...", "...##########...",
+		"...##########...", "...##########...", "..############..", "..############..",
+		".##############.", "......####......", "......####......", "................"),
 	/** Map pin — gang pings. */
 	MARKER(
 		"......####......", "....########....", "...##########...", "..############..",
@@ -91,7 +96,25 @@ public enum PanelIcon {
 		"................", "................", "....###.........", "....###.........",
 		"..############..", "....###.........", "....###..###....", ".........###....",
 		"..############..", ".........###....", "......######....", "......###.......",
-		"..############..", "......###.......", "......###.......", "................");
+		"..############..", "......###.......", "......###.......", "................"),
+	/** Gear — general/settings (cog with a center hole). */
+	GEAR(
+		"......####......", "......####......", "..############..", ".##############.",
+		".##############.", ".##############.", "######....######", "######....######",
+		"######....######", "######....######", ".##############.", ".##############.",
+		".##############.", "..############..", "......####......", "......####......"),
+	/** Open book — enchants & auras. */
+	BOOK(
+		"................", "......#..#......", "....###..###....", "...####..####...",
+		"..#####..#####..", ".######..######.", ".######..######.", ".######..######.",
+		".######..######.", ".######..######.", ".######..######.", ".##############.",
+		".##############.", "................", "................", "................"),
+	/** Exclamation mark — events alert. */
+	EXCLAMATION(
+		"................", "......####......", "......####......", "......####......",
+		"......####......", "......####......", "......####......", ".......##.......",
+		".......##.......", "................", "................", "......####......",
+		"......####......", "......####......", "................", "................");
 
 	/** 16×16 glyph bitmap, or {@code null} for a parametric glyph (drawn by {@link #draw}'s switch). */
 	private final String[] bits;
@@ -107,79 +130,14 @@ public enum PanelIcon {
 		}
 		switch (this) {
 			case FLASK -> flask(g, x, y, size, color);
-			case GEAR -> gear(g, x, y, size, color);
 			case LOCK -> lock(g, x, y, size, color);
 			case EYE -> eye(g, x, y, size, color);
 			case SATCHEL -> satchel(g, x, y, size, color);
 			case CHART -> chart(g, x, y, size, color);
 			case SPARKLE -> sparkle(g, x, y, size, color);
-			case BUNDLE -> colored(g, x, y, size, BUNDLE_ART, BUNDLE_PAL);
-			case BEACON -> colored(g, x, y, size, BEACON_ART, BEACON_PAL);
 			default -> { /* bitmap glyphs handled above */ }
 		}
 	}
-
-	/**
-	 * Renders a multi-color 16×16 glyph, nearest-neighbor scaled into the size×size box. Each digit in
-	 * {@code art} indexes {@code pal} (ARGB); {@code '.'} is transparent. Unlike {@link #bitmap}, these
-	 * carry their own colors and ignore the accent tint — used for icons that read by color (the cyan
-	 * beacon, the brown bundle), traced from their Minecraft item textures.
-	 */
-	private static void colored(GuiGraphics g, int x, int y, int size, String[] art, int[] pal) {
-		for (int dy = 0; dy < size; dy++) {
-			String row = art[dy * 16 / size];
-			for (int dx = 0; dx < size; dx++) {
-				char ch = row.charAt(dx * 16 / size);
-				if (ch != '.') {
-					g.fill(x + dx, y + dy, x + dx + 1, y + dy + 1, pal[ch - '0']);
-				}
-			}
-		}
-	}
-
-	// Bundle — palette-quantized from the vanilla bundle texture (leather browns + tan drawstring).
-	private static final int[] BUNDLE_PAL = {
-		0xFFDFC38D, 0xFF815634, 0xFFCD7B46, 0xFF4F2B10, 0xFFB79963, 0xFFA6572C, 0xFF623220,
-	};
-	private static final String[] BUNDLE_ART = {
-		"................",
-		"................",
-		"....666.........",
-		"...6511666......",
-		"..65333333663...",
-		"..615333333363..",
-		".6115213333313..",
-		".61115253335163.",
-		".651411225516133",
-		"3115544563331633",
-		"3615222445546333",
-		"3111552220463363",
-		"3365522245143363",
-		".33615554166663.",
-		"..333336666333..",
-		"....33333333....",
-	};
-
-	// Beacon — glass frame (0), cyan glow (1), bright center (2), obsidian base (3).
-	private static final int[] BEACON_PAL = { 0xFFBFD6F2, 0xFF2CDCDC, 0xFFE3FBFB, 0xFF241A2C };
-	private static final String[] BEACON_ART = {
-		"................",
-		"..000000000000..",
-		"..0..........0..",
-		"..0.11111111.0..",
-		"..0.11111111.0..",
-		"..0.11111111.0..",
-		"..0.11222211.0..",
-		"..0.11222211.0..",
-		"..0.11222211.0..",
-		"..0.11111111.0..",
-		"..0.11111111.0..",
-		"..0.33333333.0..",
-		"..0.33333333.0..",
-		"..0..........0..",
-		"..000000000000..",
-		"................",
-	};
 
 	/** Nearest-neighbor scales a 16×16 {@code '#'}/{@code '.'} bitmap into the size×size box. */
 	private static void bitmap(GuiGraphics g, int x, int y, int size, int color, String[] rows) {
@@ -266,20 +224,6 @@ public enum PanelIcon {
 			int yy = neckBottom + i;
 			g.fill(cx - half, yy, cx + half, yy + 1, color);
 		}
-	}
-
-	private static void gear(GuiGraphics g, int x, int y, int s, int color) {
-		int inset = 2;
-		// ring
-		g.fill(x + inset, y + inset, x + s - inset, y + inset + 2, color);         // top
-		g.fill(x + inset, y + s - inset - 2, x + s - inset, y + s - inset, color); // bottom
-		g.fill(x + inset, y + inset, x + inset + 2, y + s - inset, color);         // left
-		g.fill(x + s - inset - 2, y + inset, x + s - inset, y + s - inset, color); // right
-		int cx = x + s / 2, cy = y + s / 2;
-		g.fill(cx - 1, y, cx + 1, y + 2, color);           // nubs
-		g.fill(cx - 1, y + s - 2, cx + 1, y + s, color);
-		g.fill(x, cy - 1, x + 2, cy + 1, color);
-		g.fill(x + s - 2, cy - 1, x + s, cy + 1, color);
 	}
 
 	private static void lock(GuiGraphics g, int x, int y, int s, int color) {
