@@ -19,9 +19,7 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix3x2fStack;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,8 +28,7 @@ import java.util.regex.Pattern;
  * merchants, badlands bandit rushes, and meteorite showers — and renders a stacked list with a
  * live countdown, icon, and coordinates for each. It also mirrors every event into the
  * {@link dev.nishu.bettercosmic.prisons.waypoint.WaypointManager} so beams and screen-edge markers
- * can point at them, and (via the {@code updateScheduledEvent} hook) shows single-line countdowns for
- * Cosmic-API scheduled events.
+ * can point at them.
  *
  * <p>Ported from BetterPrisons' {@code hud/EventsHud} (Yarn → Mojang: {@code DrawContext} →
  * {@code GuiGraphics}, {@code Text} → {@code Component}, {@code textRenderer} → {@code font},
@@ -54,10 +51,6 @@ public class EventsHud extends BaseHud {
 
 	// --- Bandit Rushes ---
 	private final List<BanditRushInfo> activeBanditRushes = new ArrayList<>();
-
-	// --- Scheduled events (Cosmic API: server.event.schedule.changed) ---
-	private final Map<String, ScheduledEventInfo> scheduledEvents = new LinkedHashMap<>();
-	private static final List<String> SCHEDULED_EVENT_ORDER = List.of();
 
 	// --- Meteorite Showers ---
 	private final List<MeteoriteShowerInfo> activeMeteoriteShowers = new ArrayList<>();
@@ -590,54 +583,6 @@ public class EventsHud extends BaseHud {
 	}
 
 	// -------------------------------------------------------------------------
-	// Scheduled events (Cosmic API)
-	// -------------------------------------------------------------------------
-
-	public void updateScheduledEvent(String id, String name, boolean enabled, boolean active, long displayUntil) {
-		if (!SCHEDULED_EVENT_ORDER.contains(id)) {
-			return;
-		}
-		ScheduledEventInfo info = scheduledEvents.computeIfAbsent(id, k -> new ScheduledEventInfo());
-		info.id = id;
-		info.name = name;
-		info.enabled = enabled;
-		info.active = active;
-		info.displayUntil = displayUntil;
-	}
-
-	private List<ScheduledEventInfo> getVisibleScheduledEvents() {
-		List<ScheduledEventInfo> out = new ArrayList<>();
-		for (String id : SCHEDULED_EVENT_ORDER) {
-			ScheduledEventInfo info = scheduledEvents.get(id);
-			if (info != null) {
-				out.add(info);
-			}
-		}
-		return out;
-	}
-
-	private String buildScheduledHeading(ScheduledEventInfo e, long now) {
-		if (!e.enabled) {
-			return e.name + " [Disabled]";
-		}
-		if (e.active || e.displayUntil <= 0) {
-			return e.name + " [Active]";
-		}
-		long remaining = e.displayUntil - now;
-		if (remaining <= 0) {
-			return e.name + " (Soon)";
-		}
-		long totalSecs = remaining / 1000;
-		long hours = totalSecs / 3600;
-		long mins = (totalSecs % 3600) / 60;
-		long secs = totalSecs % 60;
-		if (hours > 0) {
-			return String.format("%s (%d:%02d:%02d)", e.name, hours, mins, secs);
-		}
-		return String.format("%s (%d:%02d)", e.name, mins, secs);
-	}
-
-	// -------------------------------------------------------------------------
 	// Render
 	// -------------------------------------------------------------------------
 
@@ -653,10 +598,8 @@ public class EventsHud extends BaseHud {
 		List<MerchantInfo> visibleMerchants = getVisibleMerchants();
 		List<BanditRushInfo> visibleBanditRushes = getVisibleBanditRushes();
 		List<MeteoriteShowerInfo> visibleShowers = getVisibleMeteoriteShowers();
-		List<ScheduledEventInfo> visibleScheduled = getVisibleScheduledEvents();
 		boolean hasContent = !visibleMeteors.isEmpty() || !visibleMerchants.isEmpty()
-				|| !visibleBanditRushes.isEmpty() || !visibleShowers.isEmpty()
-				|| !visibleScheduled.isEmpty();
+				|| !visibleBanditRushes.isEmpty() || !visibleShowers.isEmpty();
 
 		if (!enabled || (!showTitle && !hasContent)) {
 			return;
@@ -692,14 +635,10 @@ public class EventsHud extends BaseHud {
 			String coords = buildShowerCoords(s, playerPos);
 			maxTextWidth = Math.max(maxTextWidth, scaled(20) + (int) (client.font.width(coords) * scale));
 		}
-		for (ScheduledEventInfo e : visibleScheduled) {
-			maxTextWidth = Math.max(maxTextWidth, (int) (client.font.width(buildScheduledHeading(e, renderNow)) * scale));
-		}
 
 		int bgWidth = maxTextWidth;
 		int contentHeight = (visibleMeteors.size() + visibleMerchants.size()
-				+ visibleBanditRushes.size() + visibleShowers.size()) * scaled(32)
-				+ visibleScheduled.size() * scaled(12);
+				+ visibleBanditRushes.size() + visibleShowers.size()) * scaled(32);
 		int bgHeight = titleHeight + contentHeight;
 
 		int bgColor = (config.eventsBgOpacity << 24) | (config.eventsBgColor & 0xFFFFFF);
@@ -851,18 +790,6 @@ public class EventsHud extends BaseHud {
 			matrices.popMatrix();
 			yOffset += scaled(20);
 		}
-
-		// --- Scheduled events (Cosmic API) — single-line countdowns, no coords ---
-		int scheduledColor = 0xFF000000 | config.eventsTextColor;
-		for (ScheduledEventInfo e : visibleScheduled) {
-			String heading = buildScheduledHeading(e, renderNow);
-			matrices.pushMatrix();
-			matrices.scale(scale, scale);
-			matrices.translate(x / scale, (y + yOffset) / scale);
-			ctx.drawString(client.font, Component.literal(heading).setStyle(Style.EMPTY.withItalic(true)), 0, 0, scheduledColor, true);
-			matrices.popMatrix();
-			yOffset += scaled(12);
-		}
 	}
 
 	// -------------------------------------------------------------------------
@@ -906,9 +833,6 @@ public class EventsHud extends BaseHud {
 			String coords = buildShowerCoords(s, playerPos);
 			maxTextWidth = Math.max(maxTextWidth, scaled(20) + (int) (client.font.width(coords) * scale));
 		}
-		for (ScheduledEventInfo e : getVisibleScheduledEvents()) {
-			maxTextWidth = Math.max(maxTextWidth, (int) (client.font.width(buildScheduledHeading(e, widthNow)) * scale));
-		}
 
 		int padding = scale < 1 ? scaled(4) : 4;
 		return maxTextWidth + (padding * 2);
@@ -921,10 +845,8 @@ public class EventsHud extends BaseHud {
 		int visibleMerchantCount = getVisibleMerchants().size();
 		int visibleBanditRushCount = getVisibleBanditRushes().size();
 		int visibleShowerCount = getVisibleMeteoriteShowers().size();
-		int visibleScheduledCount = getVisibleScheduledEvents().size();
 		return titleHeight + ((getVisibleMeteors().size() + visibleMerchantCount
-				+ visibleBanditRushCount + visibleShowerCount) * scaled(32))
-				+ (visibleScheduledCount * scaled(12));
+				+ visibleBanditRushCount + visibleShowerCount) * scaled(32));
 	}
 
 	// -------------------------------------------------------------------------
@@ -952,14 +874,6 @@ public class EventsHud extends BaseHud {
 	// -------------------------------------------------------------------------
 	// Data classes
 	// -------------------------------------------------------------------------
-
-	public static class ScheduledEventInfo {
-		public String id;
-		public String name;
-		public boolean enabled;
-		public boolean active;
-		public long displayUntil;
-	}
 
 	public static class MeteorInfo {
 		public int x, y, z;

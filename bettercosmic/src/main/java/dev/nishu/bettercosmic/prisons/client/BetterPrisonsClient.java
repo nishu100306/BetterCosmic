@@ -3,7 +3,6 @@ package dev.nishu.bettercosmic.prisons.client;
 import dev.nishu.bettercosmic.prisons.BetterPrisons;
 import dev.nishu.bettercosmic.prisons.PrisonWorlds;
 import dev.nishu.bettercosmic.prisons.PrisonsGate;
-import dev.nishu.bettercosmic.prisons.api.CosmicApi;
 import dev.nishu.bettercosmic.prisons.chestsearch.ChestSearchTintProvider;
 import dev.nishu.bettercosmic.prisons.chestsearch.ClueScrollProvider;
 import dev.nishu.bettercosmic.prisons.chestsearch.SearchPanel;
@@ -20,7 +19,6 @@ import dev.nishu.bettercosmic.prisons.gangping.GangPingRenderer;
 import dev.nishu.bettercosmic.prisons.gangping.GangPingsPanel;
 import dev.nishu.bettercosmic.prisons.feature.PeacefulMiningPanel;
 import dev.nishu.bettercosmic.prisons.feature.PrisonsPeacefulMiningPolicy;
-import dev.nishu.bettercosmic.prisons.enchantprocs.EnchantProcManager;
 import dev.nishu.bettercosmic.prisons.enchants.EnchantSoundListener;
 import dev.nishu.bettercosmic.prisons.enchants.EnchantTracker;
 import dev.nishu.bettercosmic.prisons.enchants.SoundTracker;
@@ -183,13 +181,8 @@ public class BetterPrisonsClient implements ClientModInitializer {
 				PrisonbreakTexturePack.update(PrisonsGate.active()
 						&& PrisonWorlds.PRISONBREAK.equals(WaypointManager.detectWorldKey())));
 
-		// Enchant procs: floating world-space labels driven by the Cosmic API's player.enchant_proc hook.
+		// Floating world-space text renderer (used by developer tooling).
 		FloatingTextRenderer.init();
-		EnchantProcManager.init();
-
-		// Cosmic API: client_hello handshake on join + hook routing (schedule → Events HUD, enchant
-		// procs → EnchantProcManager, effects → Enchant HUD).
-		CosmicApi.register();
 
 		// Track the current world for per-world custom waypoints; clear stale event waypoints on join.
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
