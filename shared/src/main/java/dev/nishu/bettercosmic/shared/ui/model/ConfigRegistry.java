@@ -58,6 +58,20 @@ public final class ConfigRegistry {
 		return Collections.unmodifiableList(out);
 	}
 
+	/**
+	 * Whether any panel is registered scoped to {@code network}. The config screen uses this to show a
+	 * network's profile selector only when that network actually contributes panels — so a build that
+	 * ships only one network's features (e.g. Prisons without Sky) shows no empty profile tab.
+	 */
+	public static boolean hasPanels(Network network) {
+		for (Entry e : ENTRIES) {
+			if (e.network() == network) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/** Test/util hook — removes all registrations. */
 	public static void clear() {
 		ENTRIES.clear();

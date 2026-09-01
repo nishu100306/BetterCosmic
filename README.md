@@ -1,15 +1,11 @@
 # BetterCosmic
 
-A client-side quality-of-life mod for **CosmicPrisons** and **CosmicSky**. BetterCosmic adds
-on-screen HUDs, inventory overlays, event tracking, waypoints, peaceful-mining visuals, and a range
-of quality-of-life tweaks — all configurable from a fully custom in-game settings screen with no
-external dependencies required.
+A client-side quality-of-life mod for **CosmicPrisons**. BetterCosmic adds on-screen HUDs, inventory
+overlays, event tracking, waypoints, peaceful-mining visuals, and a range of quality-of-life tweaks —
+all configurable from a fully custom in-game settings screen with no external dependencies required.
 
-It ships as a single mod that detects which Cosmic network you're on and enables the matching feature
-set automatically:
-
-- **BetterPrisons** features activate on CosmicPrisons.
-- **BetterSky** features activate on CosmicSky.
+Its features only turn on while you're actually connected to CosmicPrisons, so nothing clutters your
+screen anywhere else. (CosmicSky support is on the way.)
 
 > Client-side only. It changes what *you* see and do; it does not modify the server or give any
 > unfair advantage. Everything is toggleable.
@@ -21,7 +17,7 @@ set automatically:
 1. Install [Fabric Loader](https://fabricmc.net/) for the supported Minecraft version and
    [Fabric API](https://modrinth.com/mod/fabric-api).
 2. Drop the BetterCosmic `.jar` into your `mods/` folder.
-3. Launch the game and join CosmicPrisons or CosmicSky.
+3. Launch the game and join CosmicPrisons.
 4. Press **I** (or open **Mod Menu**) to configure everything.
 
 **Requires:** Minecraft 1.21.11 · Fabric Loader 0.17.3+ · Fabric API · Java 21+
@@ -105,11 +101,6 @@ hits/right-clicks on players are suppressed. Configurable opacity, radius, and a
 - **PrisonBreak texture pack** — A bundled ore texture pack that auto-applies in the PrisonBreak
   world and removes itself when you leave.
 
-### BetterSky
-
-- **Potion trinket charge overlay** — Shows remaining uses on potion trinkets right in the slot, with
-  configurable scale, position, and color.
-
 ---
 
 ## Configuration
@@ -153,4 +144,4 @@ client-side mod for personal play; redistribution, modification, and reuse of th
 not permitted without written permission.
 
 Minecraft is a trademark of Mojang Synergies AB. This is an unofficial, fan-made mod and is not
-affiliated with or endorsed by Mojang, Microsoft, or the CosmicPrisons / CosmicSky networks.
+affiliated with or endorsed by Mojang, Microsoft, or the CosmicPrisons network.

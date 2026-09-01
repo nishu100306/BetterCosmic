@@ -15,10 +15,10 @@ import java.util.function.Supplier;
  * never drifts to the persisted value.
  *
  * <pre>{@code
- * SkyConfig d = new SkyConfig(); // code defaults
- * Options.toggle("Charge overlay", d.trinketChargesOverlay,
- *     () -> config.trinketChargesOverlay,
- *     v  -> { config.trinketChargesOverlay = v; config.save(); });
+ * MyConfig d = new MyConfig(); // code defaults
+ * Options.toggle("Some overlay", d.someOverlay,
+ *     () -> config.someOverlay,
+ *     v  -> { config.someOverlay = v; config.save(); });
  * }</pre>
  */
 public final class Options {

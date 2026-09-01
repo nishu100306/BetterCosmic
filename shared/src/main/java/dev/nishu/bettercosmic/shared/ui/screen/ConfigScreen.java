@@ -54,6 +54,7 @@ public final class ConfigScreen extends Screen {
 	private int resetX, resetW, doneX, doneW; // header/footer button hit-rects (y derived)
 	private int hudX, hudW; // footer "HUD editor" button (only shown when HUDs are registered)
 	private int prisonsX, prisonsW, skyX, skyW; // header profile-selector hit-rects (y derived)
+	private boolean skyAvailable; // whether the Sky profile has any registered panels (else it's hidden)
 	private boolean resetArmed; // "Reset all" needs a confirming second click
 
 	public ConfigScreen(Screen parent) {
@@ -68,6 +69,15 @@ public final class ConfigScreen extends Screen {
 	 * screen default to where you are while still allowing off-server editing of either profile.
 	 */
 	private static Network initialProfile() {
+		Network target = resolveProfile();
+		// Never open on a profile that contributes no panels (e.g. Sky in a Prisons-only build).
+		if (target != Network.PRISONS && !ConfigRegistry.hasPanels(target)) {
+			return Network.PRISONS;
+		}
+		return target;
+	}
+
+	private static Network resolveProfile() {
 		Network detected = ServerContext.detected();
 		if (detected != null) {
 			return detected;
@@ -92,12 +102,14 @@ public final class ConfigScreen extends Screen {
 
 		buildGrid();
 
-		// Header profile selector ("Prisons" / "Sky"), just right of the brand name.
+		// Header profile selector, just right of the brand name. Each network appears only if it has
+		// registered panels, so a Prisons-only build shows just "Prisons" (no empty Sky tab).
+		skyAvailable = ConfigRegistry.hasPanels(Network.SKY);
 		int selX = x0 + PAD + LOGO + LOGO_GAP + RenderUtils.textWidth("BetterCosmic") + 10;
 		prisonsX = selX;
 		prisonsW = RenderUtils.textWidth(Network.PRISONS.displayName());
 		skyX = prisonsX + prisonsW + 12; // gap holds the divider dot
-		skyW = RenderUtils.textWidth(Network.SKY.displayName());
+		skyW = skyAvailable ? RenderUtils.textWidth(Network.SKY.displayName()) : 0;
 
 		resetW = RenderUtils.textWidth("Reset all") + 12;
 		resetX = x0 + W - PAD - resetW;
@@ -194,13 +206,16 @@ public final class ConfigScreen extends Screen {
 		RenderUtils.text(g, "BetterCosmic", nameX, textY, Theme.text);
 
 		// Profile selector: the active network in accent, the other muted/hovered. Clicking switches.
+		// The Sky entry appears only when the Sky profile has panels this build.
 		boolean pHover = RenderUtils.hit(mouseX, mouseY, prisonsX, y0 + 6, prisonsW, 14);
-		boolean sHover = RenderUtils.hit(mouseX, mouseY, skyX, y0 + 6, skyW, 14);
 		RenderUtils.text(g, Network.PRISONS.displayName(), prisonsX, textY,
 			profile == Network.PRISONS ? Theme.accent : (pHover ? Theme.text : Theme.muted));
-		RenderUtils.text(g, "·", prisonsX + prisonsW + 4, textY, Theme.faint);
-		RenderUtils.text(g, Network.SKY.displayName(), skyX, textY,
-			profile == Network.SKY ? Theme.accent : (sHover ? Theme.text : Theme.muted));
+		if (skyAvailable) {
+			boolean sHover = RenderUtils.hit(mouseX, mouseY, skyX, y0 + 6, skyW, 14);
+			RenderUtils.text(g, "·", prisonsX + prisonsW + 4, textY, Theme.faint);
+			RenderUtils.text(g, Network.SKY.displayName(), skyX, textY,
+				profile == Network.SKY ? Theme.accent : (sHover ? Theme.text : Theme.muted));
+		}
 
 		// "Reset all" — two-click arm: first click shows "Confirm?", second resets everything.
 		boolean rHover = RenderUtils.hit(mouseX, mouseY, resetX, y0 + 6, resetW, 14);
@@ -242,7 +257,7 @@ public final class ConfigScreen extends Screen {
 			switchProfile(Network.PRISONS);
 			return true;
 		}
-		if (button == 0 && RenderUtils.hit(mx, my, skyX, y0 + 6, skyW, 14)) {
+		if (button == 0 && skyAvailable && RenderUtils.hit(mx, my, skyX, y0 + 6, skyW, 14)) {
 			switchProfile(Network.SKY);
 			return true;
 		}
