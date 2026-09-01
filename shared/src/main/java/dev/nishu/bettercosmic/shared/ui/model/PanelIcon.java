@@ -6,9 +6,8 @@ import net.minecraft.client.gui.GuiGraphics;
  * The small glyph shown on a {@link ConfigPanel} card. Two kinds coexist: <em>parametric</em> glyphs
  * are drawn with primitive fills that scale to any {@code size}; <em>bitmap</em> glyphs carry a
  * hand-authored 16×16 {@code '#'}/{@code '.'} mask (traced from / styled after Minecraft item
- * textures) and are nearest-neighbor scaled into the box. Both are tinted to a single {@code color}
- * at ({@code x},{@code y}); the sole exception is {@link #BOOK}, a multi-color glyph that carries its
- * own palette (mirroring the enchanted book) and ignores the tint.
+ * textures) and are nearest-neighbor scaled into the box. Every glyph is tinted to a single
+ * {@code color} at ({@code x},{@code y}).
  */
 public enum PanelIcon {
 	// ---- parametric glyphs (scale to any size) ----
@@ -104,8 +103,12 @@ public enum PanelIcon {
 		".##############.", ".##############.", "######....######", "######....######",
 		"######....######", "######....######", ".##############.", ".##############.",
 		".##############.", "..############..", "......####......", "......####......"),
-	/** Closed enchanted book — enchants & auras. Colored (mirrors the item); see {@link #draw}. */
-	BOOK,
+	/** Closed book silhouette — enchants & auras. */
+	BOOK(
+		"................", "..############..", ".##############.", ".##############.",
+		".##############.", ".##############.", ".##############.", ".##############.",
+		".##############.", ".##############.", ".##############.", "..############..",
+		"..############..", "................", "................", "................"),
 	/** Exclamation mark — events alert. */
 	EXCLAMATION(
 		"................", "......####......", "......####......", "......####......",
@@ -132,47 +135,7 @@ public enum PanelIcon {
 			case SATCHEL -> satchel(g, x, y, size, color);
 			case CHART -> chart(g, x, y, size, color);
 			case SPARKLE -> sparkle(g, x, y, size, color);
-			case BOOK -> book(g, x, y, size);
 			default -> { /* bitmap glyphs handled above */ }
-		}
-	}
-
-	// Closed enchanted book — the one multi-color glyph, traced from the item (X dark cover edge/clasps,
-	// H cover highlight, B cover, P cream pages). Ignores the accent tint so it reads as the book.
-	private static final String[] BOOK_ART = {
-		"................",
-		"................",
-		"..XXXXXXXXXXXX..",
-		"..XHHHHHHHHHHX..",
-		"..XBBBBBBBBBBX..",
-		"..XBBBBBBBBBBX..",
-		"..XXXXXXXXXXXX..",
-		"..XPPPPPPPPPPX..",
-		"..XPPXXPPXXPPX..",
-		"..XPPXXPPXXPPX..",
-		"..XPPPPPPPPPPX..",
-		"..XXXXXXXXXXXX..",
-		"................",
-		"................",
-		"................",
-		"................",
-	};
-
-	private static void book(GuiGraphics g, int x, int y, int size) {
-		for (int dy = 0; dy < size; dy++) {
-			String row = BOOK_ART[dy * 16 / size];
-			for (int dx = 0; dx < size; dx++) {
-				int c = switch (row.charAt(dx * 16 / size)) {
-					case 'X' -> 0xFF3A2718; // dark cover edge / clasps
-					case 'H' -> 0xFF946138; // cover highlight
-					case 'B' -> 0xFF7A4E2A; // cover
-					case 'P' -> 0xFFE8DCA8; // cream pages
-					default -> 0;
-				};
-				if (c != 0) {
-					g.fill(x + dx, y + dy, x + dx + 1, y + dy + 1, c);
-				}
-			}
 		}
 	}
 
