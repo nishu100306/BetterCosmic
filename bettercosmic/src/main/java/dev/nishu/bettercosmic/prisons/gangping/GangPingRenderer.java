@@ -220,12 +220,14 @@ public final class GangPingRenderer {
 			int w = font.width(line);
 			int scaledW = (int) (w * textScale);
 			int scaledH = (int) (LABEL_H * textScale);
-			ctx.fill(ix - scaledW / 2 - bgPad, lineY - bgPad,
-					ix + (scaledW + 1) / 2 + bgPad, lineY + scaledH + bgPad, PANEL_BG);
+			if (c.gangPingTextBackground) {
+				ctx.fill(ix - scaledW / 2 - bgPad, lineY - bgPad,
+						ix + (scaledW + 1) / 2 + bgPad, lineY + scaledH + bgPad, PANEL_BG);
+			}
 			ms.pushMatrix();
 			ms.translate(ix, lineY);
 			ms.scale(textScale, textScale);
-			ctx.drawString(font, Component.literal(line), -w / 2, 0, textArgb, c.gangPingTextShadow);
+			ctx.drawString(font, Component.literal(line), -w / 2, 0, textArgb, true);
 			ms.popMatrix();
 			lineY += lineSpacing;
 		}

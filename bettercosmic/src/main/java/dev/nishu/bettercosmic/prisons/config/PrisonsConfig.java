@@ -371,7 +371,7 @@ public class PrisonsConfig extends BetterCosmicConfig {
 	public boolean gangPingShowCoords = true;
 	public boolean gangPingShowHp = false;
 	public boolean gangPingShowFacing = false;
-	public boolean gangPingTextShadow = false;
+	public boolean gangPingTextBackground = false;
 	public float gangPingTextScale = 1.0f;
 	public float gangPingIconMinScale = 0.5f;
 	public float gangPingIconMaxScale = 1.5f;
