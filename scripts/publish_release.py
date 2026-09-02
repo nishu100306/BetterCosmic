@@ -130,12 +130,17 @@ def _discord_post(headers, channel, embed):
 
 
 def _discord_edit_or_post(headers, channel, mid, embed):
-    """Edit message `mid` in place, or post a new one if `mid` is None / was deleted. Returns the id."""
+    """Edit message `mid` in place, or post a new one if it can't be edited. Returns the id.
+
+    A tracked message may be un-editable because it was deleted (404) or is not ours / not in this
+    channel (403 — e.g. after switching the bot or the target channel). In every such case we simply
+    re-post a fresh message and record its new id, so the pipeline self-heals across those changes.
+    """
     if mid:
         r = requests.patch(f"{DISCORD_API}/channels/{channel}/messages/{mid}",
                            headers=headers, data=json.dumps({"embeds": [embed]}), timeout=30)
-        if r.status_code == 404:
-            mid = None  # message was deleted — repost below
+        if r.status_code in (403, 404):
+            mid = None  # gone / not ours / wrong channel — repost below
         elif r.status_code >= 300:
             raise RuntimeError(f"edit message HTTP {r.status_code}: {r.text}")
         else:
