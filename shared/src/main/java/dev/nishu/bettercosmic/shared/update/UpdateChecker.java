@@ -120,7 +120,7 @@ public final class UpdateChecker {
 		if (SharedConfig.get().autoUpdateApply && UpdateApplier.canSelfApply()) {
 			startDownload(s);
 		} else {
-			UpdateNotifier.showAvailable(s.latest, s.changelog, s.mandatory, UpdateApplier.canSelfApply());
+			UpdateNotifier.showAvailable(s.latest, s.mandatory, UpdateApplier.canSelfApply());
 		}
 	}
 

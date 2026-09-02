@@ -41,12 +41,12 @@ final class UpdateNotifier {
 	/**
 	 * "Available" toast, shown when auto-install is off. Offers a one-time <b>Install update</b> when a
 	 * self-install is possible (a real jar), otherwise falls back to the <b>Disable Updater</b> action.
+	 * No description line — the manifest changelog is full multi-line text and would spill across the
+	 * screen; the <b>Notes</b> button opens the changelog instead.
 	 */
-	static void showAvailable(String version, String changelog, boolean mandatory, boolean canInstall) {
-		Component desc = (changelog != null && !changelog.isBlank())
-				? Component.literal(changelog) : Component.literal("A new version is available.");
+	static void showAvailable(String version, boolean mandatory, boolean canInstall) {
 		ToastRenderer.showButtons(KEY,
-				title("BetterCosmic " + version + " available", mandatory), desc, 0L,
+				title("BetterCosmic " + version + " available", mandatory), (Component) null, 0L,
 				List.of(notes(), config(), ok(), canInstall ? install() : disable()));
 	}
 
