@@ -1,11 +1,3 @@
 {
-  "discordChangelogVersion": "2.0.0",
-  "fullDescMessageIds": [
-    "1544532493401722893",
-    "1544532505258885182"
-  ],
-  "discordFullHash": "df91181c69b989932c6ebc4c3047e23cf29c3d1fbff60b8daeb947a75dc6f5a9",
-  "shortDescMessageId": "1544532510288117762",
-  "discordShortHash": "4d454ff8688cf64e4c9b10f8fa35863ed57caa83fd8eb4ad69607907df4eb326",
   "modrinthBodyHash": "4d454ff8688cf64e4c9b10f8fa35863ed57caa83fd8eb4ad69607907df4eb326"
 }
