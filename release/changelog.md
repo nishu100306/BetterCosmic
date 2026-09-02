@@ -1,4 +1,4 @@
-# BetterCosmic 1.9.5 Changelog
+# BetterCosmic 2.0.0 Changelog
 
 **BetterPrisons is now BetterCosmic** — rebuilt from the ground up. All your BetterPrisons features are here, plus a lot of new ones. Note that your config will have been reset
 
