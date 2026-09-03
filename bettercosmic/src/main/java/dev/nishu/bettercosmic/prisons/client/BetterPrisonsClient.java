@@ -41,6 +41,10 @@ import dev.nishu.bettercosmic.prisons.misc.GangPointTooltip;
 import dev.nishu.bettercosmic.prisons.misc.PickaxeDropConfirmation;
 import dev.nishu.bettercosmic.prisons.misc.PrisonbreakTexturePack;
 import dev.nishu.bettercosmic.prisons.misc.EnergyCalculatorPanel;
+import dev.nishu.bettercosmic.prisons.pvviewer.PvCapture;
+import dev.nishu.bettercosmic.prisons.pvviewer.PvScreenHooks;
+import dev.nishu.bettercosmic.prisons.pvviewer.PvVaultStore;
+import dev.nishu.bettercosmic.prisons.pvviewer.PvViewerPanel;
 import dev.nishu.bettercosmic.prisons.misc.QolPanel;
 import dev.nishu.bettercosmic.prisons.misc.TooltipsPanel;
 import dev.nishu.bettercosmic.prisons.notification.MessageNotifications;
@@ -95,6 +99,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 	public static SuperBreakerAura superBreakerAura;
 	public static EnchantTracker enchantTracker;
 	public static WaypointManager waypointManager;
+	public static PvVaultStore pvVaultStore;
 	public static GangPingManager gangPingManager;
 	public static PickaxeDropConfirmation pickaxeDropConfirmation;
 	private static final EventChatParser eventChatParser = new EventChatParser();
@@ -115,6 +120,13 @@ public class BetterPrisonsClient implements ClientModInitializer {
 
 		// Gang ping tracking.
 		gangPingManager = new GangPingManager();
+
+		// Player-vault viewer: load the cached vaults, snapshot /pv windows as they open, and wire the
+		// preview sidebar's input (the sidebar itself is drawn by PvSidebarRenderMixin).
+		pvVaultStore = new PvVaultStore();
+		pvVaultStore.load();
+		PvCapture.register();
+		PvScreenHooks.register();
 
 		// Enchant tracking (Super Breaker, Powerball) — must exist before the HUDs that read it.
 		enchantTracker = new EnchantTracker();
@@ -361,6 +373,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		ConfigRegistry.register(GangPingsPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(EasyViewPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(SearchPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(PvViewerPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(TooltipsPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(PeacefulMiningPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(QolPanel.create(), Network.PRISONS);

@@ -8,6 +8,7 @@
 		"InventoryDropMixin",
 		"ItemDropMixin",
 		"LocalPlayerHurtMixin",
+		"PvSidebarRenderMixin",
 		"TitleBoldMixin",
 		"UseItemWhileMiningMixin"
 	],

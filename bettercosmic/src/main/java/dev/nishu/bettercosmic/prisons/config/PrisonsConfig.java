@@ -90,6 +90,7 @@ public class PrisonsConfig extends BetterCosmicConfig {
 	public boolean boldXpEnergyTitles = false;
 	public boolean useItemWhileMiningEnabled = true;
 	public boolean chestSearchEnabled = true;
+	public boolean pvViewerEnabled = true;
 	public boolean clueScrollSortingEnabled = true;
 	public int clueScrollNumberColor = 0x79FF7A;
 	public boolean clueScrollNumberOutline = true;
