@@ -45,31 +45,31 @@ public final class EasyViewProvider implements ItemOverlayProvider {
 			// ---- value notes (compact number) ----
 			if (cfg.easyViewEnergyEnabled && name.endsWith(" Cosmic Energy")) {
 				return overlay(compact(name.replace(" Cosmic Energy", "")),
-						cfg.easyViewEnergyColor, 0.5f, cfg.easyViewEnergyBold);
+						cfg.easyViewEnergyColor, cfg.easyViewEnergyScale / 100f, cfg.easyViewEnergyBold);
 			}
 			if (cfg.easyViewMoneyEnabled && name.startsWith("$")) {
 				String money = name.replace("$", "").split("\\.")[0];
-				return overlay(compact(money), cfg.easyViewMoneyColor, 0.5f, cfg.easyViewMoneyBold);
+				return overlay(compact(money), cfg.easyViewMoneyColor, cfg.easyViewMoneyScale / 100f, cfg.easyViewMoneyBold);
 			}
 			if (cfg.easyViewGangPointsEnabled
 					&& (name.toUpperCase().endsWith(" GANG POINTS") || name.endsWith(" Gang Points"))) {
 				String pts = name.replace(" GANG POINTS", "").replace(" Gang Points", "");
-				return overlay(compact(pts), cfg.easyViewGangPointsColor, 0.5f, cfg.easyViewGangPointsBold);
+				return overlay(compact(pts), cfg.easyViewGangPointsColor, cfg.easyViewGangPointsScale / 100f, cfg.easyViewGangPointsBold);
 			}
 
 			// ---- percent notes ----
 			if (cfg.easyViewBlackScrollEnabled && name.startsWith("Black Scroll (")) {
 				String pct = name.replace("Black Scroll (", "").replace("%)", "");
-				return overlay(pct + "%", cfg.easyViewBlackScrollColor, 0.5f, cfg.easyViewBlackScrollBold);
+				return overlay(pct + "%", cfg.easyViewBlackScrollColor, cfg.easyViewBlackScrollScale / 100f, cfg.easyViewBlackScrollBold);
 			}
 			if (cfg.easyViewChargeOrbEnabled && name.endsWith("% Charge Orb")) {
 				String pct = name.replace("% Charge Orb", "");
-				return overlay(pct + "%", cfg.easyViewChargeOrbColor, 0.5f, cfg.easyViewChargeOrbBold);
+				return overlay(pct + "%", cfg.easyViewChargeOrbColor, cfg.easyViewChargeOrbScale / 100f, cfg.easyViewChargeOrbBold);
 			}
 			if (cfg.easyViewDustEnabled) {
 				String pct = betweenPercent(name, " Dust (");
 				if (pct != null) {
-					return overlay(pct + "%", cfg.easyViewDustColor, 0.5f, cfg.easyViewDustBold);
+					return overlay(pct + "%", cfg.easyViewDustColor, cfg.easyViewDustScale / 100f, cfg.easyViewDustBold);
 				}
 			}
 			if (cfg.easyViewPagesEnabled) {
@@ -82,7 +82,7 @@ public final class EasyViewProvider implements ItemOverlayProvider {
 							color = tier;
 						}
 					}
-					return overlay(pct + "%", color, 0.5f, cfg.easyViewPagesBold);
+					return overlay(pct + "%", color, cfg.easyViewPagesScale / 100f, cfg.easyViewPagesBold);
 				}
 			}
 
@@ -110,7 +110,7 @@ public final class EasyViewProvider implements ItemOverlayProvider {
 			if (cfg.easyViewPrestigeTokenEnabled && name.startsWith("Pickaxe Prestige Token ")) {
 				String level = name.replace("Pickaxe Prestige Token ", "").trim();
 				if (!level.isEmpty()) {
-					return overlay(level, cfg.easyViewPrestigeTokenColor, 0.5f, cfg.easyViewPrestigeTokenBold);
+					return overlay(level, cfg.easyViewPrestigeTokenColor, cfg.easyViewPrestigeTokenScale / 100f, cfg.easyViewPrestigeTokenBold);
 				}
 			}
 			if (cfg.easyViewXpBottleEnabled
@@ -124,7 +124,7 @@ public final class EasyViewProvider implements ItemOverlayProvider {
 							color = tier;
 						}
 					}
-					return overlay(compact(amount), color, 0.5f, cfg.easyViewXpBottleBold);
+					return overlay(compact(amount), color, cfg.easyViewXpBottleScale / 100f, cfg.easyViewXpBottleBold);
 				}
 			}
 		} catch (Exception e) {

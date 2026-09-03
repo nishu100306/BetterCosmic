@@ -142,6 +142,15 @@ public class PrisonsConfig extends BetterCosmicConfig {
 	public int easyViewPickaxesScale = 70;
 	public int easyViewWeaponsScale = 70;
 	public int easyViewArmorScale = 70;
+	public int easyViewEnergyScale = 50;
+	public int easyViewMoneyScale = 50;
+	public int easyViewGangPointsScale = 50;
+	public int easyViewBlackScrollScale = 50;
+	public int easyViewChargeOrbScale = 50;
+	public int easyViewDustScale = 50;
+	public int easyViewPagesScale = 50;
+	public int easyViewPrestigeTokenScale = 50;
+	public int easyViewXpBottleScale = 50;
 	public boolean easyViewEnergyBold = true;
 	public boolean easyViewMoneyBold = true;
 	public boolean easyViewGangPointsBold = true;
