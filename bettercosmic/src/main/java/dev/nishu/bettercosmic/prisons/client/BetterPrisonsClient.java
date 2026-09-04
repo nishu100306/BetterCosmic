@@ -39,6 +39,7 @@ import dev.nishu.bettercosmic.prisons.misc.EnchantBookTooltip;
 import dev.nishu.bettercosmic.prisons.misc.GangPointTooltip;
 import dev.nishu.bettercosmic.prisons.misc.PickaxeDropConfirmation;
 import dev.nishu.bettercosmic.prisons.misc.PrisonbreakTexturePack;
+import dev.nishu.bettercosmic.prisons.misc.EnergyCalculatorPanel;
 import dev.nishu.bettercosmic.prisons.misc.QolPanel;
 import dev.nishu.bettercosmic.prisons.misc.TooltipsPanel;
 import dev.nishu.bettercosmic.prisons.notification.MessageNotifications;
@@ -358,6 +359,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		ConfigRegistry.register(TooltipsPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(PeacefulMiningPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(QolPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(EnergyCalculatorPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(NotificationsPanel.create(), Network.PRISONS);
 	}
 }

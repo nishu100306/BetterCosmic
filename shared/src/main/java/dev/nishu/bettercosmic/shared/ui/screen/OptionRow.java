@@ -53,7 +53,7 @@ public final class OptionRow extends UiElement {
 	private UiElement buildWidget(ModalHost host, int screenH) {
 		return switch (option) {
 			case ToggleOption o -> new Toggle(o);
-			case SliderOption o -> new Slider(o);
+			case SliderOption o -> new Slider(o, host);
 			case DropdownOption o -> new Dropdown(o, host, screenH);
 			case ColorOption o -> new ColorSwatch(o, host);
 			case KeybindOption o -> new KeybindButton(o, host);

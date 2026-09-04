@@ -25,4 +25,16 @@ public interface ModalHost {
 	 * @return {@code {x, y}} top-left in GUI space
 	 */
 	int[] sidebarPosition(int modalW, int modalH);
+
+	/**
+	 * Requests keyboard focus for {@code element}, so the host routes key and character input to it
+	 * (used by inline editable fields such as a slider's typed value). Any previously focused element
+	 * is blurred first. Default no-op for hosts without keyboard focus.
+	 */
+	default void requestFocus(UiElement element) {
+	}
+
+	/** Releases keyboard focus if {@code element} currently holds it. Default no-op. */
+	default void releaseFocus(UiElement element) {
+	}
 }

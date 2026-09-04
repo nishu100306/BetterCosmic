@@ -74,6 +74,9 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 	// single active modal (color picker sidebar or open dropdown list). null when none.
 	private UiElement activeModal;
 
+	// element holding keyboard focus (an inline editable field, e.g. a slider's typed value). null when none.
+	private UiElement focused;
+
 	private final long openTime = System.currentTimeMillis(); // for the scrim fade-in
 
 	public FeaturePopup(ConfigPanel panel, int screenW, int screenH) {
@@ -81,14 +84,17 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 		this.screenW = screenW;
 		this.screenH = screenH;
 
-		// Build a collapsible section per group: a clickable header + its option rows. Sections start
-		// collapsed so a panel opens as a compact list of headers the player expands as needed.
+		// Build a section per group. A titled group is a clickable header + its option rows, and starts
+		// collapsed so a panel opens as a compact list of headers the player expands as needed. A group
+		// with a blank label is headerless: no clickable header (its entry in `headers` is null) and
+		// always expanded, so its rows read as a flat, always-open list.
 		this.collapsed = new boolean[panel.groups.size()];
-		java.util.Arrays.fill(collapsed, true);
 		for (int i = 0; i < panel.groups.size(); i++) {
 			OptionGroup group = panel.groups.get(i);
 			final int gi = i;
-			headers.add(new GroupLabel(group.label, () -> collapsed[gi], () -> toggle(gi)));
+			boolean headerless = group.label == null || group.label.isBlank();
+			collapsed[i] = !headerless; // titled groups start collapsed; headerless ones stay open
+			headers.add(headerless ? null : new GroupLabel(group.label, () -> collapsed[gi], () -> toggle(gi)));
 			List<OptionRow> rows = new ArrayList<>();
 			for (Option opt : group.options) {
 				rows.add(new OptionRow(opt, this, screenH));
@@ -132,9 +138,12 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 		items.clear();
 		int cH = 0;
 		for (int i = 0; i < headers.size(); i++) {
-			items.add(headers.get(i));
-			cH += headers.get(i).preferredHeight(); // includes the collapsed-section gap
-			if (!collapsed[i]) {
+			GroupLabel header = headers.get(i); // null for a headerless (blank-label) group
+			if (header != null) {
+				items.add(header);
+				cH += header.preferredHeight(); // includes the collapsed-section gap
+			}
+			if (header == null || !collapsed[i]) {
 				for (OptionRow row : rowGroups.get(i)) {
 					items.add(row);
 					cH += OptionRow.HEIGHT;
@@ -269,6 +278,11 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 			close(); // click outside the box closes the popup
 			return true;
 		}
+		// A click away from the focused inline field commits and blurs it before normal dispatch.
+		if (focused != null && !focused.isMouseOver(mouseX, mouseY)) {
+			focused.onBlur();
+			focused = null;
+		}
 		// Snapshot: a header's click toggles its section, which rebuilds `items` mid-loop.
 		for (UiElement item : new ArrayList<>(items)) {
 			if (item.mouseClicked(mouseX, mouseY, button)) {
@@ -335,11 +349,14 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 			activeModal.keyPressed(keyCode, scanCode, modifiers); // Esc cancels the modal, keybind captures
 			return true;
 		}
+		if (focused != null && focused.keyPressed(keyCode, scanCode, modifiers)) {
+			return true; // an inline editable field (e.g. a slider value) handled the key
+		}
 		if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
 			close();
 			return true;
 		}
-		return true; // rows have no keyboard focus; the popup swallows keys
+		return true; // otherwise the popup swallows keys
 	}
 
 	@Override
@@ -347,6 +364,9 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 		if (activeModal != null) {
 			activeModal.charTyped(chr, modifiers); // hex typing while the picker is open
 			return true;
+		}
+		if (focused != null && focused.charTyped(chr, modifiers)) {
+			return true; // an inline editable field consumed the character
 		}
 		return true;
 	}
@@ -361,6 +381,21 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 	@Override
 	public void closeModal() {
 		activeModal = null;
+	}
+
+	@Override
+	public void requestFocus(UiElement element) {
+		if (focused != null && focused != element) {
+			focused.onBlur();
+		}
+		focused = element;
+	}
+
+	@Override
+	public void releaseFocus(UiElement element) {
+		if (focused == element) {
+			focused = null;
+		}
 	}
 
 	@Override
@@ -379,6 +414,10 @@ public final class FeaturePopup extends UiElement implements ModalHost {
 	}
 
 	private void close() {
+		if (focused != null) {
+			focused.onBlur(); // commit any in-progress inline edit before the popup goes away
+			focused = null;
+		}
 		onClose.run();
 	}
 

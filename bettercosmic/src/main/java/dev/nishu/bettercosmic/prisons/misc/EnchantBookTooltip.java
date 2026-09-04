@@ -84,30 +84,53 @@ public final class EnchantBookTooltip {
 		}
 	}
 
+	/**
+	 * Emits one cost line per level from {@code currentLevel + 1} up to {@code maxLevel}.
+	 *
+	 * <p>Only {@code currentCost} is measured — the real cost of the next level-up, i.e. of leaving
+	 * {@code currentLevel}. A level-up's cost scales with the {@link #relativeCost weight} of the
+	 * level being left, so the step to {@code level} is projected from that level's predecessor:
+	 * {@code currentCost} times {@code relativeCost(level - 1)} over the anchor weight. The anchor is
+	 * {@code currentLevel} itself, so the measured next level-up comes back out as exactly
+	 * {@code currentCost}.
+	 */
 	private static void appendCostLines(int currentLevel, double currentCost, int maxLevel,
 			String tier, Consumer<Component> sink) {
 		int rgb = BetterPrisonsClient.config.enchantBookCostsColor & 0xFFFFFF;
 		Style style = Style.EMPTY.withColor(TextColor.fromRgb(rgb)).withItalic(false);
 
-		double anchorWeight = weight(tier, currentLevel + 1);
+		double anchorWeight = relativeCost(tier, currentLevel);
 		if (anchorWeight <= 0) {
 			return;
 		}
-		long total = 0;
-		for (int target = currentLevel + 1; target <= maxLevel; target++) {
-			long cost = Math.round(currentCost * weight(tier, target) / anchorWeight);
-			total += cost;
-			sink.accept(Component.literal("[BP] L" + (target - 1) + "→L" + target
-					+ ": " + formatNumber(cost) + "  |  Total " + formatNumber(total)).setStyle(style));
+
+		long runningTotal = 0;
+		for (int level = currentLevel + 1; level <= maxLevel; level++) {
+			long cost = Math.round(currentCost * relativeCost(tier, level - 1) / anchorWeight);
+			runningTotal += cost;
+
+			String text = "[BP] L" + (level - 1) + "→L" + level
+					+ ": " + formatNumber(cost)
+					+ "  |  Total " + formatNumber(runningTotal);
+			sink.accept(Component.literal(text).setStyle(style));
 		}
 	}
 
-	private static double weight(String tier, int lvl) {
-		return (double) lvl * lvl * tierMultiplier(tier, lvl);
+	/**
+	 * Unit-less weight standing in for a level's cost. Costs grow with the square of the level, and
+	 * the high-cost tiers additionally cost {@code tierMultiplier}× from level 3 on. Only the ratio
+	 * between two levels' weights is meaningful; see {@link #appendCostLines}.
+	 */
+	private static double relativeCost(String tier, int level) {
+		return (double) level * level * tierMultiplier(tier, level);
 	}
 
-	private static int tierMultiplier(String tier, int lvl) {
-		if (lvl <= 2) {
+	/**
+	 * Per-level cost multiplier. Levels 1 and 2 are always 1×. From level 3 on, the high-cost tiers
+	 * (LEGENDARY, plus any unrecognised or future tier) jump to 3×; every known lower tier stays 1×.
+	 */
+	private static int tierMultiplier(String tier, int level) {
+		if (level <= 2) {
 			return 1;
 		}
 		switch (tier.toUpperCase()) {
@@ -121,7 +144,7 @@ public final class EnchantBookTooltip {
 			case "LEGENDARY":
 				return 3;
 			default:
-				return 3; // unknown / future tiers — default to the high-tier pattern
+				return 3; // unknown / future tiers — assume the high-cost pattern
 		}
 	}
 

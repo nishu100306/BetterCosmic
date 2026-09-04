@@ -1,12 +1,14 @@
-# BetterCosmic 2.0.1 Changelog
+# BetterCosmic 2.0.2 Changelog
 
-A small update that gives you finer control over EasyView's inventory overlays.
+## New Features
 
-## Improvements
+- **Energy Calculator** — a new tool in the config menu. Pick a pickaxe (Stone, Iron, or Diamond), a level range, and your prestige stage, and it shows the exact Cosmic Energy cost — both the total for the whole range and the cost of the final level — updating live as you adjust. 
 
-- **EasyView: bold toggles** — every EasyView overlay (Cosmic Energy, money, gang points, black scrolls, charge orbs, dust, pages, armor, weapons, pickaxes, prestige tokens, and XP bottles) now has its own **bold on/off** toggle in the config menu.
+- **Added number-input fields** — You can  now type a number manually for values that have a slider
 
-- **EasyView: adjustable scale** — each of those overlays now has its own **scale slider** (25%–150%), so you can size the corner text per item type instead of one fixed size.
+## Bug Fixes
+
+- **Fixed enchant book costs (again)** — the projected upgrade costs were reading one level ahead, which over- or under-shot the deeper levels. They should now match the in-game costs exactly.
 
 ---
 

@@ -96,4 +96,11 @@ public abstract class UiElement {
 	public boolean charTyped(char chr, int modifiers) {
 		return false;
 	}
+
+	/**
+	 * Called when this element loses keyboard focus — e.g. the host hands focus to another element or a
+	 * click lands outside it. Editable elements should commit their pending value here. Default no-op.
+	 */
+	public void onBlur() {
+	}
 }
