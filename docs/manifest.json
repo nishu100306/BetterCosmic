@@ -1,10 +1,10 @@
 {
   "modId": "bettercosmic",
-  "latest": "2.0.1",
+  "latest": "2.0.2",
   "minecraft": "1.21.11",
   "channel": "release",
-  "url": "https://github.com/nishu100306/BetterCosmic/releases/download/v2.0.1/bettercosmic-2.0.1.jar",
-  "sha256": "4e707c143e33f465e37758357fa599af65a33b8d9c64ea8201ceff1ffe34e048",
-  "changelog": "# BetterCosmic 2.0.1 Changelog\n\nA small update that gives you finer control over EasyView's inventory overlays.\n\n## Improvements\n\n- **EasyView: bold toggles** — every EasyView overlay (Cosmic Energy, money, gang points, black scrolls, charge orbs, dust, pages, armor, weapons, pickaxes, prestige tokens, and XP bottles) now has its own **bold on/off** toggle in the config menu.\n\n- **EasyView: adjustable scale** — each of those overlays now has its own **scale slider** (25%–150%), so you can size the corner text per item type instead of one fixed size.\n\n---\n\nDownload in **#mod-download** in the BetterCosmic Discord: https://discord.gg/vJaH4Yr5Dq\n",
+  "url": "https://github.com/nishu100306/BetterCosmic/releases/download/v2.0.2/bettercosmic-2.0.2.jar",
+  "sha256": "a53e8f7e0bdb8ff09a30f8f97c58ff30ab918b6a4f02152018ea8fc8b7e4f8d4",
+  "changelog": "# BetterCosmic 2.0.2 Changelog\n\n## New Features\n\n- **Energy Calculator** — a new tool in the config menu. Pick a pickaxe (Stone, Iron, or Diamond), a level range, and your prestige stage, and it shows the exact Cosmic Energy cost — both the total for the whole range and the cost of the final level — updating live as you adjust. \n\n- **Added number-input fields** — You can  now type a number manually for values that have a slider\n\n## Bug Fixes\n\n- **Fixed enchant book costs (again)** — the projected upgrade costs were reading one level ahead, which over- or under-shot the deeper levels. They should now match the in-game costs exactly.\n\n---\n\nDownload in **#mod-download** in the BetterCosmic Discord: https://discord.gg/vJaH4Yr5Dq",
   "mandatory": false
 }
