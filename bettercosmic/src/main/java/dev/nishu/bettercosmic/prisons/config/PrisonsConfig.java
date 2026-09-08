@@ -398,4 +398,10 @@ public class PrisonsConfig extends BetterCosmicConfig {
 	public boolean powerballAlertTitleEnabled = true;
 	public String powerballAlertTitleText = "Powerball Ready!";
 	public int powerballAlertTitleColor = 0xFFAA00;
+
+	// ---- Cosmic API (official mod-registry integration) ----
+	/** Master switch for the Cosmic API presence handshake. See {@code prisons.api.CosmicApi}. */
+	public boolean cosmicApiEnabled = true;
+	/** Stable per-install id sent in the handshake; generated once on first send, then persisted. */
+	public String cosmicApiInstallId = "";
 }

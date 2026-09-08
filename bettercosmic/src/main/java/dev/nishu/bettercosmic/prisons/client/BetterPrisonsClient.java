@@ -3,6 +3,7 @@ package dev.nishu.bettercosmic.prisons.client;
 import dev.nishu.bettercosmic.prisons.BetterPrisons;
 import dev.nishu.bettercosmic.prisons.PrisonWorlds;
 import dev.nishu.bettercosmic.prisons.PrisonsGate;
+import dev.nishu.bettercosmic.prisons.api.CosmicApi;
 import dev.nishu.bettercosmic.prisons.chestsearch.ClueScrollProvider;
 import dev.nishu.bettercosmic.prisons.chestsearch.PrisonSearchTypes;
 import dev.nishu.bettercosmic.prisons.chestsearch.SearchPanel;
@@ -185,6 +186,10 @@ public class BetterPrisonsClient implements ClientModInitializer {
 
 		// Floating world-space text renderer (used by developer tooling).
 		FloatingTextRenderer.init();
+
+		// Cosmic API: send the required presence handshake on join and record the granted scopes/hooks.
+		// Handshake-only for now — no push hooks are routed into features yet.
+		CosmicApi.register();
 
 		// Track the current world for per-world custom waypoints; clear stale event waypoints on join.
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
