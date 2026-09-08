@@ -3,7 +3,7 @@
 	"id": "bettercosmic",
 	"version": "${version}",
 	"name": "BetterCosmic",
-	"description": "A client-side QOL mod for CosmicPrisons.",
+	"description": "A client-side QOL mod for CosmicPrisons and CosmicSky.",
 	"authors": [
 		"nishu06"
 	],
@@ -13,7 +13,8 @@
 	"environment": "client",
 	"entrypoints": {
 		"client": [
-			"dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient"
+			"dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient",
+			"dev.nishu.bettercosmic.sky.client.BetterSkyClient"
 		],
 		"modmenu": [
 			"dev.nishu.bettercosmic.prisons.ModMenuIntegration"
