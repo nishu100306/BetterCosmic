@@ -3,6 +3,7 @@ package dev.nishu.bettercosmic.sky.client;
 import dev.nishu.bettercosmic.shared.config.BetterCosmicConfig;
 import dev.nishu.bettercosmic.shared.config.SharedConfig;
 import dev.nishu.bettercosmic.shared.easyview.EasyView;
+import dev.nishu.bettercosmic.shared.hud.HudRegistry;
 import dev.nishu.bettercosmic.shared.server.Network;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigPanel;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigRegistry;
@@ -12,6 +13,8 @@ import dev.nishu.bettercosmic.shared.ui.model.PanelIcon;
 import dev.nishu.bettercosmic.sky.BetterSky;
 import dev.nishu.bettercosmic.sky.config.SkyConfig;
 import dev.nishu.bettercosmic.sky.feature.TrinketChargesProvider;
+import dev.nishu.bettercosmic.sky.hud.PlayerListHud;
+import dev.nishu.bettercosmic.sky.hud.PlayerListHudPanel;
 import net.fabricmc.api.ClientModInitializer;
 
 import java.util.List;
@@ -24,19 +27,39 @@ public class BetterSkyClient implements ClientModInitializer {
 	/** BetterSky's own config (config/bettercosmic/bettersky.json). */
 	public static SkyConfig config;
 
+	/** Compact alphabetical list of the other players loaded in your world. */
+	public static PlayerListHud playerListHud;
+
 	@Override
 	public void onInitializeClient() {
 		// Load the shared config and BetterSky's own config.
 		sharedConfig = SharedConfig.get();
 		config = BetterCosmicConfig.load(SkyConfig.class);
 
+		// Code defaults, so a config "reset" restores these rather than the persisted values.
+		SkyConfig def = new SkyConfig();
+
 		// EasyView: show potion trinket charges in the slot corner (only on Cosmic Sky).
 		EasyView.register(new TrinketChargesProvider(), Network.SKY);
 
-		// Config UI: register BetterSky's own feature panel under the Sky profile. The shared General
+		// HUD: compact alphabetical list of the other players in your world (only on Cosmic Sky). The
+		// shared HudRenderer (registered by BetterPrisonsClient, which always loads alongside Sky in
+		// this build) ticks/draws every HudRegistry entry, gated by its owning network.
+		playerListHud = new PlayerListHud();
+		playerListHud.x = config.playerListHudX;
+		playerListHud.y = config.playerListHudY;
+		playerListHud.defaultX = def.playerListHudX;
+		playerListHud.defaultY = def.playerListHudY;
+		playerListHud.enabled = config.playerListHudEnabled;
+		HudRegistry.register(playerListHud, () -> {
+			config.playerListHudX = playerListHud.x;
+			config.playerListHudY = playerListHud.y;
+			config.save();
+		}, Network.SKY);
+
+		// Config UI: register BetterSky's own feature panels under the Sky profile. The shared General
 		// panel (dev mode, formatting, theme) is registered by the shared library, and the header
 		// profile selector labels the screen — so nothing is branded here.
-		SkyConfig def = new SkyConfig(); // code defaults (so reset restores these, not the persisted values)
 		OptionGroup overlayGroup = new OptionGroup("Overlay", List.of(
 				Options.toggle("Charge overlay", def.trinketChargesOverlay,
 						() -> config.trinketChargesOverlay,
@@ -64,6 +87,7 @@ public class BetterSkyClient implements ClientModInitializer {
 		ConfigRegistry.register(ConfigPanel.of("trinkets", "Trinkets",
 				"Potion trinket charge overlay", PanelIcon.POTION, List.of(overlayGroup, colorGroup)),
 				Network.SKY);
+		ConfigRegistry.register(PlayerListHudPanel.create(), Network.SKY);
 
 		BetterSky.LOGGER.info("Loaded configs: {} and {}",
 				sharedConfig.configPath(), config.configPath());
