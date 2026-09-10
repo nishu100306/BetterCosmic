@@ -3,6 +3,7 @@ package dev.nishu.bettercosmic.shared;
 import dev.nishu.bettercosmic.shared.chestsearch.ChestSearchTintProvider;
 import dev.nishu.bettercosmic.shared.command.DevCommands;
 import dev.nishu.bettercosmic.shared.config.SharedConfig;
+import dev.nishu.bettercosmic.shared.dev.DevLogFilter;
 import dev.nishu.bettercosmic.shared.easyview.EasyView;
 import dev.nishu.bettercosmic.shared.notification.ToastRenderer;
 import dev.nishu.bettercosmic.shared.ui.ConfigUi;
@@ -27,6 +28,11 @@ public class BetterCosmicShared implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
+		// Dev-only: quiet noisy companion mods in our runClient console (e.g. the official
+		// CosmicPrisonsMod prints hundreds of [CosmicPrisonsMod] lines to stdout). No-op in a shipped
+		// build — it never suppresses another mod's logs for real players.
+		DevLogFilter.suppressContaining("[CosmicPrisonsMod]");
+
 		// Load (creating on first run) the shared config so config/bettercosmic/shared.json exists
 		// and is available to every mod through SharedConfig.get().
 		SharedConfig.get();
