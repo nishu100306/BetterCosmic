@@ -5,8 +5,8 @@ import net.minecraft.network.chat.Component;
 
 /**
  * Base class for a tracked Cosmic Prisons enchant/effect shown on the Enchant HUD. Holds active
- * state and a countdown; subclasses detect activation their own way (chat, sound, item lore) and call
- * {@link #activate}. Ported from BetterPrisons (Yarn → Mojang).
+ * state and a countdown; subclasses activate in response to the Cosmic API {@code player.enchant_proc}
+ * hook (see {@link #onProc}). Ported from BetterPrisons (Yarn → Mojang).
  */
 public abstract class BaseEnchant {
 
@@ -33,8 +33,12 @@ public abstract class BaseEnchant {
 		}
 	}
 
-	/** Chat-based detection hook (override in subclasses). */
-	public void onChatMessage(String message) {
+	/**
+	 * Called when the Cosmic API reports this enchant proccing ({@code player.enchant_proc}). Subclasses
+	 * activate the effect (and may apply their own gating). {@code displayText} is the server's coloured
+	 * label; {@code level} is the reported enchant level (0 if unknown).
+	 */
+	public void onProc(Component displayText, int level) {
 	}
 
 	public void activate(double duration) {

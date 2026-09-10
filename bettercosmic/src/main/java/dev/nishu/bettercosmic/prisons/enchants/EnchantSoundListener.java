@@ -6,25 +6,20 @@ import net.minecraft.client.sounds.WeighedSoundEvents;
 import net.minecraft.resources.Identifier;
 
 /**
- * Flags the two enchant "tell" sounds on {@link SoundTracker} for the current tick: the wither-shoot
- * sound (Powerball) and the ender-dragon growl (Super Breaker, when paired with a nearby particle).
- * Registered on the client's {@code SoundManager}. Ported from BetterPrisons'
- * {@code devtools/SoundDebugListener} (reduced to the enchant detections).
+ * Flags Powerball's wither-shoot "tell" sound on {@link SoundTracker} for the current tick. Registered
+ * on the client's {@code SoundManager}. (Super Breaker's dragon-growl detection was dropped when it
+ * moved to the Cosmic API {@code player.enchant_proc} hook.) Ported from BetterPrisons'
+ * {@code devtools/SoundDebugListener} (reduced to the Powerball detection).
  */
 public final class EnchantSoundListener implements SoundEventListener {
 
 	private static final Identifier WITHER_SHOOT =
 			Identifier.fromNamespaceAndPath("minecraft", "entity.wither.shoot");
-	private static final Identifier DRAGON_GROWL =
-			Identifier.fromNamespaceAndPath("minecraft", "entity.ender_dragon.growl");
 
 	@Override
 	public void onPlaySound(SoundInstance sound, WeighedSoundEvents soundSet, float range) {
-		Identifier id = sound.getIdentifier();
-		if (WITHER_SHOOT.equals(id)) {
+		if (WITHER_SHOOT.equals(sound.getIdentifier())) {
 			SoundTracker.markWitherShootSoundHeard();
-		} else if (DRAGON_GROWL.equals(id)) {
-			SoundTracker.markDragonSoundHeard();
 		}
 	}
 }

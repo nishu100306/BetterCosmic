@@ -11,6 +11,7 @@ import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import dev.nishu.bettercosmic.prisons.hud.CooldownHud;
 import dev.nishu.bettercosmic.shared.server.Network;
 import dev.nishu.bettercosmic.shared.server.ServerContext;
+import net.minecraft.network.chat.Component;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -193,8 +194,34 @@ public final class CosmicApi {
 		String eventType = obj.has("eventType") ? obj.get("eventType").getAsString() : "";
 		switch (eventType) {
 			case "player.cooldowns.changed" -> routeCooldowns(obj);
+			case "player.enchant_proc" -> routeEnchantProc(obj);
 			default -> { /* not wired into a feature yet */ }
 		}
+	}
+
+	/**
+	 * Hands a {@code player.enchant_proc} event to the Enchant HUD's tracker. The proc detail lives at
+	 * {@code root.payload.payload = { enchantId, displayName, level }}; {@code displayName} carries
+	 * legacy {@code &}/{@code §} colour codes (normalised to {@code §} for rendering).
+	 */
+	private static void routeEnchantProc(JsonObject root) {
+		if (BetterPrisonsClient.enchantTracker == null) {
+			return;
+		}
+		if (!root.has("payload") || !root.get("payload").isJsonObject()) {
+			return;
+		}
+		JsonObject envelope = root.getAsJsonObject("payload");
+		JsonObject data = envelope.has("payload") && envelope.get("payload").isJsonObject()
+				? envelope.getAsJsonObject("payload") : null;
+		if (data == null || !data.has("enchantId") || !data.get("enchantId").isJsonPrimitive()) {
+			return;
+		}
+		String enchantId = data.get("enchantId").getAsString();
+		String display = data.has("displayName") && data.get("displayName").isJsonPrimitive()
+				? data.get("displayName").getAsString() : enchantId;
+		int level = data.has("level") && data.get("level").isJsonPrimitive() ? data.get("level").getAsInt() : 0;
+		BetterPrisonsClient.enchantTracker.onEnchantProc(enchantId, Component.literal(display.replace('&', '§')), level);
 	}
 
 	/**

@@ -24,7 +24,6 @@ import dev.nishu.bettercosmic.prisons.feature.PrisonsPeacefulMiningPolicy;
 import dev.nishu.bettercosmic.prisons.enchants.EnchantSoundListener;
 import dev.nishu.bettercosmic.prisons.enchants.EnchantTracker;
 import dev.nishu.bettercosmic.prisons.enchants.SoundTracker;
-import dev.nishu.bettercosmic.prisons.enchants.SuperBreakerDetector;
 import dev.nishu.bettercosmic.prisons.hud.CooldownHud;
 import dev.nishu.bettercosmic.prisons.hud.CooldownHudPanel;
 import dev.nishu.bettercosmic.prisons.hud.EnchantHud;
@@ -143,7 +142,6 @@ public class BetterPrisonsClient implements ClientModInitializer {
 			if (!overlay && PrisonsGate.active()) {
 				String text = message.getString();
 				cooldownHud.onChatReceived(text);
-				enchantTracker.onChatMessage(text);
 				eventChatParser.handle(eventsHud, text);
 				GangPingChatParser.handle(text);
 				MessageNotifications.handle(text);
@@ -251,8 +249,10 @@ public class BetterPrisonsClient implements ClientModInitializer {
 	}
 
 	/**
-	 * Ticks the enchant tracker each client tick (then clears the per-tick sound flag) and registers
-	 * the sound listener that detects Powerball's wither-shoot tell.
+	 * Ticks the enchant tracker each client tick and registers the sound listener that detects
+	 * Powerball's wither-shoot tell. Super Breaker activation comes from the Cosmic API
+	 * {@code player.enchant_proc} hook (routed by {@link dev.nishu.bettercosmic.prisons.api.CosmicApi}
+	 * into {@link EnchantTracker#onEnchantProc}); Powerball still uses local sound detection.
 	 */
 	private void registerEnchantSystem() {
 		final boolean[] soundListenerRegistered = {false};
@@ -266,9 +266,6 @@ public class BetterPrisonsClient implements ClientModInitializer {
 				return;
 			}
 			enchantTracker.tick(client);
-			// Super Breaker activation: correlate this tick's nearest flame/spell particle with the
-			// dragon-growl sound. Runs after the enchant tick and before the sound flags are cleared.
-			SuperBreakerDetector.evaluate();
 			SoundTracker.clearTickCache();
 		});
 	}
