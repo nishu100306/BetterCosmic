@@ -8,11 +8,15 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.nishu.bettercosmic.prisons.BetterPrisons;
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
+import dev.nishu.bettercosmic.prisons.hud.CooldownHud;
+import dev.nishu.bettercosmic.shared.server.Network;
+import dev.nishu.bettercosmic.shared.server.ServerContext;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.loader.api.FabricLoader;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -123,8 +127,19 @@ public final class CosmicApi {
 			}
 			return;
 		}
-		// Only the Cosmic server declares this channel; canSend is false everywhere else.
-		if (!ClientPlayNetworking.canSend(CosmicApiPayload.TYPE)) {
+		// Send the handshake when we're connected to Cosmic Prisons. We deliberately do NOT gate on
+		// ClientPlayNetworking.canSend(): Cosmic is a Paper/Bukkit server, and Bukkit plugin-message
+		// listeners aren't reliably advertised through Fabric's channel negotiation, so canSend can be
+		// false even though the server is listening on cosmicapi:bettercosmic. ClientPlayNetworking.send()
+		// doesn't require canSend — it just emits the custom-payload packet — so we gate on the detected
+		// network instead (also honouring a ServerContext override, if one is ever set for testing).
+		boolean canSend = ClientPlayNetworking.canSend(CosmicApiPayload.TYPE);
+		boolean onPrisons = ServerContext.detected() == Network.PRISONS
+				|| ServerContext.override() == Network.PRISONS;
+		if (!canSend && !onPrisons) {
+			BetterPrisons.LOGGER.info(
+					"Cosmic API: not sending client_hello (not on Cosmic Prisons; detected={}, canSend=false).",
+					ServerContext.detected());
 			return;
 		}
 
@@ -160,10 +175,64 @@ public final class CosmicApi {
 			if ("resolve".equals(type)
 					|| obj.has("allowedScopes") || obj.has("allowedHooks")) {
 				handleResolve(obj);
+				return;
+			}
+			if ("event".equals(type)) {
+				handleEvent(obj);
 			}
 		} catch (Exception e) {
 			BetterPrisons.LOGGER.warn("Cosmic API: received a non-JSON / malformed message: {}", e.toString());
 		}
+	}
+
+	/**
+	 * Routes a push hook event to the feature that consumes it. Only wired hooks act; every event is
+	 * already logged in full by {@link #logFullPayload}, so unwired ones are simply ignored here.
+	 */
+	private static void handleEvent(JsonObject obj) {
+		String eventType = obj.has("eventType") ? obj.get("eventType").getAsString() : "";
+		switch (eventType) {
+			case "player.cooldowns.changed" -> routeCooldowns(obj);
+			default -> { /* not wired into a feature yet */ }
+		}
+	}
+
+	/**
+	 * Hands the {@code player.cooldowns.changed} snapshot to the Cooldown HUD. The active list lives at
+	 * {@code root.payload.payload.activeCooldowns[]} (the event nests an envelope inside an envelope);
+	 * an absent array is treated as an empty snapshot so the HUD clears its hook-owned cooldowns.
+	 */
+	private static void routeCooldowns(JsonObject root) {
+		CooldownHud hud = BetterPrisonsClient.cooldownHud;
+		if (hud == null) {
+			return;
+		}
+		if (!root.has("payload") || !root.get("payload").isJsonObject()) {
+			return;
+		}
+		JsonObject envelope = root.getAsJsonObject("payload");
+		JsonObject inner = envelope.has("payload") && envelope.get("payload").isJsonObject()
+				? envelope.getAsJsonObject("payload") : null;
+		if (inner == null || !inner.has("activeCooldowns") || !inner.get("activeCooldowns").isJsonArray()) {
+			hud.onCooldownsChanged(List.of());
+			return;
+		}
+		List<CooldownHud.ServerCooldown> list = new ArrayList<>();
+		for (JsonElement el : inner.getAsJsonArray("activeCooldowns")) {
+			if (!el.isJsonObject()) {
+				continue;
+			}
+			JsonObject e = el.getAsJsonObject();
+			String key = e.has("key") && e.get("key").isJsonPrimitive() ? e.get("key").getAsString()
+					: (e.has("cooldownId") && e.get("cooldownId").isJsonPrimitive() ? e.get("cooldownId").getAsString() : null);
+			if (key == null) {
+				continue;
+			}
+			long remaining = e.has("remainingMillis") && e.get("remainingMillis").isJsonPrimitive()
+					? e.get("remainingMillis").getAsLong() : 0L;
+			list.add(new CooldownHud.ServerCooldown(key, remaining));
+		}
+		hud.onCooldownsChanged(list);
 	}
 
 	/** Logs the complete inbound payload — pretty-printed if it's valid JSON, otherwise the raw text. */
