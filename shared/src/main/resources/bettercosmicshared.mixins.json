@@ -5,6 +5,7 @@
 	"client": [
 		"AbstractContainerScreenMixin",
 		"AvatarRendererPeacefulMiningMixin",
+		"ChestSearchMixin",
 		"GameRendererFovMixin",
 		"GameRendererPeacefulMiningMixin",
 		"GuiMixin",

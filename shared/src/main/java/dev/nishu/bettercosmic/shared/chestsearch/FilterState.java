@@ -1,4 +1,6 @@
-package dev.nishu.bettercosmic.prisons.chestsearch;
+package dev.nishu.bettercosmic.shared.chestsearch;
+
+import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,9 +8,10 @@ import java.util.List;
 /**
  * Static state for the no-code filter sidebar. When {@link #sidebarOpen} is true and at least one
  * rule has a non-empty value, these rules drive the highlight color (over the inline query). Each
- * rule is auto-assigned a distinct color from {@link #COLOR_VALUES}. Ported from BetterPrisons.
+ * rule is auto-assigned a distinct color from {@link #COLOR_VALUES}. Shared across every mod; rule
+ * types come from {@link ChestSearchRegistry} for the active network.
  */
-public final class ChestSearchFilterState {
+public final class FilterState {
 
 	public static final String[] COLOR_NAMES = {
 			"lime", "red", "orange", "yellow", "cyan", "blue", "purple", "pink", "white"
@@ -23,12 +26,12 @@ public final class ChestSearchFilterState {
 	public static boolean sidebarOpen = false;
 	/** false = OR (any active rule matches), true = AND (all active rules must match). */
 	public static boolean matchAll = false;
-	public static final List<ChestSearchFilterRule> rules = new ArrayList<>();
+	public static final List<FilterRule> rules = new ArrayList<>();
 
-	private ChestSearchFilterState() {}
+	private FilterState() {}
 
 	public static boolean hasActiveRules() {
-		for (ChestSearchFilterRule r : rules) {
+		for (FilterRule r : rules) {
 			if (r.isActive()) {
 				return true;
 			}
@@ -40,7 +43,7 @@ public final class ChestSearchFilterState {
 		if (rules.size() >= MAX_RULES) {
 			return;
 		}
-		ChestSearchFilterRule r = new ChestSearchFilterRule();
+		FilterRule r = new FilterRule(ChestSearchRegistry.defaultType());
 		r.color = COLOR_VALUES[rules.size() % COLOR_VALUES.length];
 		rules.add(r);
 	}
@@ -74,17 +77,16 @@ public final class ChestSearchFilterState {
 	 * Returns a highlight color, or 0 for no match. OR mode: the first matching active rule's color.
 	 * AND mode: the first active rule's color, but only if every active rule matches.
 	 */
-	public static int evaluate(String name, List<String> lore, ChestSearchFilterRule.BookAttributes book,
-			Integer clueStep) {
+	public static int evaluate(ItemStack stack, String name, List<String> lore) {
 		if (matchAll) {
 			int firstColor = 0;
 			boolean anyActive = false;
-			for (ChestSearchFilterRule r : rules) {
+			for (FilterRule r : rules) {
 				if (!r.isActive()) {
 					continue;
 				}
 				anyActive = true;
-				if (!r.matches(name, lore, book, clueStep)) {
+				if (!r.matches(stack, name, lore)) {
 					return 0;
 				}
 				if (firstColor == 0) {
@@ -93,8 +95,8 @@ public final class ChestSearchFilterState {
 			}
 			return anyActive ? firstColor : 0;
 		}
-		for (ChestSearchFilterRule r : rules) {
-			if (r.matches(name, lore, book, clueStep)) {
+		for (FilterRule r : rules) {
+			if (r.matches(stack, name, lore)) {
 				return r.color;
 			}
 		}

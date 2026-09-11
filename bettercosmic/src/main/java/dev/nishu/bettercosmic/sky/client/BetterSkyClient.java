@@ -2,6 +2,7 @@ package dev.nishu.bettercosmic.sky.client;
 
 import dev.nishu.bettercosmic.shared.config.BetterCosmicConfig;
 import dev.nishu.bettercosmic.shared.config.SharedConfig;
+import dev.nishu.bettercosmic.shared.chestsearch.ChestSearchRegistry;
 import dev.nishu.bettercosmic.shared.easyview.EasyView;
 import dev.nishu.bettercosmic.shared.hud.HudRegistry;
 import dev.nishu.bettercosmic.shared.server.Network;
@@ -46,6 +47,11 @@ public class BetterSkyClient implements ClientModInitializer {
 
 		// EasyView: centered cooldown / active-effect timer on inventory pets (only on Cosmic Sky).
 		EasyView.register(new PetCooldownProvider(), Network.SKY);
+
+		// Chest search: reuse the shared search bar + filter sidebar. Sky adds no item-specific filter
+		// types (no enchant books / clue scrolls), so just NAME rules + the text query. The shared
+		// library owns the tint provider + UI mixin.
+		ChestSearchRegistry.register(Network.SKY, () -> config.chestSearchEnabled, List.of(), List.of());
 
 		// HUD: compact alphabetical list of the other players online on the server (only on Cosmic Sky). The
 		// shared HudRenderer (registered by BetterPrisonsClient, which always loads alongside Sky in
@@ -110,6 +116,16 @@ public class BetterSkyClient implements ClientModInitializer {
 		));
 		ConfigRegistry.register(ConfigPanel.of("pets", "Pets",
 				"Pet cooldown & active-effect timer", PanelIcon.CLOCK, List.of(petGroup)),
+				Network.SKY);
+
+		OptionGroup searchGroup = new OptionGroup("Chest search", List.of(
+				Options.toggle("Chest search", def.chestSearchEnabled,
+						() -> config.chestSearchEnabled,
+						v -> { config.chestSearchEnabled = v; config.save(); })
+						.tooltip("Search bar + filter-rule sidebar in containers; matches are highlighted.")
+		));
+		ConfigRegistry.register(ConfigPanel.of("sky-search", "Search",
+				"Search & highlight items in containers", PanelIcon.MAGNIFIER, List.of(searchGroup)),
 				Network.SKY);
 		ConfigRegistry.register(PlayerListHudPanel.create(), Network.SKY);
 

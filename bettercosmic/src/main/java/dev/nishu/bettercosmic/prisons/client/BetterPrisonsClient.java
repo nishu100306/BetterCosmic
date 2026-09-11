@@ -3,9 +3,10 @@ package dev.nishu.bettercosmic.prisons.client;
 import dev.nishu.bettercosmic.prisons.BetterPrisons;
 import dev.nishu.bettercosmic.prisons.PrisonWorlds;
 import dev.nishu.bettercosmic.prisons.PrisonsGate;
-import dev.nishu.bettercosmic.prisons.chestsearch.ChestSearchTintProvider;
 import dev.nishu.bettercosmic.prisons.chestsearch.ClueScrollProvider;
+import dev.nishu.bettercosmic.prisons.chestsearch.PrisonSearchTypes;
 import dev.nishu.bettercosmic.prisons.chestsearch.SearchPanel;
+import dev.nishu.bettercosmic.shared.chestsearch.ChestSearchRegistry;
 import dev.nishu.bettercosmic.prisons.config.PrisonsConfig;
 import dev.nishu.bettercosmic.prisons.devtools.PrisonDevCommands;
 import dev.nishu.bettercosmic.prisons.easyview.EasyViewPanel;
@@ -207,9 +208,11 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		EasyView.register(new EasyViewProvider(), Network.PRISONS);
 		// Item cooldown timers (pet / trinket / bandit box), centered on the item.
 		EasyView.register(new ItemCooldownProvider(), Network.PRISONS);
-		// Clue scroll step number (overlay) + chest-search match highlight (tint).
+		// Clue scroll step number (overlay). The chest-search match highlight is a shared tint provider
+		// registered by the shared library; here we only contribute prison's item-specific filter types.
 		EasyView.register(new ClueScrollProvider(), Network.PRISONS);
-		EasyView.registerTint(new ChestSearchTintProvider(), Network.PRISONS);
+		ChestSearchRegistry.register(Network.PRISONS, () -> config.chestSearchEnabled,
+				PrisonSearchTypes.types(), java.util.List.of(PrisonSearchTypes.clueQueryMatcher()));
 
 		// Item tooltips: clue-scroll unmapped-step warning, enchant-book upgrade costs, gang-point expiry.
 		ItemTooltipCallback.EVENT.register((stack, tooltipContext, tooltipType, lines) -> {

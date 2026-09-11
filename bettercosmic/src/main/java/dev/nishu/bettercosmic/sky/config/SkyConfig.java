@@ -102,4 +102,14 @@ public class SkyConfig extends BetterCosmicConfig {
 
 	/** Render the timer text bold. */
 	public boolean petCooldownBold = true;
+
+	// ---- Chest search ----
+
+	/**
+	 * Search bar + no-code filter sidebar in container screens, highlighting matching slots. The
+	 * shared framework provides the UI + name/lore filtering; BetterSky adds no item-specific filter
+	 * types (Cosmic Sky has no enchant books or clue scrolls). See
+	 * {@link dev.nishu.bettercosmic.shared.chestsearch.ChestSearchRegistry}.
+	 */
+	public boolean chestSearchEnabled = true;
 }

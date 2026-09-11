@@ -1,7 +1,9 @@
 package dev.nishu.bettercosmic.shared;
 
+import dev.nishu.bettercosmic.shared.chestsearch.ChestSearchTintProvider;
 import dev.nishu.bettercosmic.shared.command.DevCommands;
 import dev.nishu.bettercosmic.shared.config.SharedConfig;
+import dev.nishu.bettercosmic.shared.easyview.EasyView;
 import dev.nishu.bettercosmic.shared.notification.ToastRenderer;
 import dev.nishu.bettercosmic.shared.ui.ConfigUi;
 import dev.nishu.bettercosmic.shared.update.UpdateChecker;
@@ -31,6 +33,11 @@ public class BetterCosmicShared implements ClientModInitializer {
 
 		// Register the shared dev commands (/bcdev toggle + gated /bcitem, ...).
 		DevCommands.register();
+
+		// Chest search: one slot-highlight tint provider for every mod. It's network-agnostic and
+		// gates itself on the active network's ChestSearchRegistry entry; the search-bar/sidebar UI is
+		// added by the shared ChestSearchMixin. Each mod registers its network + filter types.
+		EasyView.registerTint(new ChestSearchTintProvider());
 
 		// Register the config-UI keybind (default I) that opens the shared config screen.
 		ConfigUi.init();
