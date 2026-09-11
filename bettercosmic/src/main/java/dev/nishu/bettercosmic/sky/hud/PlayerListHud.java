@@ -6,18 +6,23 @@ import dev.nishu.bettercosmic.sky.config.SkyConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.multiplayer.PlayerInfo;
 import org.joml.Matrix3x2fStack;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 /**
- * Player List HUD: a compact, small-text list of the other players loaded in the client's world
- * ({@code ClientLevel.players()}, excluding yourself), sorted alphabetically and laid out in columns
- * of a configurable height. An optional "Players: N" header shows the total, and a configurable cap
- * collapses any overflow into a trailing "+N more" line.
+ * Player List HUD: a compact, small-text list of the other players online on the server, sorted
+ * alphabetically and laid out in columns of a configurable height. An optional "Players: N" header
+ * shows the total, and a configurable cap collapses any overflow into a trailing "+N more" line.
+ *
+ * <p>The roster is the same one the vanilla Social Interactions screen shows —
+ * {@code connection.getOnlinePlayers()}, every player the client knows about via player-info updates,
+ * not just those loaded as entities near you — with yourself excluded.
  *
  * <p>Names only — no distance, ping, or health — per the feature's scope. Extends the shared
  * {@link BaseHud}; position is moved by the shared HUD editor and scale comes from config.
@@ -59,14 +64,19 @@ public class PlayerListHud extends BaseHud {
 		Font font = client.font;
 
 		List<String> names = new ArrayList<>();
-		if (client.level != null && client.player != null) {
-			for (AbstractClientPlayer p : client.level.players()) {
-				if (p.getUUID().equals(client.player.getUUID())) {
+		ClientPacketListener connection = client.getConnection();
+		if (connection != null && client.player != null) {
+			UUID self = client.player.getUUID();
+			for (PlayerInfo info : connection.getOnlinePlayers()) {
+				if (self.equals(info.getProfile().id())) {
 					continue; // exclude yourself
 				}
-				// getName() is the plain profile username (team/prefix formatting lives on
-				// getDisplayName()), which is what we want for a flat, alphabetically sortable list.
-				names.add(p.getName().getString());
+				// The profile name is the plain username (tab-list/team formatting lives elsewhere),
+				// which is what we want for a flat, alphabetically sortable list.
+				String name = info.getProfile().name();
+				if (name != null && !name.isEmpty()) {
+					names.add(name);
+				}
 			}
 		}
 		names.sort(Comparator.comparing(String::toLowerCase));
@@ -109,7 +119,7 @@ public class PlayerListHud extends BaseHud {
 
 	@Override
 	public void render(GuiGraphics ctx, Minecraft client) {
-		if (!enabled || client.player == null || client.level == null) {
+		if (!enabled || client.player == null || client.getConnection() == null) {
 			return;
 		}
 		SkyConfig c = cfg();

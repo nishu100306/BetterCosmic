@@ -27,7 +27,7 @@ public class BetterSkyClient implements ClientModInitializer {
 	/** BetterSky's own config (config/bettercosmic/bettersky.json). */
 	public static SkyConfig config;
 
-	/** Compact alphabetical list of the other players loaded in your world. */
+	/** Compact alphabetical list of the other players online on the server. */
 	public static PlayerListHud playerListHud;
 
 	@Override
@@ -42,7 +42,7 @@ public class BetterSkyClient implements ClientModInitializer {
 		// EasyView: show potion trinket charges in the slot corner (only on Cosmic Sky).
 		EasyView.register(new TrinketChargesProvider(), Network.SKY);
 
-		// HUD: compact alphabetical list of the other players in your world (only on Cosmic Sky). The
+		// HUD: compact alphabetical list of the other players online on the server (only on Cosmic Sky). The
 		// shared HudRenderer (registered by BetterPrisonsClient, which always loads alongside Sky in
 		// this build) ticks/draws every HudRegistry entry, gated by its owning network.
 		playerListHud = new PlayerListHud();

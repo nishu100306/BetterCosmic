@@ -23,7 +23,7 @@ public final class PlayerListHudPanel {
 		OptionGroup general = new OptionGroup("General", List.<Option>of(
 				Options.toggle("Player List HUD", d.playerListHudEnabled,
 						() -> c.playerListHudEnabled, v -> { c.playerListHudEnabled = v; c.save(); })
-						.tooltip("List the other players loaded in your world."),
+						.tooltip("List the other players online on the server."),
 				Options.intSlider("Scale", d.playerListHudScale, 50, 150, 5,
 						() -> c.playerListHudScale, v -> { c.playerListHudScale = v; c.save(); })
 						.tooltip("Text size (100% = normal)."),
@@ -59,7 +59,7 @@ public final class PlayerListHudPanel {
 						() -> c.playerListBorderThickness, v -> { c.playerListBorderThickness = v; c.save(); })));
 
 		return ConfigPanel.of("sky-playerlist", "Player List",
-				"Other players in your world", PanelIcon.EYE,
+				"Players online on the server", PanelIcon.EYE,
 				List.of(general, colors, style));
 	}
 }
