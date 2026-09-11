@@ -85,4 +85,21 @@ public class SkyConfig extends BetterCosmicConfig {
 	public int playerListBorderColor = 0xFFFFFF;
 	public int playerListBorderOpacity = 60;
 	public int playerListBorderThickness = 1;
+
+	// ---- Pet Cooldown overlay ----
+	// A centered m:ss timer on inventory pets (custom_data.persistentItem == "inventory_pet"),
+	// anchored off custom_data.lastUsed: green while the ability effect is active, red while on
+	// cooldown. See dev.nishu.bettercosmic.sky.feature.PetCooldownProvider.
+
+	/** Show the pet cooldown / active-effect timer. */
+	public boolean petCooldownOverlay = true;
+
+	/** RGB color of the timer while the pet is on cooldown. */
+	public int petCooldownColor = 0xFF5555;
+
+	/** RGB color of the timer while the pet's ability effect is still active. */
+	public int petActiveColor = 0x00FF00;
+
+	/** Render the timer text bold. */
+	public boolean petCooldownBold = true;
 }

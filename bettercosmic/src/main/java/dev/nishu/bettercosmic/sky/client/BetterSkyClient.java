@@ -12,9 +12,11 @@ import dev.nishu.bettercosmic.shared.ui.model.Options;
 import dev.nishu.bettercosmic.shared.ui.model.PanelIcon;
 import dev.nishu.bettercosmic.sky.BetterSky;
 import dev.nishu.bettercosmic.sky.config.SkyConfig;
+import dev.nishu.bettercosmic.sky.feature.PetCooldownProvider;
 import dev.nishu.bettercosmic.sky.feature.TrinketChargesProvider;
 import dev.nishu.bettercosmic.sky.hud.PlayerListHud;
 import dev.nishu.bettercosmic.sky.hud.PlayerListHudPanel;
+import dev.nishu.bettercosmic.sky.ui.SkyOptions;
 import net.fabricmc.api.ClientModInitializer;
 
 import java.util.List;
@@ -41,6 +43,9 @@ public class BetterSkyClient implements ClientModInitializer {
 
 		// EasyView: show potion trinket charges in the slot corner (only on Cosmic Sky).
 		EasyView.register(new TrinketChargesProvider(), Network.SKY);
+
+		// EasyView: centered cooldown / active-effect timer on inventory pets (only on Cosmic Sky).
+		EasyView.register(new PetCooldownProvider(), Network.SKY);
 
 		// HUD: compact alphabetical list of the other players online on the server (only on Cosmic Sky). The
 		// shared HudRenderer (registered by BetterPrisonsClient, which always loads alongside Sky in
@@ -86,6 +91,25 @@ public class BetterSkyClient implements ClientModInitializer {
 		));
 		ConfigRegistry.register(ConfigPanel.of("trinkets", "Trinkets",
 				"Potion trinket charge overlay", PanelIcon.POTION, List.of(overlayGroup, colorGroup)),
+				Network.SKY);
+
+		OptionGroup petGroup = new OptionGroup("Cooldown timer", List.of(
+				Options.toggle("Cooldown overlay", def.petCooldownOverlay,
+						() -> config.petCooldownOverlay,
+						v -> { config.petCooldownOverlay = v; config.save(); })
+						.tooltip("Show a centered timer on inventory pets."),
+				SkyOptions.colorRgb("Cooldown color", def.petCooldownColor,
+						() -> config.petCooldownColor,
+						v -> { config.petCooldownColor = v; config.save(); }),
+				SkyOptions.colorRgb("Active color", def.petActiveColor,
+						() -> config.petActiveColor,
+						v -> { config.petActiveColor = v; config.save(); }),
+				Options.toggle("Bold", def.petCooldownBold,
+						() -> config.petCooldownBold,
+						v -> { config.petCooldownBold = v; config.save(); })
+		));
+		ConfigRegistry.register(ConfigPanel.of("pets", "Pets",
+				"Pet cooldown & active-effect timer", PanelIcon.CLOCK, List.of(petGroup)),
 				Network.SKY);
 		ConfigRegistry.register(PlayerListHudPanel.create(), Network.SKY);
 
