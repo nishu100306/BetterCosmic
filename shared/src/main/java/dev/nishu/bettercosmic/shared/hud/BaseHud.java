@@ -63,6 +63,29 @@ public abstract class BaseHud {
 		this.scale = defaultScale;
 	}
 
+	/**
+	 * Screen-clamped render X. Some HUDs grow with their content; when a HUD would extend past the
+	 * screen edge this shifts where it draws so it stays fully on-screen, <b>without</b> changing the
+	 * saved {@link #x} (its anchor) — so once the content shrinks again it returns to the anchor. When
+	 * the width is unknown ({@link #getWidth()} returns 0) the anchor is used unchanged.
+	 */
+	public int clampedX(int screenWidth) {
+		int w = getWidth();
+		if (w <= 0) {
+			return x;
+		}
+		return Math.max(0, Math.min(x, screenWidth - w));
+	}
+
+	/** Screen-clamped render Y; see {@link #clampedX(int)}. */
+	public int clampedY(int screenHeight) {
+		int h = getHeight();
+		if (h <= 0) {
+			return y;
+		}
+		return Math.max(0, Math.min(y, screenHeight - h));
+	}
+
 	// Helpers for subclasses to scale widths/heights/offsets in render().
 	protected int scaled(int value) {
 		return (int) (value * scale);

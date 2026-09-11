@@ -27,9 +27,24 @@ public final class HudRenderer {
 			}
 			// Keep the shared tokens (and the server-following accent) fresh for in-world HUDs/toasts.
 			Theme.load();
+			int screenWidth = client.getWindow().getGuiScaledWidth();
+			int screenHeight = client.getWindow().getGuiScaledHeight();
 			for (HudRegistry.Entry entry : HudRegistry.entries()) {
 				if (entry.hud.enabled && ServerContext.isActive(entry.network)) {
-					entry.hud.render(context, client);
+					BaseHud hud = entry.hud;
+					// Draw at a screen-clamped position so content-resizing HUDs stay fully on-screen,
+					// but keep the saved anchor (x/y) untouched — the config/editor position is always
+					// the original, so the HUD returns to it once its content shrinks again.
+					int anchorX = hud.x;
+					int anchorY = hud.y;
+					hud.x = hud.clampedX(screenWidth);
+					hud.y = hud.clampedY(screenHeight);
+					try {
+						hud.render(context, client);
+					} finally {
+						hud.x = anchorX;
+						hud.y = anchorY;
+					}
 				}
 			}
 		});
