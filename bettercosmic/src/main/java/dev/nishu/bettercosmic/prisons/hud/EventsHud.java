@@ -1,6 +1,7 @@
 package dev.nishu.bettercosmic.prisons.hud;
 
 import dev.nishu.bettercosmic.prisons.BetterPrisons;
+import dev.nishu.bettercosmic.prisons.api.CosmicApi;
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import dev.nishu.bettercosmic.prisons.config.PrisonsConfig;
 import dev.nishu.bettercosmic.shared.hud.BaseHud;
@@ -270,6 +271,88 @@ public class EventsHud extends BaseHud {
 			}
 		}
 		BetterPrisons.LOGGER.warn("Merchant slain but no matching entry found: {} at {}, {}, {}", tierName, x, y, z);
+	}
+
+	// -------------------------------------------------------------------------
+	// Cosmic API hook feeds (meteors + merchants)
+	// -------------------------------------------------------------------------
+
+	/** True while the {@code server.meteor.landing.changed} hook is granted — chat meteor scraping stands down. */
+	public static boolean meteorsHookActive() {
+		return CosmicApi.allowedHooks.contains("server.meteor.landing.changed");
+	}
+
+	/** True while the {@code server.merchant.spawned} hook is granted — chat merchant scraping stands down. */
+	public static boolean merchantsHookActive() {
+		return CosmicApi.allowedHooks.contains("server.merchant.spawned");
+	}
+
+	/**
+	 * Feeds a meteor from the {@code server.meteor.landing.changed} hook, keyed by target coordinates.
+	 * {@code summoner} empty ⇒ Natural, otherwise Summoned. {@code state == "in_flight"} sets the landing
+	 * countdown from {@code remainingMillis}; {@code "landed"} (and any other non-flight state) marks it
+	 * crashed, after which {@code tick()} removes it {@code eventsCrashedDisplayDuration}s later — expiry
+	 * is client-side from config, not a server signal.
+	 */
+	public void onMeteorHook(int x, int y, int z, String state, String summoner, long remainingMillis) {
+		MeteorType type = (summoner == null || summoner.isEmpty()) ? MeteorType.NATURAL : MeteorType.SUMMONED;
+		boolean inFlight = "in_flight".equalsIgnoreCase(state);
+		// Known states so far: "in_flight" (falling) and "landed" (crashed/mineable). Any non-in_flight
+		// state is treated as crashed; an unrecognised one is logged so the vocabulary can be extended.
+		if (!inFlight && !"landed".equalsIgnoreCase(state)) {
+			BetterPrisons.LOGGER.debug("Cosmic API meteor state '{}' at {},{},{} treated as crashed", state, x, y, z);
+		}
+		long now = System.currentTimeMillis();
+		for (MeteorInfo m : activeMeteors) {
+			if (m.x == x && m.y == y && m.z == z) {
+				if (inFlight) {
+					m.landingTime = now + Math.max(0L, remainingMillis);
+				} else if (m.crashTime == null) {
+					m.crashTime = now;
+				}
+				return;
+			}
+		}
+		long landingTime = inFlight ? now + Math.max(0L, remainingMillis) : now;
+		MeteorInfo info = new MeteorInfo(x, y, z, now, landingTime, createMeteorIcon(), type);
+		if (!inFlight) {
+			info.crashTime = now;
+		}
+		activeMeteors.add(info);
+		int color = (type == MeteorType.NATURAL) ? cfg().eventsNaturalHeadingColor : cfg().eventsSummonedHeadingColor;
+		String name = (type == MeteorType.NATURAL) ? "Natural Meteor" : "Summoned Meteor";
+		String eventKey = (type == MeteorType.NATURAL) ? "METEOR_NATURAL" : "METEOR_SUMMONED";
+		BetterPrisonsClient.waypointManager.addEventWaypoint(x, y, z, color, name, eventKey);
+	}
+
+	/**
+	 * Feeds a merchant from the {@code server.merchant.spawned} hook, keyed by {@code merchantId}. The ore
+	 * tier comes from {@code zoneId} (e.g. {@code "redstone"} ⇒ {@link MerchantType#REDSTONE}).
+	 */
+	public void onMerchantSpawnedHook(long merchantId, String zoneId, int x, int y, int z) {
+		for (MerchantInfo m : activeMerchants) {
+			if (m.merchantId != 0 && m.merchantId == merchantId) {
+				return;
+			}
+		}
+		MerchantType type = MerchantType.fromString(zoneId);
+		ItemStack icon = new ItemStack(itemOrDefault("minecraft:" + type.getDefaultIconId(), "coal"));
+		MerchantInfo info = new MerchantInfo(x, y, z, System.currentTimeMillis(), icon, type);
+		info.merchantId = merchantId;
+		activeMerchants.add(info);
+		int color = type.getHeadingColor(cfg());
+		BetterPrisonsClient.waypointManager.addEventWaypoint(x, y, z, color, type.getDisplayName(), "MERCHANT_" + type.name());
+	}
+
+	/** Removes the merchant matching {@code merchantId} on the {@code server.merchant.despawned} hook. */
+	public void onMerchantDespawnedHook(long merchantId) {
+		activeMerchants.removeIf(m -> {
+			if (m.merchantId != 0 && m.merchantId == merchantId) {
+				BetterPrisonsClient.waypointManager.removeEventWaypoint(m.x, m.y, m.z);
+				return true;
+			}
+			return false;
+		});
 	}
 
 	// -------------------------------------------------------------------------
@@ -901,6 +984,8 @@ public class EventsHud extends BaseHud {
 		public Long slainTime;
 		public ItemStack iconStack;
 		public MerchantType type;
+		/** Server merchant id when spawned via the Cosmic API hook; 0 for chat-sourced merchants. */
+		public long merchantId = 0;
 
 		public MerchantInfo(int x, int y, int z, long spawnTime, ItemStack iconStack, MerchantType type) {
 			this.x = x;

@@ -9,6 +9,7 @@ import com.google.gson.JsonParser;
 import dev.nishu.bettercosmic.prisons.BetterPrisons;
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import dev.nishu.bettercosmic.prisons.hud.CooldownHud;
+import dev.nishu.bettercosmic.prisons.hud.EventsHud;
 import dev.nishu.bettercosmic.shared.server.Network;
 import dev.nishu.bettercosmic.shared.server.ServerContext;
 import net.minecraft.network.chat.Component;
@@ -73,6 +74,7 @@ public final class CosmicApi {
 			"server.event.schedule.changed",
 			"server.meteor.landing.changed",
 			"server.merchant.spawned",
+			"server.merchant.despawned",
 			"player.effects.changed",
 			"player.cooldowns.changed",
 			"player.enchant_proc",
@@ -195,6 +197,9 @@ public final class CosmicApi {
 		switch (eventType) {
 			case "player.cooldowns.changed" -> routeCooldowns(obj);
 			case "player.enchant_proc" -> routeEnchantProc(obj);
+			case "server.meteor.landing.changed" -> routeMeteor(obj);
+			case "server.merchant.spawned" -> routeMerchantSpawned(obj);
+			case "server.merchant.despawned" -> routeMerchantDespawned(obj);
 			default -> { /* not wired into a feature yet */ }
 		}
 	}
@@ -222,6 +227,93 @@ public final class CosmicApi {
 				? data.get("displayName").getAsString() : enchantId;
 		int level = data.has("level") && data.get("level").isJsonPrimitive() ? data.get("level").getAsInt() : 0;
 		BetterPrisonsClient.enchantTracker.onEnchantProc(enchantId, Component.literal(display.replace('&', '§')), level);
+	}
+
+	/**
+	 * Routes a {@code server.meteor.landing.changed} event to the Events HUD. The meteor detail lives at
+	 * {@code root.payload.payload = { state, x, y, z, meteorType, summoner, remainingMillis, ... }}. A
+	 * meteor is keyed by its target {@code x/y/z}; {@code summoner} distinguishes Natural (empty) from
+	 * Summoned. Observed states: {@code "in_flight"} (falling) and {@code "landed"} (crashed); the HUD
+	 * treats any other state as crashed and logs it so the vocabulary can be extended.
+	 */
+	private static void routeMeteor(JsonObject root) {
+		EventsHud hud = BetterPrisonsClient.eventsHud;
+		JsonObject d = innerData(root);
+		if (hud == null || d == null) {
+			return;
+		}
+		Integer x = asInt(d, "x");
+		Integer y = asInt(d, "y");
+		Integer z = asInt(d, "z");
+		if (x == null || y == null || z == null) {
+			return;
+		}
+		hud.onMeteorHook(x, y, z, asString(d, "state", ""), asString(d, "summoner", ""),
+				asLong(d, "remainingMillis", 0L));
+	}
+
+	/**
+	 * Routes a {@code server.merchant.spawned} event to the Events HUD. Detail at
+	 * {@code root.payload.payload = { merchantId, zoneId, x, y, z, ... }}; the ore tier comes from
+	 * {@code zoneId} (e.g. {@code "redstone"}) and {@code merchantId} keys the later despawn.
+	 */
+	private static void routeMerchantSpawned(JsonObject root) {
+		EventsHud hud = BetterPrisonsClient.eventsHud;
+		JsonObject d = innerData(root);
+		if (hud == null || d == null) {
+			return;
+		}
+		Integer x = asInt(d, "x");
+		Integer y = asInt(d, "y");
+		Integer z = asInt(d, "z");
+		String zoneId = asString(d, "zoneId", "");
+		long merchantId = asLong(d, "merchantId", 0L);
+		if (x == null || y == null || z == null || zoneId.isEmpty()) {
+			return;
+		}
+		hud.onMerchantSpawnedHook(merchantId, zoneId, x, y, z);
+	}
+
+	/**
+	 * Routes a {@code server.merchant.despawned} event to the Events HUD, removing the merchant whose
+	 * {@code merchantId} matches the one from {@code server.merchant.spawned} (confirmed to echo the same
+	 * id). If {@code merchantId} is somehow absent we log the data as a defensive fallback.
+	 */
+	private static void routeMerchantDespawned(JsonObject root) {
+		EventsHud hud = BetterPrisonsClient.eventsHud;
+		JsonObject d = innerData(root);
+		if (hud == null || d == null) {
+			return;
+		}
+		long merchantId = asLong(d, "merchantId", 0L);
+		if (merchantId == 0L) {
+			BetterPrisons.LOGGER.info("Cosmic API: merchant.despawned without a merchantId; data:\n{}",
+					GSON_PRETTY.toJson(d));
+			return;
+		}
+		hud.onMerchantDespawnedHook(merchantId);
+	}
+
+	/** The doubly-nested event data: {@code root.payload.payload}, or {@code null} if absent. */
+	private static JsonObject innerData(JsonObject root) {
+		if (!root.has("payload") || !root.get("payload").isJsonObject()) {
+			return null;
+		}
+		JsonObject envelope = root.getAsJsonObject("payload");
+		return envelope.has("payload") && envelope.get("payload").isJsonObject()
+				? envelope.getAsJsonObject("payload") : null;
+	}
+
+	private static Integer asInt(JsonObject o, String key) {
+		return o.has(key) && o.get(key).isJsonPrimitive() ? o.get(key).getAsInt() : null;
+	}
+
+	private static long asLong(JsonObject o, String key, long def) {
+		return o.has(key) && o.get(key).isJsonPrimitive() ? o.get(key).getAsLong() : def;
+	}
+
+	private static String asString(JsonObject o, String key, String def) {
+		return o.has(key) && o.get(key).isJsonPrimitive() ? o.get(key).getAsString() : def;
 	}
 
 	/**

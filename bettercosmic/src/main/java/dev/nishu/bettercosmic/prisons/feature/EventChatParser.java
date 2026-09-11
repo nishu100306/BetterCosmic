@@ -31,9 +31,9 @@ public final class EventChatParser {
 	public void handle(EventsHud eventsHud, String rawText) {
 		String strippedText = rawText.replaceAll("§.", "");
 
-		// --- Merchant spawn ---
+		// --- Merchant spawn --- (skipped when the API merchant hooks drive the HUD)
 		Matcher merchantSpawn = MERCHANT_SPAWN_PATTERN.matcher(strippedText);
-		if (merchantSpawn.find()) {
+		if (!EventsHud.merchantsHookActive() && merchantSpawn.find()) {
 			try {
 				eventsHud.onMerchantSpawned(merchantSpawn.group(1),
 						Integer.parseInt(merchantSpawn.group(2)),
@@ -44,9 +44,9 @@ public final class EventChatParser {
 			}
 		}
 
-		// --- Merchant slain ---
+		// --- Merchant slain --- (skipped when the API merchant hooks drive the HUD)
 		Matcher merchantSlain = MERCHANT_SLAIN_PATTERN.matcher(strippedText);
-		if (merchantSlain.find()) {
+		if (!EventsHud.merchantsHookActive() && merchantSlain.find()) {
 			try {
 				eventsHud.onMerchantSlain(merchantSlain.group(1),
 						Integer.parseInt(merchantSlain.group(2)),
@@ -57,24 +57,28 @@ public final class EventChatParser {
 			}
 		}
 
-		// --- Meteor falling (coords on this line, header on the previous) ---
-		if (previousMessage.contains("A METEOR IS FALLING FROM THE SKY")) {
-			eventsHud.onMeteorFalling(strippedText, EventsHud.MeteorType.NATURAL);
-		} else if (previousMessage.contains("A METEOR WILL CRASH")) {
-			EventsHud.MeteorType type = strippedText.contains("Summoned by")
-					? EventsHud.MeteorType.SUMMONED : EventsHud.MeteorType.NATURAL;
-			eventsHud.onMeteorFalling(strippedText, type);
-		} else if (previousMessage.startsWith("(!) A meteor is falling from the sky at:")) {
-			eventsHud.onMeteorFalling(strippedText, EventsHud.MeteorType.NATURAL);
-		} else if (previousMessage.startsWith("(!) A meteor summoned by")
-				&& previousMessage.contains("is falling from the sky at:")) {
-			eventsHud.onMeteorFalling(strippedText, EventsHud.MeteorType.SUMMONED);
-		}
+		// --- Meteors --- (skipped when the API meteor hook drives the HUD; meteorite showers below
+		// have no API equivalent and stay chat-sourced)
+		if (!EventsHud.meteorsHookActive()) {
+			// Meteor falling (coords on this line, header on the previous)
+			if (previousMessage.contains("A METEOR IS FALLING FROM THE SKY")) {
+				eventsHud.onMeteorFalling(strippedText, EventsHud.MeteorType.NATURAL);
+			} else if (previousMessage.contains("A METEOR WILL CRASH")) {
+				EventsHud.MeteorType type = strippedText.contains("Summoned by")
+						? EventsHud.MeteorType.SUMMONED : EventsHud.MeteorType.NATURAL;
+				eventsHud.onMeteorFalling(strippedText, type);
+			} else if (previousMessage.startsWith("(!) A meteor is falling from the sky at:")) {
+				eventsHud.onMeteorFalling(strippedText, EventsHud.MeteorType.NATURAL);
+			} else if (previousMessage.startsWith("(!) A meteor summoned by")
+					&& previousMessage.contains("is falling from the sky at:")) {
+				eventsHud.onMeteorFalling(strippedText, EventsHud.MeteorType.SUMMONED);
+			}
 
-		// --- Meteor crashed ---
-		if (previousMessage.contains("(!) A meteor has crashed at:")
-				|| previousMessage.contains("A METEOR HAS CRASHED")) {
-			eventsHud.onMeteorCrashed(strippedText);
+			// Meteor crashed
+			if (previousMessage.contains("(!) A meteor has crashed at:")
+					|| previousMessage.contains("A METEOR HAS CRASHED")) {
+				eventsHud.onMeteorCrashed(strippedText);
+			}
 		}
 
 		// --- Meteorite shower (coords on this line, header on the previous) ---
