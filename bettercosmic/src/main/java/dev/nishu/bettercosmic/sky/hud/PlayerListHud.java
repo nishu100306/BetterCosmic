@@ -20,9 +20,9 @@ import java.util.UUID;
  * alphabetically and laid out in columns of a configurable height. An optional "Players: N" header
  * shows the total, and a configurable cap collapses any overflow into a trailing "+N more" line.
  *
- * <p>The roster is the same one the vanilla Social Interactions screen shows —
- * {@code connection.getOnlinePlayers()}, every player the client knows about via player-info updates,
- * not just those loaded as entities near you — with yourself excluded.
+ * <p>The roster is the vanilla tab list — {@code connection.getListedOnlinePlayers()}, the players
+ * the server marks as "listed" (so unlisted/vanished players are omitted), not just those loaded as
+ * entities near you — with yourself excluded.
  *
  * <p>Names only — no distance, ping, or health — per the feature's scope. Extends the shared
  * {@link BaseHud}; position is moved by the shared HUD editor and scale comes from config.
@@ -67,7 +67,7 @@ public class PlayerListHud extends BaseHud {
 		ClientPacketListener connection = client.getConnection();
 		if (connection != null && client.player != null) {
 			UUID self = client.player.getUUID();
-			for (PlayerInfo info : connection.getOnlinePlayers()) {
+			for (PlayerInfo info : connection.getListedOnlinePlayers()) {
 				if (self.equals(info.getProfile().id())) {
 					continue; // exclude yourself
 				}

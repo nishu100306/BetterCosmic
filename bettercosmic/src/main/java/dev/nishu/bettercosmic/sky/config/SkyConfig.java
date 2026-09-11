@@ -46,9 +46,8 @@ public class SkyConfig extends BetterCosmicConfig {
 	public int trinketChargesColor = 0xFFFFFF;
 
 	// ---- Player List HUD ----
-	// A compact, small-text list of the other players online on the server (the Social Interactions
-	// roster, connection.getOnlinePlayers(), excluding yourself), sorted alphabetically and laid out
-	// in columns of a configurable height.
+	// A compact, small-text list of the other players on the tab list (connection.getListedOnlinePlayers(),
+	// excluding yourself), sorted alphabetically and laid out in columns of a configurable height.
 
 	/** Show the Player List HUD. */
 	public boolean playerListHudEnabled = true;
