@@ -83,7 +83,9 @@ public final class PeacefulMining {
 	public static void init() {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			TARGETS.clear();
-			if (policy == null || !policy.isActive() || client.level == null || client.player == null) {
+			// Gate on the network-aware isActive() (not the raw policy) so ghost rendering — which reads
+			// TARGETS — never leaks onto a server the policy's network doesn't own.
+			if (!isActive() || client.level == null || client.player == null) {
 				return;
 			}
 			for (Player other : client.level.players()) {
