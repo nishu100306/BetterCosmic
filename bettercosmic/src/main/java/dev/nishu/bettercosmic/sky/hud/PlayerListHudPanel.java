@@ -24,7 +24,7 @@ public final class PlayerListHudPanel {
 				Options.toggle("Player List HUD", d.playerListHudEnabled,
 						() -> c.playerListHudEnabled, v -> { c.playerListHudEnabled = v; c.save(); })
 						.tooltip("List the other players online on the server."),
-				Options.intSlider("Scale", d.playerListHudScale, 50, 150, 5,
+				Options.intSlider("Scale", d.playerListHudScale, 25, 150, 5,
 						() -> c.playerListHudScale, v -> { c.playerListHudScale = v; c.save(); })
 						.tooltip("Text size (100% = normal)."),
 				Options.toggle("Show header", d.playerListShowHeader,

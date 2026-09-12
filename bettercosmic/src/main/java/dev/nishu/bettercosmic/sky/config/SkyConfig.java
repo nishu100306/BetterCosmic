@@ -57,7 +57,7 @@ public class SkyConfig extends BetterCosmicConfig {
 	public int playerListHudY = 40;
 
 	/** Render scale as a percent (100 = 1.0x). Defaults small since the list is meant to be compact. */
-	public int playerListHudScale = 80;
+	public int playerListHudScale = 55;
 
 	/** Show the "Players: N" header line above the columns (N is the full count, even when capped). */
 	public boolean playerListShowHeader = true;
