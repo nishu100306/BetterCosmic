@@ -1,5 +1,6 @@
 package dev.nishu.bettercosmic.shared.hud;
 
+import dev.nishu.bettercosmic.shared.server.ServerContext;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -48,7 +49,7 @@ public final class HudEditorScreen extends Screen {
 				this.width / 2, 25, 0xFFAAAAAA);
 
 		for (HudRegistry.Entry entry : HudRegistry.entries()) {
-			if (!entry.draggable || !entry.hud.enabled) {
+			if (!editable(entry)) {
 				continue;
 			}
 			BaseHud hud = entry.hud;
@@ -67,7 +68,7 @@ public final class HudEditorScreen extends Screen {
 			double mouseX = event.x();
 			double mouseY = event.y();
 			for (HudRegistry.Entry entry : HudRegistry.entries()) {
-				if (!entry.draggable || !entry.hud.enabled) {
+				if (!editable(entry)) {
 					continue;
 				}
 				BaseHud hud = entry.hud;
@@ -111,9 +112,17 @@ public final class HudEditorScreen extends Screen {
 
 	private void resetPositions() {
 		for (HudRegistry.Entry entry : HudRegistry.entries()) {
+			if (!ServerContext.isActive(entry.network)) {
+				continue; // only reset the HUDs shown for the active network
+			}
 			entry.hud.resetToDefault();
 			entry.persist.run();
 		}
+	}
+
+	/** A HUD is shown/edited only when it's draggable, enabled, and owned by the active network. */
+	private static boolean editable(HudRegistry.Entry entry) {
+		return entry.draggable && entry.hud.enabled && ServerContext.isActive(entry.network);
 	}
 
 	@Override
