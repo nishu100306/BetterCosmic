@@ -113,6 +113,11 @@ public class SkyConfig extends BetterCosmicConfig {
 	 */
 	public boolean chestSearchEnabled = true;
 
+	// ---- Auto-trade ----
+
+	/** Shift-right-click another player to send {@code /trade <name>}. */
+	public boolean autoTradeEnabled = true;
+
 	// ---- Tracker HUD ----
 	// Counts the Island Quests completed this session by tier (Basic/Elite/Legendary/Godly/Heroic/
 	// Mythic), with a session timer and on-HUD Pause/Reset buttons. Fed from the server's

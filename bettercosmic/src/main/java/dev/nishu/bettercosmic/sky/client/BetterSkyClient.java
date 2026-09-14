@@ -14,6 +14,7 @@ import dev.nishu.bettercosmic.shared.ui.model.Options;
 import dev.nishu.bettercosmic.shared.ui.model.PanelIcon;
 import dev.nishu.bettercosmic.sky.BetterSky;
 import dev.nishu.bettercosmic.sky.config.SkyConfig;
+import dev.nishu.bettercosmic.sky.feature.AutoTrade;
 import dev.nishu.bettercosmic.sky.feature.PetCooldownProvider;
 import dev.nishu.bettercosmic.sky.feature.TrinketChargesProvider;
 import dev.nishu.bettercosmic.sky.hud.PlayerListHud;
@@ -57,6 +58,9 @@ public class BetterSkyClient implements ClientModInitializer {
 
 		// EasyView: centered cooldown / active-effect timer on inventory pets (only on Cosmic Sky).
 		EasyView.register(new PetCooldownProvider(), Network.SKY);
+
+		// Auto-trade: shift-right-click another player to send /trade <name> (only on Cosmic Sky).
+		AutoTrade.register();
 
 		// Chest search: reuse the shared search bar + filter sidebar. Sky adds no item-specific filter
 		// types (no enchant books / clue scrolls), so just NAME rules + the text query. The shared
@@ -171,6 +175,15 @@ public class BetterSkyClient implements ClientModInitializer {
 				Network.SKY);
 		ConfigRegistry.register(PlayerListHudPanel.create(), Network.SKY);
 		ConfigRegistry.register(TrackerHudPanel.create(), Network.SKY);
+
+		OptionGroup interactionsGroup = new OptionGroup("Interactions", List.of(
+				Options.toggle("Auto-trade", def.autoTradeEnabled,
+						() -> config.autoTradeEnabled,
+						v -> { config.autoTradeEnabled = v; config.save(); })
+						.tooltip("Shift-right-click a player to send /trade <name>.")));
+		ConfigRegistry.register(ConfigPanel.of("sky-interactions", "Interactions",
+				"Player interaction shortcuts", PanelIcon.BUBBLE, List.of(interactionsGroup)),
+				Network.SKY);
 
 		BetterSky.LOGGER.info("Loaded configs: {} and {}",
 				sharedConfig.configPath(), config.configPath());
