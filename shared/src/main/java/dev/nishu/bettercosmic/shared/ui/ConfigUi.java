@@ -1,5 +1,6 @@
 package dev.nishu.bettercosmic.shared.ui;
 
+import dev.nishu.bettercosmic.shared.input.KeyBinds;
 import dev.nishu.bettercosmic.shared.ui.screen.ConfigScreen;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -42,8 +43,10 @@ public final class ConfigUi {
 	 */
 	public static KeyMapping openKeyMapping() {
 		if (openKey == null) {
-			openKey = KeyBindingHelper.registerKeyBinding(
-				new KeyMapping(KEY_OPEN, GLFW.GLFW_KEY_I, KeyMapping.Category.MISC));
+			// Own "BetterCosmic" category (not vanilla MISC) so it shows as its own clearly-labelled
+			// section in the vanilla Controls screen instead of being buried among the misc entries.
+			openKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+				KEY_OPEN, GLFW.GLFW_KEY_I, KeyBinds.category("bettercosmic", "bettercosmic")));
 		}
 		return openKey;
 	}
