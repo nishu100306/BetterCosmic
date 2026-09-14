@@ -112,4 +112,40 @@ public class SkyConfig extends BetterCosmicConfig {
 	 * {@link dev.nishu.bettercosmic.shared.chestsearch.ChestSearchRegistry}.
 	 */
 	public boolean chestSearchEnabled = true;
+
+	// ---- Tracker HUD ----
+	// Counts the Island Quests completed this session by tier (Basic/Elite/Legendary/Godly/Heroic/
+	// Mythic), with a session timer and on-HUD Pause/Reset buttons. Fed from the server's
+	// "… Quest COMPLETE: <Tier> …" chat message. See dev.nishu.bettercosmic.sky.hud.TrackerHud.
+
+	/** Show the Tracker HUD. */
+	public boolean trackerHudEnabled = true;
+
+	/** HUD position (GUI-scaled pixels), moved by the drag-and-drop HUD editor. */
+	public int trackerHudX = 5;
+	public int trackerHudY = 90;
+
+	/** Render scale as a percent (100 = 1.0x). Defaults small to keep the tracker compact. */
+	public int trackerHudScale = 65;
+
+	/** Show the session timer line. */
+	public boolean trackerShowTimer = true;
+
+	/** Hide tiers whose count is still 0 (so the HUD only lists tiers you've completed). */
+	public boolean trackerHideEmpty = false;
+
+	/** RGB color of the "Quest Tracker" title. */
+	public int trackerTitleColor = 0xF1C40F;
+
+	/** RGB color of the session-timer line. */
+	public int trackerTimerColor = 0xFFFFFF;
+
+	/** Background fill: RGB color + separate 0–255 opacity (0 = no background). */
+	public int trackerBgColor = 0x000000;
+	public int trackerBgOpacity = 120;
+
+	/** Border: RGB color + separate 0–255 opacity + thickness in pixels (0 = no border). */
+	public int trackerBorderColor = 0xFFFFFF;
+	public int trackerBorderOpacity = 60;
+	public int trackerBorderThickness = 1;
 }

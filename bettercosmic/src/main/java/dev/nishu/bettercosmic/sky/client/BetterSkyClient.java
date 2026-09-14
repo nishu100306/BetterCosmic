@@ -6,6 +6,7 @@ import dev.nishu.bettercosmic.shared.chestsearch.ChestSearchRegistry;
 import dev.nishu.bettercosmic.shared.easyview.EasyView;
 import dev.nishu.bettercosmic.shared.hud.HudRegistry;
 import dev.nishu.bettercosmic.shared.server.Network;
+import dev.nishu.bettercosmic.shared.server.ServerContext;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigPanel;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigRegistry;
 import dev.nishu.bettercosmic.shared.ui.model.OptionGroup;
@@ -17,8 +18,14 @@ import dev.nishu.bettercosmic.sky.feature.PetCooldownProvider;
 import dev.nishu.bettercosmic.sky.feature.TrinketChargesProvider;
 import dev.nishu.bettercosmic.sky.hud.PlayerListHud;
 import dev.nishu.bettercosmic.sky.hud.PlayerListHudPanel;
+import dev.nishu.bettercosmic.sky.hud.TrackerHud;
+import dev.nishu.bettercosmic.sky.hud.TrackerHudPanel;
 import dev.nishu.bettercosmic.sky.ui.SkyOptions;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
+import net.minecraft.client.gui.screens.ChatScreen;
 
 import java.util.List;
 
@@ -32,6 +39,9 @@ public class BetterSkyClient implements ClientModInitializer {
 
 	/** Compact alphabetical list of the other players online on the server. */
 	public static PlayerListHud playerListHud;
+
+	/** Session tracker of Island Quests completed, by tier, with a timer and pause/reset buttons. */
+	public static TrackerHud trackerHud;
 
 	@Override
 	public void onInitializeClient() {
@@ -67,6 +77,38 @@ public class BetterSkyClient implements ClientModInitializer {
 			config.playerListHudY = playerListHud.y;
 			config.save();
 		}, Network.SKY);
+
+		// HUD: session tracker of completed Island Quests by tier, with a timer and Pause/Reset buttons.
+		trackerHud = new TrackerHud();
+		trackerHud.x = config.trackerHudX;
+		trackerHud.y = config.trackerHudY;
+		trackerHud.defaultX = def.trackerHudX;
+		trackerHud.defaultY = def.trackerHudY;
+		trackerHud.enabled = config.trackerHudEnabled;
+		HudRegistry.register(trackerHud, () -> {
+			config.trackerHudX = trackerHud.x;
+			config.trackerHudY = trackerHud.y;
+			config.save();
+		}, Network.SKY);
+
+		// Feed the tracker from chat: the server's "… Quest COMPLETE: <Tier> …" completion message.
+		ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
+			if (!overlay && ServerContext.isActive(Network.SKY)) {
+				trackerHud.onChatMessage(message.getString());
+			}
+		});
+
+		// The tracker's Pause/Reset buttons can't be clicked while the cursor is grabbed. The HUD stays
+		// visible behind the chat screen, so route clicks to it while chat is open (the shared toast
+		// system solves over-gameplay clicks the same way).
+		ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
+			if (!(screen instanceof ChatScreen)) {
+				return;
+			}
+			ScreenMouseEvents.afterMouseClick(screen).register((scr, ctx, consumed) ->
+					ctx.button() == 0 && ServerContext.isActive(Network.SKY)
+							&& trackerHud.enabled && trackerHud.handleClick(ctx.x(), ctx.y()));
+		});
 
 		// Config UI: register BetterSky's own feature panels under the Sky profile. The shared General
 		// panel (dev mode, formatting, theme) is registered by the shared library, and the header
@@ -128,6 +170,7 @@ public class BetterSkyClient implements ClientModInitializer {
 				"Search & highlight items in containers", PanelIcon.MAGNIFIER, List.of(searchGroup)),
 				Network.SKY);
 		ConfigRegistry.register(PlayerListHudPanel.create(), Network.SKY);
+		ConfigRegistry.register(TrackerHudPanel.create(), Network.SKY);
 
 		BetterSky.LOGGER.info("Loaded configs: {} and {}",
 				sharedConfig.configPath(), config.configPath());
