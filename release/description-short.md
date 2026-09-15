@@ -1,8 +1,9 @@
 # BetterCosmic
 
-**BetterCosmic** is a client-side quality-of-life mod for **Cosmic Prisons** — customizable HUDs,
-inventory overlays, event tracking, and handy tools, all configured from a custom in-game menu.
-Everything is optional and independently toggleable.
+**BetterCosmic** is a client-side quality-of-life mod for **Cosmic Prisons** and **Cosmic Sky** —
+customizable HUDs, inventory overlays, event tracking, and handy tools, all configured from a custom
+in-game menu. It detects which network you're on and shows only that server's features. Everything is
+optional and independently toggleable.
 
 ## HUDs
 
@@ -30,6 +31,18 @@ Draggable, scalable, recolorable overlays:
 - **Peaceful mining** — ghost nearby players while you mine
 - DM sound alerts, pickaxe drop protection, shift-click auto-trade, and more
 - **Built-in updater** — get notified of new versions and auto-install them
+
+## Cosmic Sky
+
+Connect to Cosmic Sky and BetterCosmic shows its own toolset instead:
+
+- **Tracker HUD** — session counts of Island Quests and adventure chests by tier, with a timer and
+  Pause/Reset
+- **Player List HUD** — a compact alphabetical list of everyone online
+- **Damage indicators** — floating red/green combat numbers over nearby entities
+- **EasyView** — trinket charges, pet cooldown timers, and quest-point / money-note / XP-bottle values
+  shown right on items, plus local-time quest-point expiry
+- **Chest search** and **shift-click auto-trade**, same as on Prisons
 
 ## Configuration
 

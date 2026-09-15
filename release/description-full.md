@@ -1,9 +1,13 @@
 # BetterCosmic
 
-**BetterCosmic** is a client-side quality-of-life mod for **Cosmic Prisons**. It layers a suite of
-fully customizable on-screen HUDs, inventory overlays, event tracking, navigation aids, and
-quality-of-life tools on top of the vanilla client — all configured from a custom in-game menu, with
-no external libraries required.
+**BetterCosmic** is a client-side quality-of-life mod for **Cosmic Prisons** and **Cosmic Sky**. It
+layers a suite of fully customizable on-screen HUDs, inventory overlays, event tracking, navigation
+aids, and quality-of-life tools on top of the vanilla client — all configured from a custom in-game
+menu, with no external libraries required.
+
+BetterCosmic detects which network you're connected to and shows only that server's features. The
+sections below cover the **Cosmic Prisons** toolset; jump to **Cosmic Sky** further down for that
+network's tools. The built-in updater and configuration menu are shared by both.
 
 Everything is optional and independently toggleable. HUDs can be dragged, scaled, recolored, and
 faded; overlays and features each have their own settings; and nothing is forced on you.
@@ -94,6 +98,38 @@ For mining in crowded areas without accidentally targeting other players:
 - **Bold XP/Energy popups** — optionally bold the server's `+XP` / `+Energy` mining popups.
 - **PrisonBreak texture pack** — a bundled ore texture pack that auto-applies in the PrisonBreak world
   and removes itself when you leave.
+
+## Cosmic Sky
+
+Connect to **Cosmic Sky** and BetterCosmic swaps in a dedicated toolset for that network — everything
+below is gated to Sky, so it stays out of the way on Prisons.
+
+- **Tracker HUD** — counts what you earn this session, broken out by tier (Basic, Elite, Legendary,
+  Godly, Heroic, Mythic), with a running session timer and on-HUD **Pause**/**Reset** buttons. A mode
+  toggle switches the view between **Quest** tracking (Island Quest completions) and **Adventure**
+  tracking (adventure chests dropped nearby); each keeps its own counts and timer, fed automatically
+  from chat.
+- **Player List HUD** — a compact, small-text list of everyone online, drawn from the tab list, sorted
+  alphabetically and laid out in configurable columns with an optional "Players: N" header and a cap
+  that collapses overflow into a "+N more" line.
+- **Damage indicators** — floating combat numbers over nearby entities, inferred from health changes:
+  red `-N` when something takes damage, green `+N` when it heals. Configurable radius and colors, with
+  a little scatter and drift so stacked hits stay readable.
+- **EasyView — inventory value overlays** — read important values straight off an item, in containers
+  and your hotbar:
+  - **Potion trinkets** — remaining usable charges, colored to match the trinket's potion.
+  - **Pets** — a centered cooldown / active-effect timer (green while the ability is active, red while
+    on cooldown).
+  - **Quest-point notes**, **money notes**, and **XP bottles** — their value shown compactly in the
+    corner, read exactly from item data rather than the display name.
+- **Quest-point expiry tooltip** — hover a quest-point note to see the time remaining and the exact
+  expiry in *your* local timezone, instead of the server's fixed time.
+- **Chest search** — the same search bar and no-code filter-rule sidebar available on Prisons, in Sky
+  containers: highlight matching items, each rule with its own color and an Any/All mode.
+- **Auto-trade** — shift-right-click a player to send `/trade <name>` automatically.
+
+All of it is optional and configured from the same in-game menu, and the HUDs use the same drag-and-drop
+editor, scaling, and recoloring as the Prisons HUDs.
 
 ## Built-in updater
 
