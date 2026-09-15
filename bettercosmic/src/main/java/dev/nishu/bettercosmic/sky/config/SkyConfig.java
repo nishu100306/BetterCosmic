@@ -119,9 +119,10 @@ public class SkyConfig extends BetterCosmicConfig {
 	public boolean autoTradeEnabled = true;
 
 	// ---- Tracker HUD ----
-	// Counts the Island Quests completed this session by tier (Basic/Elite/Legendary/Godly/Heroic/
-	// Mythic), with a session timer and on-HUD Pause/Reset buttons. Fed from the server's
-	// "… Quest COMPLETE: <Tier> …" chat message. See dev.nishu.bettercosmic.sky.hud.TrackerHud.
+	// Counts what you earn this session by tier (Basic/Elite/Legendary/Godly/Heroic/Mythic), with a
+	// session timer and on-HUD Pause/Reset buttons plus a mode toggle. Fed from chat: Island Quests
+	// ("… Quest COMPLETE: <Tier> …") in Quest mode and adventure chests ("<Tier> Chest dropped nearby!")
+	// in Adventure mode. See dev.nishu.bettercosmic.sky.hud.TrackerHud.
 
 	/** Show the Tracker HUD. */
 	public boolean trackerHudEnabled = true;

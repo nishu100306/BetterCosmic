@@ -14,13 +14,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Tracker HUD: counts the Island Quests you complete this session, broken out by tier
- * (Basic / Elite / Legendary / Godly / Heroic / Mythic), with a running session timer and two
- * on-HUD buttons — <b>Pause</b>/<b>Resume</b> (freezes the timer) and <b>Reset</b> (zeroes the counts
- * and restarts the timer).
+ * Tracker HUD: counts what you earn this session, broken out by tier (Basic / Elite / Legendary /
+ * Godly / Heroic / Mythic), with a running session timer and on-HUD buttons — <b>Pause</b>/<b>Resume</b>
+ * (freezes the timer), <b>Reset</b> (zeroes the counts and restarts the timer), and a <b>mode</b> toggle
+ * that switches the view between:
+ * <ul>
+ *   <li><b>Quest</b> — Island Quests completed ("{@code … Quest COMPLETE: <Tier> …}").</li>
+ *   <li><b>Adventure</b> — adventure chests dropped ("{@code <Tier> Chest dropped nearby!}").</li>
+ * </ul>
  *
- * <p>Counts are fed from chat: BetterSky watches for the server's "{@code … Quest COMPLETE: <Tier> …}"
- * message (see {@link #onChatMessage}). It's fully client-local — nothing is sent to the server.
+ * <p>Both are tracked at all times (each with its own counts and timer); the mode toggle only switches
+ * which one is shown, and Pause/Reset act on the visible mode. It's fully client-local — the counts come
+ * from chat (see {@link #onChatMessage}), nothing is sent to the server.
  *
  * <p>The buttons can't be clicked while the cursor is grabbed (normal gameplay). Following the shared
  * toast system's approach, {@link BetterSkyClient} routes clicks to {@link #handleClick} while the
@@ -36,7 +41,7 @@ public class TrackerHud extends BaseHud {
 	/** Unscaled button metrics. */
 	private static final int BTN_H = 12;
 	private static final int BTN_HPAD = 4;   // horizontal padding each side of a button label
-	private static final int BTN_GAP = 3;    // gap between the two buttons
+	private static final int BTN_GAP = 3;    // gap between buttons
 	private static final int BTN_ROW_GAP = 3; // gap between the last text row and the button row
 
 	/** Quest tiers, in ascending prestige, each with a display name and label color (nearest vanilla). */
@@ -67,21 +72,91 @@ public class TrackerHud extends BaseHud {
 		}
 	}
 
-	private static final Component TITLE = Component.literal("Quest Tracker")
-			.setStyle(Style.EMPTY.withBold(true).withUnderlined(true));
+	/** The two things the tracker can count; each keeps its own state, and the toggle switches the view. */
+	private enum Mode {
+		QUEST("Quest Tracker", "Adv"),
+		ADVENTURE("Adventure Tracker", "Quest");
 
-	/** Completion counts, indexed by {@link Tier#ordinal()}. */
-	private final int[] counts = new int[Tier.values().length];
+		final String title;         // HUD title line
+		final String switchButton;  // toggle-button label: names the mode this one switches TO
 
-	// Session timer (same freeze-aware scheme as the prisons Stats HUD).
-	private long sessionStartTime = 0;
-	private boolean paused = false;
-	private long pauseStartTime = 0;
-	private long totalPauseDuration = 0;
+		Mode(String title, String switchButton) {
+			this.title = title;
+			this.switchButton = switchButton;
+		}
+
+		Mode next() {
+			return this == QUEST ? ADVENTURE : QUEST;
+		}
+	}
+
+	/** One mode's independent state: per-tier counts and a freeze-aware session timer. */
+	private static final class ModeState {
+		final int[] counts = new int[Tier.values().length];
+		long sessionStartTime = 0;
+		boolean paused = false;
+		long pauseStartTime = 0;
+		long totalPauseDuration = 0;
+
+		void startTimer() {
+			sessionStartTime = System.currentTimeMillis();
+			totalPauseDuration = 0;
+			pauseStartTime = 0;
+			paused = false;
+		}
+
+		void record(Tier tier) {
+			if (sessionStartTime == 0) {
+				startTimer();
+			}
+			counts[tier.ordinal()]++;
+		}
+
+		void togglePause() {
+			if (paused) {
+				if (pauseStartTime > 0) {
+					totalPauseDuration += System.currentTimeMillis() - pauseStartTime;
+					pauseStartTime = 0;
+				}
+				paused = false;
+			} else {
+				pauseStartTime = System.currentTimeMillis();
+				paused = true;
+			}
+		}
+
+		void reset() {
+			for (int i = 0; i < counts.length; i++) {
+				counts[i] = 0;
+			}
+			startTimer();
+		}
+
+		String duration() {
+			if (sessionStartTime == 0) {
+				return "0:00:00";
+			}
+			long elapsed = System.currentTimeMillis() - sessionStartTime - totalPauseDuration;
+			if (paused && pauseStartTime > 0) {
+				elapsed -= System.currentTimeMillis() - pauseStartTime;
+			}
+			long seconds = (elapsed / 1000) % 60;
+			long minutes = (elapsed / 60000) % 60;
+			long hours = elapsed / 3600000;
+			return String.format("%d:%02d:%02d", hours, minutes, seconds);
+		}
+	}
+
+	private static final Style TITLE_STYLE = Style.EMPTY.withBold(true).withUnderlined(true);
+
+	private final ModeState quest = new ModeState();
+	private final ModeState adventure = new ModeState();
+	private Mode mode = Mode.QUEST;
 
 	// Absolute button hit-rects, recomputed each render and read by handleClick.
 	private int pauseBtnX, pauseBtnY, pauseBtnW;
 	private int resetBtnX, resetBtnY, resetBtnW;
+	private int modeBtnX, modeBtnY, modeBtnW;
 	private int btnH;
 	private boolean btnsValid = false;
 
@@ -93,45 +168,51 @@ public class TrackerHud extends BaseHud {
 		return BetterSkyClient.config;
 	}
 
+	private ModeState current() {
+		return mode == Mode.QUEST ? quest : adventure;
+	}
+
 	@Override
 	public void tick(Minecraft client) {
 		this.enabled = cfg().trackerHudEnabled;
-		// Start the session timer the first time the HUD ticks on Sky (ticking is network-gated).
-		if (sessionStartTime == 0) {
-			startTimer();
+		// Start each mode's timer the first time the HUD ticks on Sky (ticking is network-gated), so the
+		// timer runs from when you join even before the first quest/chest.
+		if (quest.sessionStartTime == 0) {
+			quest.startTimer();
+		}
+		if (adventure.sessionStartTime == 0) {
+			adventure.startTimer();
 		}
 	}
 
 	/**
-	 * Feeds one received chat line to the tracker. Increments the matching tier's count when the line
-	 * is a quest-completion message; otherwise a no-op. Colour codes are stripped first.
+	 * Feeds one received chat line to the tracker. Increments the matching tier under the right mode when
+	 * the line is a quest-completion or adventure-chest message; otherwise a no-op. Both modes are fed
+	 * regardless of which is being viewed. Colour codes are stripped first.
 	 */
 	public void onChatMessage(String raw) {
 		if (raw == null) {
 			return;
 		}
 		String s = raw.replaceAll("§.", "");
-		if (!s.contains("Quest") || !s.contains("COMPLETE:")) {
-			return;
+		if (s.contains("Quest") && s.contains("COMPLETE:")) {
+			// Tier is the first tier word after "COMPLETE:".
+			Tier tier = detectTier(s.substring(s.indexOf("COMPLETE:")));
+			if (tier != null) {
+				quest.record(tier);
+			}
+		} else if (s.contains("Chest dropped")) {
+			// e.g. " * Basic Chest dropped nearby! *" — tier is the first tier word on the line.
+			Tier tier = detectTier(s);
+			if (tier != null) {
+				adventure.record(tier);
+			}
 		}
-		Tier tier = detectTier(s);
-		if (tier == null) {
-			return;
-		}
-		if (sessionStartTime == 0) {
-			startTimer();
-		}
-		counts[tier.ordinal()]++;
 	}
 
-	/** Finds the tier keyword following "COMPLETE:" in a completion line, or {@code null}. */
-	private static Tier detectTier(String line) {
-		int i = line.indexOf("COMPLETE:");
-		if (i < 0) {
-			return null;
-		}
-		String after = line.substring(i + "COMPLETE:".length()).replace("*", " ").trim();
-		for (String token : after.split("\\s+")) {
+	/** The first tier keyword appearing as a whitespace-separated token in {@code segment}, or {@code null}. */
+	private static Tier detectTier(String segment) {
+		for (String token : segment.replace("*", " ").split("\\s+")) {
 			Tier t = Tier.byName(token);
 			if (t != null) {
 				return t;
@@ -140,53 +221,10 @@ public class TrackerHud extends BaseHud {
 		return null;
 	}
 
-	// ---- Timer / buttons ----
-
-	private void startTimer() {
-		sessionStartTime = System.currentTimeMillis();
-		totalPauseDuration = 0;
-		pauseStartTime = 0;
-		paused = false;
-	}
-
-	/** Toggles the timer's paused state, accumulating paused time so it's excluded from the duration. */
-	public void togglePause() {
-		if (paused) {
-			if (pauseStartTime > 0) {
-				totalPauseDuration += System.currentTimeMillis() - pauseStartTime;
-				pauseStartTime = 0;
-			}
-			paused = false;
-		} else {
-			pauseStartTime = System.currentTimeMillis();
-			paused = true;
-		}
-	}
-
-	/** Zeroes every tier count and restarts the timer. */
-	public void reset() {
-		for (int i = 0; i < counts.length; i++) {
-			counts[i] = 0;
-		}
-		startTimer();
-	}
-
-	private String sessionDuration() {
-		if (sessionStartTime == 0) {
-			return "0:00:00";
-		}
-		long elapsed = System.currentTimeMillis() - sessionStartTime - totalPauseDuration;
-		if (paused && pauseStartTime > 0) {
-			elapsed -= System.currentTimeMillis() - pauseStartTime;
-		}
-		long seconds = (elapsed / 1000) % 60;
-		long minutes = (elapsed / 60000) % 60;
-		long hours = elapsed / 3600000;
-		return String.format("%d:%02d:%02d", hours, minutes, seconds);
-	}
+	// ---- Buttons ----
 
 	private String pauseLabel() {
-		return paused ? "Resume" : "Pause";
+		return current().paused ? "Resume" : "Pause";
 	}
 
 	/**
@@ -197,15 +235,23 @@ public class TrackerHud extends BaseHud {
 		if (!btnsValid) {
 			return false;
 		}
-		if (mx >= pauseBtnX && mx < pauseBtnX + pauseBtnW && my >= pauseBtnY && my < pauseBtnY + btnH) {
-			togglePause();
+		if (hit(mx, my, pauseBtnX, pauseBtnY, pauseBtnW)) {
+			current().togglePause();
 			return true;
 		}
-		if (mx >= resetBtnX && mx < resetBtnX + resetBtnW && my >= resetBtnY && my < resetBtnY + btnH) {
-			reset();
+		if (hit(mx, my, resetBtnX, resetBtnY, resetBtnW)) {
+			current().reset();
+			return true;
+		}
+		if (hit(mx, my, modeBtnX, modeBtnY, modeBtnW)) {
+			mode = mode.next();
 			return true;
 		}
 		return false;
+	}
+
+	private boolean hit(double mx, double my, int bx, int by, int bw) {
+		return mx >= bx && mx < bx + bw && my >= by && my < by + btnH;
 	}
 
 	// ---- Rendering ----
@@ -216,17 +262,18 @@ public class TrackerHud extends BaseHud {
 	/** The ordered text rows (title, optional timer, per-tier counts); shared by render and sizing. */
 	private List<Row> rows() {
 		SkyConfig c = cfg();
+		ModeState state = current();
 		List<Row> r = new ArrayList<>();
-		r.add(new Row(TITLE, c.trackerTitleColor));
+		r.add(new Row(Component.literal(mode.title).setStyle(TITLE_STYLE), c.trackerTitleColor));
 		if (c.trackerShowTimer) {
-			r.add(new Row(Component.literal((paused ? "(P) " : "") + sessionDuration()), c.trackerTimerColor));
+			r.add(new Row(Component.literal((state.paused ? "(P) " : "") + state.duration()), c.trackerTimerColor));
 		}
 		Tier[] tiers = Tier.values();
 		for (int i = 0; i < tiers.length; i++) {
-			if (c.trackerHideEmpty && counts[i] == 0) {
+			if (c.trackerHideEmpty && state.counts[i] == 0) {
 				continue;
 			}
-			r.add(new Row(Component.literal(tiers[i].display + ": " + counts[i]), tiers[i].color));
+			r.add(new Row(Component.literal(tiers[i].display + ": " + state.counts[i]), tiers[i].color));
 		}
 		return r;
 	}
@@ -241,7 +288,10 @@ public class TrackerHud extends BaseHud {
 		m.popMatrix();
 	}
 
-	private void drawButton(GuiGraphics ctx, Font font, String label, int bx, int by, int bw, int rgb) {
+	/** Draws a button; returns its width so the caller can advance the button row. */
+	private int drawButton(GuiGraphics ctx, Font font, String label, int bx, int by, int rgb) {
+		int pad = scaled(BTN_HPAD);
+		int bw = (int) (font.width(label) * scale) + pad * 2;
 		int line = 0xFF000000 | (rgb & 0xFFFFFF);
 		ctx.fill(bx, by, bx + bw, by + btnH, 0x80000000);          // translucent fill
 		ctx.fill(bx, by, bx + bw, by + 1, line);                   // top
@@ -252,6 +302,11 @@ public class TrackerHud extends BaseHud {
 		int lx = bx + (bw - lw) / 2;
 		int ly = by + (btnH - scaled(8)) / 2;
 		drawScaled(ctx, font, Component.literal(label), lx, ly, rgb);
+		return bw;
+	}
+
+	private int buttonWidth(Font font, String label) {
+		return (int) (font.width(label) * scale) + scaled(BTN_HPAD) * 2;
 	}
 
 	@Override
@@ -265,18 +320,18 @@ public class TrackerHud extends BaseHud {
 
 		List<Row> rows = rows();
 		int lineH = scaled(LINE_H);
+		this.btnH = scaled(BTN_H);
+		int gap = scaled(BTN_GAP);
 
 		int contentW = 0;
 		for (Row row : rows) {
 			contentW = Math.max(contentW, (int) (font.width(row.text()) * scale));
 		}
 
-		int pad = scaled(BTN_HPAD);
-		int gap = scaled(BTN_GAP);
-		this.btnH = scaled(BTN_H);
-		int pauseW = (int) (font.width(pauseLabel()) * scale) + pad * 2;
-		int resetW = (int) (font.width("Reset") * scale) + pad * 2;
-		int btnRowW = pauseW + gap + resetW;
+		int pauseW = buttonWidth(font, pauseLabel());
+		int resetW = buttonWidth(font, "Reset");
+		int modeW = buttonWidth(font, mode.switchButton);
+		int btnRowW = pauseW + gap + resetW + gap + modeW;
 
 		int bgW = Math.max(contentW, btnRowW);
 		int rowsH = rows.size() * lineH;
@@ -304,17 +359,18 @@ public class TrackerHud extends BaseHud {
 		}
 
 		int btnY = y + rowsH + btnRowGap;
-		int pauseX = x;
-		int resetX = x + pauseW + gap;
-		drawButton(ctx, font, pauseLabel(), pauseX, btnY, pauseW, paused ? 0x55FF55 : 0xFFFF55);
-		drawButton(ctx, font, "Reset", resetX, btnY, resetW, 0xFF5555);
-
-		pauseBtnX = pauseX;
+		int bx = x;
+		pauseBtnX = bx;
 		pauseBtnY = btnY;
-		pauseBtnW = pauseW;
-		resetBtnX = resetX;
+		pauseBtnW = drawButton(ctx, font, pauseLabel(), bx, btnY, current().paused ? 0x55FF55 : 0xFFFF55);
+		bx += pauseBtnW + gap;
+		resetBtnX = bx;
 		resetBtnY = btnY;
-		resetBtnW = resetW;
+		resetBtnW = drawButton(ctx, font, "Reset", bx, btnY, 0xFF5555);
+		bx += resetBtnW + gap;
+		modeBtnX = bx;
+		modeBtnY = btnY;
+		modeBtnW = drawButton(ctx, font, mode.switchButton, bx, btnY, 0x55FFFF);
 		btnsValid = true;
 	}
 
@@ -330,11 +386,10 @@ public class TrackerHud extends BaseHud {
 		for (Row row : rows()) {
 			contentW = Math.max(contentW, (int) (font.width(row.text()) * scale));
 		}
-		int pad = scaled(BTN_HPAD);
 		int gap = scaled(BTN_GAP);
-		int pauseW = (int) (font.width(pauseLabel()) * scale) + pad * 2;
-		int resetW = (int) (font.width("Reset") * scale) + pad * 2;
-		return Math.max(contentW, pauseW + gap + resetW) + PAD * 2;
+		int btnRowW = buttonWidth(font, pauseLabel()) + gap + buttonWidth(font, "Reset")
+				+ gap + buttonWidth(font, mode.switchButton);
+		return Math.max(contentW, btnRowW) + PAD * 2;
 	}
 
 	@Override

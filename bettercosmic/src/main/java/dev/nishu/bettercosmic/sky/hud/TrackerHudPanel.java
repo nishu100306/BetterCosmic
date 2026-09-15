@@ -23,7 +23,7 @@ public final class TrackerHudPanel {
 		OptionGroup general = new OptionGroup("General", List.<Option>of(
 				Options.toggle("Tracker HUD", d.trackerHudEnabled,
 						() -> c.trackerHudEnabled, v -> { c.trackerHudEnabled = v; c.save(); })
-						.tooltip("Count the Island Quests you complete this session, by tier."),
+						.tooltip("Track quests completed / adventure chests by tier. Toggle mode on the HUD."),
 				Options.intSlider("Scale", d.trackerHudScale, 25, 150, 5,
 						() -> c.trackerHudScale, v -> { c.trackerHudScale = v; c.save(); })
 						.tooltip("Text size (100% = normal)."),
@@ -53,7 +53,7 @@ public final class TrackerHudPanel {
 						() -> c.trackerBorderThickness, v -> { c.trackerBorderThickness = v; c.save(); })));
 
 		return ConfigPanel.of("sky-tracker", "Tracker",
-				"Quest completions by tier", PanelIcon.CHART,
+				"Quests & adventure chests by tier", PanelIcon.CHART,
 				List.of(general, colors, style));
 	}
 }
