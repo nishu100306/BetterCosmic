@@ -41,7 +41,7 @@ public final class QuestPointTooltip {
 				return;
 			}
 			CompoundTag nbt = data.copyTag();
-			if (!QuestPointProvider.COSMIC_ITEM.equals(nbt.getStringOr("cosmicItem", ""))) {
+			if (!QuestPointProvider.isQuestPointNote(nbt.getStringOr("cosmicItem", ""))) {
 				return;
 			}
 			long expirationMs = nbt.getLongOr("expiration", 0L);

@@ -134,9 +134,10 @@ public class SkyConfig extends BetterCosmicConfig {
 	/** RGB color of a heal indicator ({@code +N}). Pure green. */
 	public int healIndicatorColor = 0x00FF00;
 
-	// ---- Adventure quest points ----
-	// EasyView corner overlay + expiry tooltip for adventure quest-point notes
-	// (custom_data.cosmicItem == "adventure_island_quest_point_note"). See
+	// ---- Quest points ----
+	// EasyView corner overlay + expiry tooltip for quest-point notes — both the regular
+	// (custom_data.cosmicItem == "island_quest_point_note") and adventure
+	// ("adventure_island_quest_point_note") variants, which share this config. See
 	// dev.nishu.bettercosmic.sky.feature.QuestPointProvider / QuestPointTooltip.
 
 	/** Show the point value in the corner of quest-point notes. */
@@ -146,7 +147,7 @@ public class SkyConfig extends BetterCosmicConfig {
 	public int questPointColor = 0x55FFFF;
 
 	/** Overlay text scale, as a percent (100 = normal). */
-	public int questPointScale = 90;
+	public int questPointScale = 50;
 
 	/** Render the overlay bold. */
 	public boolean questPointBold = true;
@@ -168,7 +169,7 @@ public class SkyConfig extends BetterCosmicConfig {
 	public int moneyNoteColor = 0x55FF55;
 
 	/** Overlay text scale, as a percent (100 = normal). */
-	public int moneyNoteScale = 90;
+	public int moneyNoteScale = 50;
 
 	/** Render the overlay bold. */
 	public boolean moneyNoteBold = true;
@@ -184,7 +185,7 @@ public class SkyConfig extends BetterCosmicConfig {
 	public int xpBottleColor = 0xFF55FF;
 
 	/** Overlay text scale, as a percent (100 = normal). */
-	public int xpBottleScale = 90;
+	public int xpBottleScale = 50;
 
 	/** Render the overlay bold. */
 	public boolean xpBottleBold = true;

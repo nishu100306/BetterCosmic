@@ -11,18 +11,26 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
+import java.util.regex.Pattern;
+
 /**
- * EasyView provider for Cosmic Sky adventure quest-point notes: shows the note's point value compactly
- * in the top-left of its slot, like BetterPrisons' gang-point notes.
+ * EasyView provider for Cosmic Sky quest-point notes: shows the note's point value compactly in the
+ * top-left of its slot, like BetterPrisons' gang-point notes.
  *
  * <p>The value comes straight from NBT — {@code custom_data.points} (a double) — rather than the display
- * name, so it's exact regardless of formatting. Notes are identified by
- * {@code custom_data.cosmicItem == "adventure_island_quest_point_note"}.
+ * name, so it's exact regardless of formatting. It covers both note variants — regular
+ * ({@code island_quest_point_note}) and adventure ({@code adventure_island_quest_point_note}) — matched
+ * by {@link #COSMIC_ITEM_PATTERN}; both share the same config.
  */
 public final class QuestPointProvider implements ItemOverlayProvider {
 
-	/** {@code custom_data.cosmicItem} value that marks an adventure quest-point note. */
-	static final String COSMIC_ITEM = "adventure_island_quest_point_note";
+	/** Matches the {@code custom_data.cosmicItem} of either quest-point note variant. */
+	static final Pattern COSMIC_ITEM_PATTERN = Pattern.compile("(?:adventure_)?island_quest_point_note");
+
+	/** Whether {@code cosmicItem} identifies a quest-point note (regular or adventure). */
+	static boolean isQuestPointNote(String cosmicItem) {
+		return cosmicItem != null && COSMIC_ITEM_PATTERN.matcher(cosmicItem).matches();
+	}
 
 	@Override
 	public SlotOverlay getOverlay(ItemStack stack) {
@@ -35,7 +43,7 @@ public final class QuestPointProvider implements ItemOverlayProvider {
 			return null;
 		}
 		CompoundTag nbt = data.copyTag();
-		if (!COSMIC_ITEM.equals(nbt.getStringOr("cosmicItem", ""))) {
+		if (!isQuestPointNote(nbt.getStringOr("cosmicItem", ""))) {
 			return null;
 		}
 		long points = (long) nbt.getDoubleOr("points", 0);

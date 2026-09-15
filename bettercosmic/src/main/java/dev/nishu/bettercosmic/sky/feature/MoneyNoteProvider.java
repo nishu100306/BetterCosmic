@@ -42,7 +42,7 @@ public final class MoneyNoteProvider implements ItemOverlayProvider {
 			return null;
 		}
 		int color = 0xFF000000 | (cfg.moneyNoteColor & 0xFFFFFF);
-		return new SlotOverlay("$" + NumberFormatUtil.compact(value), color,
+		return new SlotOverlay(NumberFormatUtil.compact(value), color,
 				cfg.moneyNoteScale / 100f, cfg.moneyNoteBold, Anchor.TOP_LEFT);
 	}
 }
