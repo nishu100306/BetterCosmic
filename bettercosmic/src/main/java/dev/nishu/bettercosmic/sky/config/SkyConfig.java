@@ -118,6 +118,22 @@ public class SkyConfig extends BetterCosmicConfig {
 	/** Shift-right-click another player to send {@code /trade <name>}. */
 	public boolean autoTradeEnabled = true;
 
+	// ---- Damage indicators ----
+	// Floating combat numbers over nearby entities, inferred from client-visible health changes:
+	// red -N on damage, green +N on a heal. See dev.nishu.bettercosmic.sky.feature.DamageIndicators.
+
+	/** Show floating damage/heal numbers over nearby entities. */
+	public boolean damageIndicatorsEnabled = true;
+
+	/** Only entities within this many blocks of the player get indicators. */
+	public int damageIndicatorRadius = 10;
+
+	/** RGB color of a damage indicator ({@code -N}). Pure red. */
+	public int damageIndicatorColor = 0xFF0000;
+
+	/** RGB color of a heal indicator ({@code +N}). Pure green. */
+	public int healIndicatorColor = 0x00FF00;
+
 	// ---- Tracker HUD ----
 	// Counts what you earn this session by tier (Basic/Elite/Legendary/Godly/Heroic/Mythic), with a
 	// session timer and on-HUD Pause/Reset buttons plus a mode toggle. Fed from chat: Island Quests

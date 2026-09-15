@@ -5,6 +5,7 @@ import dev.nishu.bettercosmic.shared.config.SharedConfig;
 import dev.nishu.bettercosmic.shared.chestsearch.ChestSearchRegistry;
 import dev.nishu.bettercosmic.shared.easyview.EasyView;
 import dev.nishu.bettercosmic.shared.hud.HudRegistry;
+import dev.nishu.bettercosmic.shared.render.FloatingTextRenderer;
 import dev.nishu.bettercosmic.shared.server.Network;
 import dev.nishu.bettercosmic.shared.server.ServerContext;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigPanel;
@@ -15,6 +16,7 @@ import dev.nishu.bettercosmic.shared.ui.model.PanelIcon;
 import dev.nishu.bettercosmic.sky.BetterSky;
 import dev.nishu.bettercosmic.sky.config.SkyConfig;
 import dev.nishu.bettercosmic.sky.feature.AutoTrade;
+import dev.nishu.bettercosmic.sky.feature.DamageIndicators;
 import dev.nishu.bettercosmic.sky.feature.PetCooldownProvider;
 import dev.nishu.bettercosmic.sky.feature.TrinketChargesProvider;
 import dev.nishu.bettercosmic.sky.hud.PlayerListHud;
@@ -61,6 +63,11 @@ public class BetterSkyClient implements ClientModInitializer {
 
 		// Auto-trade: shift-right-click another player to send /trade <name> (only on Cosmic Sky).
 		AutoTrade.register();
+
+		// Damage indicators: floating red/green combat numbers over nearby entities (only on Cosmic Sky).
+		// FloatingTextRenderer.init() is idempotent (BetterPrisonsClient also calls it in this build).
+		FloatingTextRenderer.init();
+		DamageIndicators.register();
 
 		// Chest search: reuse the shared search bar + filter sidebar. Sky adds no item-specific filter
 		// types (no enchant books / clue scrolls), so just NAME rules + the text query. The shared
@@ -183,6 +190,25 @@ public class BetterSkyClient implements ClientModInitializer {
 						.tooltip("Shift-right-click a player to send /trade <name>.")));
 		ConfigRegistry.register(ConfigPanel.of("sky-interactions", "Interactions",
 				"Player interaction shortcuts", PanelIcon.BUBBLE, List.of(interactionsGroup)),
+				Network.SKY);
+
+		OptionGroup damageGroup = new OptionGroup("Damage indicators", List.of(
+				Options.toggle("Damage indicators", def.damageIndicatorsEnabled,
+						() -> config.damageIndicatorsEnabled,
+						v -> { config.damageIndicatorsEnabled = v; config.save(); })
+						.tooltip("Floating red/green damage & heal numbers over nearby entities."),
+				Options.intSlider("Radius (blocks)", def.damageIndicatorRadius, 5, 30, 1,
+						() -> config.damageIndicatorRadius,
+						v -> { config.damageIndicatorRadius = v; config.save(); })
+						.tooltip("Only entities within this many blocks get indicators."),
+				SkyOptions.colorRgb("Damage color", def.damageIndicatorColor,
+						() -> config.damageIndicatorColor,
+						v -> { config.damageIndicatorColor = v; config.save(); }),
+				SkyOptions.colorRgb("Heal color", def.healIndicatorColor,
+						() -> config.healIndicatorColor,
+						v -> { config.healIndicatorColor = v; config.save(); })));
+		ConfigRegistry.register(ConfigPanel.of("sky-damage", "Damage Indicators",
+				"Floating damage & heal numbers", PanelIcon.SWORD, List.of(damageGroup)),
 				Network.SKY);
 
 		BetterSky.LOGGER.info("Loaded configs: {} and {}",

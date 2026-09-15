@@ -1,8 +1,10 @@
 package dev.nishu.bettercosmic.shared.render;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.LightTexture;
@@ -34,20 +36,24 @@ import java.util.List;
  * text says (an enchant proc, a pickup, ...) is up to the caller. Ported from BetterPrisons'
  * {@code FloatingTextRenderer}.
  *
- * <p><b>1.21.11 render port.</b> BetterPrisons drew via {@code OrderedRenderCommandQueue.submitLabel}
- * from a {@code WorldRenderer} mixin. Both are gone; this uses the new
- * {@link SubmitNodeCollector#submitNameTag} on the Fabric world-render pass (the camera state comes
- * from {@link WorldRenderContext#worldState()}), so no mixin is needed. Like all world-space render
- * code in this port, it needs an in-game pass. All access is on the render/client thread.
+ * <p><b>1.21.11 render.</b> The label is submitted as raw billboarded text via
+ * {@link SubmitNodeCollector#submitText} on the Fabric world-render pass — the same submit collector the
+ * vanilla name-tag path uses, but without its forced background box: we pass {@code backgroundColor = 0}.
+ * We reproduce vanilla's name-tag transform (camera-facing via {@code cameraRenderState.orientation},
+ * then {@code scale(0.025, -0.025, 0.025)}); the {@link Component}'s own style supplies colour + bold.
+ * Like all world-space render code here it needs an in-game pass; all access is on the render/client thread.
  */
 public final class FloatingTextRenderer {
 
-	private static final double RISE_BLOCKS = 1.0;    // total upward travel over its lifetime
-	private static final double JITTER = 0.25;        // world-space spread for concurrent labels
+	private static final double RISE_BLOCKS = 0.4;    // total upward drift over its lifetime
+	private static final double DRIFT_BLOCKS = 0.6;   // total sideways drift over its lifetime (± per label)
+	private static final double JITTER = 0.6;         // billboard-plane spawn spread (blocks) around the mob
 	private static final double TARGET_REACH = 64.0;  // how far to look for the anchor target
 	private static final int MAX_ENTRIES = 32;
 
 	private static final List<FloatingText> active = new ArrayList<>();
+
+	private static boolean registered = false;
 
 	private FloatingTextRenderer() {}
 
@@ -57,8 +63,9 @@ public final class FloatingTextRenderer {
 		final long durationMs;
 		final Entity anchorEntity; // tracked live if present
 		final Vec3 anchorPos;      // fixed fallback / block-or-point anchor
-		final double jitterX;
-		final double jitterZ;
+		final double jitterX;      // horizontal offset in the billboard (screen-facing) plane, blocks
+		final double jitterY;      // vertical offset in the billboard plane, blocks
+		final double driftDir;     // per-label sideways drift direction/strength in [-1, 1]
 
 		FloatingText(Component text, long durationMs, Entity anchorEntity, Vec3 anchorPos) {
 			this.text = text;
@@ -67,13 +74,33 @@ public final class FloatingTextRenderer {
 			this.anchorEntity = anchorEntity;
 			this.anchorPos = anchorPos;
 			this.jitterX = (Math.random() - 0.5) * 2.0 * JITTER;
-			this.jitterZ = (Math.random() - 0.5) * 2.0 * JITTER;
+			this.jitterY = (Math.random() - 0.5) * 2.0 * JITTER;
+			this.driftDir = (Math.random() - 0.5) * 2.0;
 		}
 	}
 
-	/** Hooks the world-render pass. Call once from a mod client init. */
+	/** Hooks the world-render pass. Idempotent — safe to call from more than one mod's client init. */
 	public static void init() {
+		if (registered) {
+			return;
+		}
+		registered = true;
 		WorldRenderEvents.AFTER_ENTITIES.register(FloatingTextRenderer::renderInWorld);
+	}
+
+	/**
+	 * Spawns a floating label anchored directly on {@code anchor} (tracked live as it moves), instead of
+	 * on the player's look target. For callers that already know the entity the text belongs to — e.g. a
+	 * damage number over the mob that was hit.
+	 */
+	public static void spawn(Component text, long durationMs, Entity anchor) {
+		if (text == null || anchor == null) {
+			return;
+		}
+		if (active.size() >= MAX_ENTRIES) {
+			active.remove(0);
+		}
+		active.add(new FloatingText(text, durationMs, anchor, anchor.getBoundingBox().getCenter()));
 	}
 
 	/**
@@ -143,21 +170,28 @@ public final class FloatingTextRenderer {
 		return best;
 	}
 
-	/** Submits the active labels via the vanilla name-tag path on the Fabric world-render pass. */
+	/** Vanilla name-tag glyph scale (1 block ≈ 40 px). Y is flipped: text space grows downward. */
+	private static final float TEXT_SCALE = 0.025f;
+	/** Vanilla raises the tag half a block above its anchor point; match that so placement is familiar. */
+	private static final double NAMETAG_Y_OFFSET = 0.5;
+
+	/** Submits the active labels as camera-facing text (no background box) on the world-render pass. */
 	private static void renderInWorld(WorldRenderContext ctx) {
 		if (active.isEmpty()) {
 			return;
 		}
+		PoseStack pose = ctx.matrices();
 		SubmitNodeCollector queue = ctx.commandQueue();
 		LevelRenderState worldState = ctx.worldState();
-		if (queue == null || ctx.matrices() == null || worldState == null) {
+		if (pose == null || queue == null || worldState == null) {
 			return;
 		}
-		CameraRenderState cameraRenderState = worldState.cameraRenderState;
-		if (cameraRenderState == null) {
+		CameraRenderState cameraState = worldState.cameraRenderState;
+		if (cameraState == null) {
 			return;
 		}
-		Vec3 camPos = cameraRenderState.pos;
+		Vec3 camPos = cameraState.pos;
+		Font font = Minecraft.getInstance().font;
 		long now = System.currentTimeMillis();
 
 		Iterator<FloatingText> it = active.iterator();
@@ -173,16 +207,25 @@ public final class FloatingTextRenderer {
 
 			float progress = (float) elapsed / ft.durationMs;
 			double rise = RISE_BLOCKS * (1.0 - (1.0 - progress) * (1.0 - progress));
+			double drift = ft.driftDir * DRIFT_BLOCKS * progress; // sideways travel, linear over life
 
-			// pos must be camera-relative: the name-tag renderer translates by pos directly.
-			Vec3 pos = new Vec3(
-					base.x + ft.jitterX - camPos.x,
-					base.y + rise - camPos.y,
-					base.z + ft.jitterZ - camPos.z);
-			double sqDist = pos.lengthSqr();
+			pose.pushPose();
+			// The world-render matrix puts the camera at the origin, so translate by (world - camera).
+			pose.translate(base.x - camPos.x,
+					base.y + rise + NAMETAG_Y_OFFSET - camPos.y,
+					base.z - camPos.z);
+			pose.mulPose(cameraState.orientation);          // face the camera (billboard)
+			// Scatter around the mob (jitter) plus a sideways drift over its lifetime, both in the
+			// screen-facing plane (blocks, before the shrink) so they read the same from any angle.
+			pose.translate(ft.jitterX + drift, ft.jitterY, 0.0);
+			pose.scale(TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE); // to text space + shrink
 
-			queue.submitNameTag(ctx.matrices(), pos, 0, ft.text, true,
-					LightTexture.FULL_BRIGHT, sqDist, cameraRenderState);
+			float x = -font.width(ft.text) / 2.0f;          // centre horizontally
+			// submitText(pose, x, y, text, dropShadow, displayMode, light, color, backgroundColor, outline)
+			// backgroundColor 0 = no box; the Component's own style supplies colour + bold.
+			queue.submitText(pose, x, 0f, ft.text.getVisualOrderText(), false,
+					Font.DisplayMode.NORMAL, LightTexture.FULL_BRIGHT, 0xFFFFFFFF, 0, 0);
+			pose.popPose();
 		}
 	}
 }
