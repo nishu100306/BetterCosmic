@@ -134,6 +134,61 @@ public class SkyConfig extends BetterCosmicConfig {
 	/** RGB color of a heal indicator ({@code +N}). Pure green. */
 	public int healIndicatorColor = 0x00FF00;
 
+	// ---- Adventure quest points ----
+	// EasyView corner overlay + expiry tooltip for adventure quest-point notes
+	// (custom_data.cosmicItem == "adventure_island_quest_point_note"). See
+	// dev.nishu.bettercosmic.sky.feature.QuestPointProvider / QuestPointTooltip.
+
+	/** Show the point value in the corner of quest-point notes. */
+	public boolean questPointOverlayEnabled = true;
+
+	/** RGB color of the point-value overlay. */
+	public int questPointColor = 0x55FFFF;
+
+	/** Overlay text scale, as a percent (100 = normal). */
+	public int questPointScale = 90;
+
+	/** Render the overlay bold. */
+	public boolean questPointBold = true;
+
+	/** Append a time-remaining + local-timezone expiry line to the note's tooltip. */
+	public boolean questPointExpiryEnabled = true;
+
+	/** RGB color of the expiry tooltip lines. */
+	public int questPointExpiryColor = 0xFF5555;
+
+	// ---- Money notes ----
+	// EasyView corner overlay for money notes (custom_data.cosmicItem == "money_note"), showing
+	// custom_data.noteValue. See dev.nishu.bettercosmic.sky.feature.MoneyNoteProvider.
+
+	/** Show the dollar value in the corner of money notes. */
+	public boolean moneyNoteOverlayEnabled = true;
+
+	/** RGB color of the money-note overlay. */
+	public int moneyNoteColor = 0x55FF55;
+
+	/** Overlay text scale, as a percent (100 = normal). */
+	public int moneyNoteScale = 90;
+
+	/** Render the overlay bold. */
+	public boolean moneyNoteBold = true;
+
+	// ---- EXP bottles ----
+	// EasyView corner overlay for EXP bottles (custom_data.cosmicItem == "exp_bottle"), showing
+	// custom_data.expValue. See dev.nishu.bettercosmic.sky.feature.XpBottleProvider.
+
+	/** Show the XP value in the corner of EXP bottles. */
+	public boolean xpBottleOverlayEnabled = true;
+
+	/** RGB color of the EXP-bottle overlay. */
+	public int xpBottleColor = 0xFF55FF;
+
+	/** Overlay text scale, as a percent (100 = normal). */
+	public int xpBottleScale = 90;
+
+	/** Render the overlay bold. */
+	public boolean xpBottleBold = true;
+
 	// ---- Tracker HUD ----
 	// Counts what you earn this session by tier (Basic/Elite/Legendary/Godly/Heroic/Mythic), with a
 	// session timer and on-HUD Pause/Reset buttons plus a mode toggle. Fed from chat: Island Quests

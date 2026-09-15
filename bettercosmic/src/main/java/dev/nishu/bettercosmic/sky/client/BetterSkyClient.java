@@ -17,14 +17,19 @@ import dev.nishu.bettercosmic.sky.BetterSky;
 import dev.nishu.bettercosmic.sky.config.SkyConfig;
 import dev.nishu.bettercosmic.sky.feature.AutoTrade;
 import dev.nishu.bettercosmic.sky.feature.DamageIndicators;
+import dev.nishu.bettercosmic.sky.feature.MoneyNoteProvider;
 import dev.nishu.bettercosmic.sky.feature.PetCooldownProvider;
+import dev.nishu.bettercosmic.sky.feature.QuestPointProvider;
+import dev.nishu.bettercosmic.sky.feature.QuestPointTooltip;
 import dev.nishu.bettercosmic.sky.feature.TrinketChargesProvider;
+import dev.nishu.bettercosmic.sky.feature.XpBottleProvider;
 import dev.nishu.bettercosmic.sky.hud.PlayerListHud;
 import dev.nishu.bettercosmic.sky.hud.PlayerListHudPanel;
 import dev.nishu.bettercosmic.sky.hud.TrackerHud;
 import dev.nishu.bettercosmic.sky.hud.TrackerHudPanel;
 import dev.nishu.bettercosmic.sky.ui.SkyOptions;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
@@ -60,6 +65,22 @@ public class BetterSkyClient implements ClientModInitializer {
 
 		// EasyView: centered cooldown / active-effect timer on inventory pets (only on Cosmic Sky).
 		EasyView.register(new PetCooldownProvider(), Network.SKY);
+
+		// EasyView: point value in the corner of adventure quest-point notes (only on Cosmic Sky).
+		EasyView.register(new QuestPointProvider(), Network.SKY);
+
+		// EasyView: dollar value in the corner of money notes (only on Cosmic Sky).
+		EasyView.register(new MoneyNoteProvider(), Network.SKY);
+
+		// EasyView: XP value in the corner of EXP bottles (only on Cosmic Sky).
+		EasyView.register(new XpBottleProvider(), Network.SKY);
+
+		// Item tooltips: local-timezone expiry countdown on quest-point notes.
+		ItemTooltipCallback.EVENT.register((stack, tooltipContext, tooltipType, lines) -> {
+			if (ServerContext.isActive(Network.SKY)) {
+				QuestPointTooltip.append(stack, lines);
+			}
+		});
 
 		// Auto-trade: shift-right-click another player to send /trade <name> (only on Cosmic Sky).
 		AutoTrade.register();
@@ -124,7 +145,9 @@ public class BetterSkyClient implements ClientModInitializer {
 		// Config UI: register BetterSky's own feature panels under the Sky profile. The shared General
 		// panel (dev mode, formatting, theme) is registered by the shared library, and the header
 		// profile selector labels the screen — so nothing is branded here.
-		OptionGroup overlayGroup = new OptionGroup("Overlay", List.of(
+		// EasyView: every item slot-overlay lives under one panel (trinkets, pets, and the note/bottle
+		// value overlays). Each item type is its own group; the combined panel is registered below.
+		OptionGroup trinketGroup = new OptionGroup("Trinkets", List.of(
 				Options.toggle("Charge overlay", def.trinketChargesOverlay,
 						() -> config.trinketChargesOverlay,
 						v -> { config.trinketChargesOverlay = v; config.save(); })
@@ -136,27 +159,22 @@ public class BetterSkyClient implements ClientModInitializer {
 				Options.dropdown("Position", def.trinketChargesAnchor,
 						List.of("Top-left", "Top-right", "Bottom-left", "Bottom-right", "Center"),
 						() -> config.trinketChargesAnchor,
-						v -> { config.trinketChargesAnchor = v; config.save(); })
-		));
-		OptionGroup colorGroup = new OptionGroup("Color", List.of(
-				Options.dropdown("Source", def.trinketColorSource, List.of("Potion color", "Custom"),
+						v -> { config.trinketChargesAnchor = v; config.save(); }),
+				Options.dropdown("Color source", def.trinketColorSource, List.of("Potion color", "Custom"),
 						() -> config.trinketColorSource,
 						v -> { config.trinketColorSource = v; config.save(); })
 						.tooltip("Use the trinket's potion color, or your custom color."),
 				Options.color("Custom color", def.trinketChargesColor,
 						() -> config.trinketChargesColor,
 						v -> { config.trinketChargesColor = v; config.save(); })
-						.tooltip("Used only when Source is Custom.")
+						.tooltip("Used only when Color source is Custom.")
 		));
-		ConfigRegistry.register(ConfigPanel.of("trinkets", "Trinkets",
-				"Potion trinket charge overlay", PanelIcon.POTION, List.of(overlayGroup, colorGroup)),
-				Network.SKY);
 
-		OptionGroup petGroup = new OptionGroup("Cooldown timer", List.of(
+		OptionGroup petGroup = new OptionGroup("Pets", List.of(
 				Options.toggle("Cooldown overlay", def.petCooldownOverlay,
 						() -> config.petCooldownOverlay,
 						v -> { config.petCooldownOverlay = v; config.save(); })
-						.tooltip("Show a centered timer on inventory pets."),
+						.tooltip("Show a centered cooldown / active-effect timer on inventory pets."),
 				SkyOptions.colorRgb("Cooldown color", def.petCooldownColor,
 						() -> config.petCooldownColor,
 						v -> { config.petCooldownColor = v; config.save(); }),
@@ -167,9 +185,6 @@ public class BetterSkyClient implements ClientModInitializer {
 						() -> config.petCooldownBold,
 						v -> { config.petCooldownBold = v; config.save(); })
 		));
-		ConfigRegistry.register(ConfigPanel.of("pets", "Pets",
-				"Pet cooldown & active-effect timer", PanelIcon.CLOCK, List.of(petGroup)),
-				Network.SKY);
 
 		OptionGroup searchGroup = new OptionGroup("Chest search", List.of(
 				Options.toggle("Chest search", def.chestSearchEnabled,
@@ -209,6 +224,55 @@ public class BetterSkyClient implements ClientModInitializer {
 						v -> { config.healIndicatorColor = v; config.save(); })));
 		ConfigRegistry.register(ConfigPanel.of("sky-damage", "Damage Indicators",
 				"Floating damage & heal numbers", PanelIcon.SWORD, List.of(damageGroup)),
+				Network.SKY);
+
+		OptionGroup questPointGroup = new OptionGroup("Quest points", List.of(
+				Options.toggle("Point overlay", def.questPointOverlayEnabled,
+						() -> config.questPointOverlayEnabled,
+						v -> { config.questPointOverlayEnabled = v; config.save(); })
+						.tooltip("Show the point value in the corner of adventure quest-point notes."),
+				SkyOptions.colorRgb("Overlay color", def.questPointColor,
+						() -> config.questPointColor, v -> { config.questPointColor = v; config.save(); }),
+				Options.intSlider("Overlay scale", def.questPointScale, 25, 150, 5,
+						() -> config.questPointScale, v -> { config.questPointScale = v; config.save(); }),
+				Options.toggle("Bold", def.questPointBold,
+						() -> config.questPointBold, v -> { config.questPointBold = v; config.save(); }),
+				Options.toggle("Expiry tooltip", def.questPointExpiryEnabled,
+						() -> config.questPointExpiryEnabled,
+						v -> { config.questPointExpiryEnabled = v; config.save(); })
+						.tooltip("Add a time-remaining + local-timezone expiry line to the tooltip."),
+				SkyOptions.colorRgb("Expiry color", def.questPointExpiryColor,
+						() -> config.questPointExpiryColor,
+						v -> { config.questPointExpiryColor = v; config.save(); })));
+
+		OptionGroup moneyNoteGroup = new OptionGroup("Money notes", List.of(
+				Options.toggle("Value overlay", def.moneyNoteOverlayEnabled,
+						() -> config.moneyNoteOverlayEnabled,
+						v -> { config.moneyNoteOverlayEnabled = v; config.save(); })
+						.tooltip("Show the dollar value in the corner of money notes."),
+				SkyOptions.colorRgb("Overlay color", def.moneyNoteColor,
+						() -> config.moneyNoteColor, v -> { config.moneyNoteColor = v; config.save(); }),
+				Options.intSlider("Overlay scale", def.moneyNoteScale, 25, 150, 5,
+						() -> config.moneyNoteScale, v -> { config.moneyNoteScale = v; config.save(); }),
+				Options.toggle("Bold", def.moneyNoteBold,
+						() -> config.moneyNoteBold, v -> { config.moneyNoteBold = v; config.save(); })));
+
+		OptionGroup xpBottleGroup = new OptionGroup("EXP bottles", List.of(
+				Options.toggle("Value overlay", def.xpBottleOverlayEnabled,
+						() -> config.xpBottleOverlayEnabled,
+						v -> { config.xpBottleOverlayEnabled = v; config.save(); })
+						.tooltip("Show the XP value in the corner of EXP bottles."),
+				SkyOptions.colorRgb("Overlay color", def.xpBottleColor,
+						() -> config.xpBottleColor, v -> { config.xpBottleColor = v; config.save(); }),
+				Options.intSlider("Overlay scale", def.xpBottleScale, 25, 150, 5,
+						() -> config.xpBottleScale, v -> { config.xpBottleScale = v; config.save(); }),
+				Options.toggle("Bold", def.xpBottleBold,
+						() -> config.xpBottleBold, v -> { config.xpBottleBold = v; config.save(); })));
+
+		// One EasyView panel holding every item slot-overlay group.
+		ConfigRegistry.register(ConfigPanel.of("sky-easyview", "EasyView",
+				"Item slot value overlays", PanelIcon.EYE,
+				List.of(trinketGroup, petGroup, questPointGroup, moneyNoteGroup, xpBottleGroup)),
 				Network.SKY);
 
 		BetterSky.LOGGER.info("Loaded configs: {} and {}",
