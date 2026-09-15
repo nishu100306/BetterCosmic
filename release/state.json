@@ -1,11 +1,12 @@
 {
-  "modrinthBodyHash": "4d454ff8688cf64e4c9b10f8fa35863ed57caa83fd8eb4ad69607907df4eb326",
-  "discordChangelogVersion": "2.0.2",
+  "modrinthBodyHash": "64ab1a94044b17258193f4840781ee54313396005dac17cc12caf87f84cafec6",
+  "discordChangelogVersion": "2.1.0",
   "fullDescMessageIds": [
     "1544535735896379393",
-    "1544535738174017647"
+    "1544535738174017647",
+    "1549325713239187548"
   ],
-  "discordFullHash": "df91181c69b989932c6ebc4c3047e23cf29c3d1fbff60b8daeb947a75dc6f5a9",
+  "discordFullHash": "d3727a11b9a1f2c88f673a7b7aab1d6a046a94fd24bb3a2390224fb9d2654548",
   "shortDescMessageId": "1544535739725779065",
-  "discordShortHash": "4d454ff8688cf64e4c9b10f8fa35863ed57caa83fd8eb4ad69607907df4eb326"
+  "discordShortHash": "64ab1a94044b17258193f4840781ee54313396005dac17cc12caf87f84cafec6"
 }
