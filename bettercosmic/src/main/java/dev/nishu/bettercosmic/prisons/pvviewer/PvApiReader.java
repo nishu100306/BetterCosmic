@@ -22,64 +22,69 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 import java.time.Instant;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Fills the {@link PvVaultStore} from the Cosmic API {@code private_vault.read} action, so the PV
- * viewer's cached previews of vaults the player isn't currently looking at can be refreshed without
- * opening each one in-game.
+ * viewer's cached previews of vaults the player isn't currently looking at can be refreshed — and, on
+ * top of that, discovered: the API has no "list my vaults" call, so ownership is learned by <b>probing
+ * vault numbers in order (1, 2, 3, …) until one comes back {@code invalid_vault}</b>, which marks the
+ * end of the range.
  *
- * <p>What it does <b>not</b> touch is the vault currently open in the real GUI: the API reflects the
- * last <em>saved</em> vault state (not an open window), and its items are plain — only {@code material},
+ * <p>What it never touches is the vault currently open in the real GUI: the API reflects the last
+ * <em>saved</em> vault state (not an open window), and its items are plain — only {@code material},
  * {@code amount} and {@code name}, with no lore/enchant/custom data. So live {@link PvCapture} snapshots
  * stay authoritative for the open vault and are never overwritten by an API read (enforced by
  * {@link PvVaultStore#putFromApi}).
  *
- * <p>Reads happen at two points, both throttled through one queue because the action "costs more of the
- * per-player rate budget":
+ * <p>A probe is kicked at two points:
  * <ul>
  *   <li><b>On the handshake</b> — once per session, after the {@code player.private_vaults:read} scope
- *       resolves, every known vault for the current profile is queued to seed initial state.
- *   <li><b>On a genuine in-game open</b> — when the player opens a {@code /pv} screen themselves (not
- *       the mod's own auto-{@code /pv} navigation, and not the vault they're now viewing live), the
- *       other vaults are refreshed.
+ *       resolves and the player is on a real planet.
+ *   <li><b>On {@code /pv}</b> — when the player opens a vault screen themselves (the selector or a
+ *       {@code /pv <n>} window), but not the mod's own auto-{@code /pv} navigation.
  * </ul>
- * A vault is only queued when a refresh would actually help: it's skipped when a full-fidelity live
- * snapshot exists (that data is richer and shouldn't be spent on) or a recent API read is still fresh.
+ * The probe is strictly sequential (one request in flight, waiting for each ack before sending the
+ * next) so the {@code invalid_vault} stop is clean, and it is throttled because the action "costs more
+ * of the per-player rate budget." Numbers whose data is already fresh (a live capture, or a recent API
+ * read) and the live-open vault are stepped over without a network call, so a re-probe is cheap.
  */
 public final class PvApiReader {
 
 	/** Scope that backs the action; without it the server rejects the read. */
 	private static final String SCOPE = "player.private_vaults:read";
+	/** Ack reason meaning the number is past the last vault — the probe's stop signal. */
+	private static final String REASON_INVALID_VAULT = "invalid_vault";
+	/** Ack reason meaning the vault exists but isn't unlocked — skip it, but keep probing higher. */
+	private static final String REASON_VAULT_LOCKED = "vault_locked";
 
 	/** Minimum gap between two reads, to stay within the per-player rate budget. */
 	private static final long SEND_GAP_MS = 800;
-	/** How many reads may be awaiting a result at once. */
-	private static final int MAX_INFLIGHT = 2;
-	/** Drop a pending read whose result never arrived after this long, so its slot frees up. */
-	private static final long PENDING_TIMEOUT_MS = 8000;
+	/** Abandon the probe if an ack never arrives after this long, so a lost packet can't hang it. */
+	private static final long ACK_TIMEOUT_MS = 8000;
 	/** Don't re-read a vault whose API snapshot is younger than this. */
 	private static final long API_REFRESH_TTL_MS = 5 * 60 * 1000L;
+	/** Safety cap on how far a probe will walk, in case {@code invalid_vault} never comes. */
+	private static final int MAX_PROBE_VAULT = 200;
 	/** Fallback row count when we don't yet know a vault's real size. */
 	private static final int DEFAULT_ROWS = 6;
 
-	private record Queued(String profileKey, int vault) {}
-
 	private record Pending(String profileKey, int vault, long sentAt) {}
 
-	private static final Deque<Queued> QUEUE = new ArrayDeque<>();
+	/** requestId -> the read it belongs to, for correlating acks and results. */
 	private static final Map<String, Pending> PENDING = new HashMap<>();
-	/** {@code profileKey#vault} entries currently queued or in flight, so we never double-request one. */
-	private static final Set<String> IN_FLIGHT_OR_QUEUED = new HashSet<>();
+
+	// Probe state (one sequential walk at a time).
+	private static boolean probing = false;
+	private static String probeProfile = null;
+	private static int probeVault = 1;
+	private static String probeAwaitingAck = null; // requestId we're waiting on; null when free to send
+	private static long probeAckSentAt = 0;
 
 	private static long lastSend = 0;
 	private static String lastSeededSession = null;
@@ -101,17 +106,15 @@ public final class PvApiReader {
 			return;
 		}
 
-		// Drop stale correlation state across (re)connects — session ids don't carry over.
+		// Drop stale state across (re)connects — session ids and pending correlations don't carry over.
 		String session = CosmicApi.sessionId;
 		if (session == null || !session.equals(lastSessionSeen)) {
 			lastSessionSeen = session;
-			QUEUE.clear();
+			resetProbe();
 			PENDING.clear();
-			IN_FLIGHT_OR_QUEUED.clear();
 		}
 
-		boolean ready = session != null && CosmicApi.allowedScopes.contains(SCOPE);
-		if (!ready) {
+		if (session == null || !CosmicApi.allowedScopes.contains(SCOPE)) {
 			wasPvScreen = PvScreens.isPvScreen(client.screen);
 			return;
 		}
@@ -120,38 +123,85 @@ public final class PvApiReader {
 		int openVault = PvScreens.vaultContentsNumber(client.screen);
 
 		// Handshake seed: once per session, but only once we're actually on a planet — PvKey falls back to
-		// an "unknown" planet before the tab header is read, and seeding under that bogus key (which caches
-		// nothing) would still mark the session seeded and starve the real planet.
+		// an "unknown" planet before the tab header is read, and seeding under that bogus key would still
+		// mark the session seeded and starve the real planet.
 		String planet = PlanetDetector.detect();
 		boolean onPlanet = planet != null && !planet.isEmpty();
 		if (onPlanet && profileKey != null && !session.equals(lastSeededSession)) {
 			lastSeededSession = session;
-			enqueueRefresh(profileKey, openVault);
+			startProbe(profileKey);
 		}
 
-		// Genuine in-game open: the player opened a /pv screen themselves (not our auto-/pv), so refresh
-		// the other vaults. Fires only on the entering edge, so paging within the viewer doesn't re-queue.
+		// /pv (or /pv <n>): the player opened a vault screen themselves (not our auto-/pv). Fires on the
+		// entering edge so it kicks a fresh probe once per open, not every tick a vault GUI is up. The
+		// vault they're now viewing live is stepped over inside the probe.
 		boolean isPvScreen = PvScreens.isPvScreen(client.screen);
 		if (isPvScreen && !wasPvScreen && !PvSidebar.isAutoOpening() && profileKey != null) {
-			enqueueRefresh(profileKey, openVault);
+			startProbe(profileKey);
 		}
 		wasPvScreen = isPvScreen;
 
-		expirePending();
-		drain();
+		// Give up on a probe whose ack was lost, rather than stalling forever.
+		if (probeAwaitingAck != null && System.currentTimeMillis() - probeAckSentAt > ACK_TIMEOUT_MS) {
+			PENDING.remove(probeAwaitingAck);
+			probeAwaitingAck = null;
+			probing = false;
+		}
+
+		driveProbe(profileKey, openVault);
 	}
 
-	/** Queues every known vault worth refreshing for the profile, skipping {@code excludeVault}. */
-	private static void enqueueRefresh(String profileKey, int excludeVault) {
-		for (int vault : BetterPrisonsClient.pvVaultStore.vaults(profileKey)) {
-			if (vault == excludeVault || !worthRefreshing(profileKey, vault)) {
-				continue;
-			}
-			String key = key(profileKey, vault);
-			if (IN_FLIGHT_OR_QUEUED.add(key)) {
-				QUEUE.add(new Queued(profileKey, vault));
-			}
+	/** (Re)starts the sequential probe at vault 1 for {@code profileKey}. */
+	private static void startProbe(String profileKey) {
+		probing = true;
+		probeProfile = profileKey;
+		probeVault = 1;
+	}
+
+	private static void resetProbe() {
+		probing = false;
+		probeProfile = null;
+		probeVault = 1;
+		probeAwaitingAck = null;
+	}
+
+	/** Sends the next probe read, stepping over vaults that don't need one, throttled and one-at-a-time. */
+	private static void driveProbe(String profileKey, int openVault) {
+		if (!probing) {
+			return;
 		}
+		if (probeProfile == null || !probeProfile.equals(profileKey)) {
+			resetProbe(); // planet/profile changed under us
+			return;
+		}
+		if (probeAwaitingAck != null) {
+			return; // wait for the in-flight ack before advancing, so the stop stays clean
+		}
+		// Step over numbers we don't need to hit the network for: the live-open vault, and any vault whose
+		// data is already fresh. This keeps a re-probe cheap while still walking to the end of the range.
+		while (probing && probeVault <= MAX_PROBE_VAULT
+				&& (probeVault == openVault || !worthRefreshing(probeProfile, probeVault))) {
+			probeVault++;
+		}
+		if (probeVault > MAX_PROBE_VAULT) {
+			probing = false;
+			return;
+		}
+		if (System.currentTimeMillis() - lastSend < SEND_GAP_MS) {
+			return;
+		}
+		JsonObject payload = new JsonObject();
+		payload.addProperty("vaultNumber", probeVault);
+		String requestId = CosmicApi.sendAction("private_vault.read", payload);
+		if (requestId == null) {
+			probing = false; // session dropped; a later trigger will restart
+			return;
+		}
+		long now = System.currentTimeMillis();
+		PENDING.put(requestId, new Pending(probeProfile, probeVault, now));
+		probeAwaitingAck = requestId;
+		probeAckSentAt = now;
+		lastSend = now;
 	}
 
 	/** A refresh helps only for an absent/placeholder vault or an aged API read — never over live data. */
@@ -166,57 +216,47 @@ public final class PvApiReader {
 		return System.currentTimeMillis() - snap.capturedAt > API_REFRESH_TTL_MS; // stale API read
 	}
 
-	private static void drain() {
-		long now = System.currentTimeMillis();
-		while (!QUEUE.isEmpty() && PENDING.size() < MAX_INFLIGHT && now - lastSend >= SEND_GAP_MS) {
-			Queued q = QUEUE.poll();
-			JsonObject payload = new JsonObject();
-			payload.addProperty("vaultNumber", q.vault());
-			String requestId = CosmicApi.sendAction("private_vault.read", payload);
-			if (requestId == null) {
-				IN_FLIGHT_OR_QUEUED.remove(key(q.profileKey(), q.vault()));
-				return; // session dropped mid-drain; try again next tick
-			}
-			PENDING.put(requestId, new Pending(q.profileKey(), q.vault(), now));
-			lastSend = now;
-		}
-	}
-
-	private static void expirePending() {
-		long now = System.currentTimeMillis();
-		PENDING.entrySet().removeIf(e -> {
-			if (now - e.getValue().sentAt() > PENDING_TIMEOUT_MS) {
-				IN_FLIGHT_OR_QUEUED.remove(key(e.getValue().profileKey(), e.getValue().vault()));
-				return true;
-			}
-			return false;
-		});
-	}
-
 	// ---- Replies (routed from CosmicApi, on the client thread) ----
 
-	/** An {@code ack}: a rejection (locked/invalid vault) ends the read; an accept awaits the result. */
+	/**
+	 * An {@code ack}. Drives the probe: an accept (or {@code vault_locked}) advances to the next number;
+	 * {@code invalid_vault} or any other rejection stops the walk. A non-probe ack is ignored here.
+	 */
 	public static void onAck(JsonObject obj) {
-		boolean accepted = !obj.has("accepted") || obj.get("accepted").getAsBoolean();
-		if (accepted) {
-			return; // the action_result will follow
-		}
 		String requestId = str(obj, "requestId");
-		Pending p = PENDING.remove(requestId);
-		if (p != null) {
-			IN_FLIGHT_OR_QUEUED.remove(key(p.profileKey(), p.vault()));
+		boolean accepted = !obj.has("accepted") || obj.get("accepted").getAsBoolean();
+		boolean isCurrentProbe = requestId.equals(probeAwaitingAck);
+		Pending p = PENDING.get(requestId);
+
+		if (accepted) {
+			if (isCurrentProbe) {
+				probeAwaitingAck = null;
+				probeVault = (p != null ? p.vault() : probeVault) + 1;
+			}
+			return; // keep PENDING; the action_result follows
 		}
-		BetterPrisons.LOGGER.info("Cosmic API: private_vault.read rejected (vault {}): {}",
-				p != null ? p.vault() : "?", str(obj, "reason"));
+
+		// Rejected — no result will come.
+		PENDING.remove(requestId);
+		String reason = str(obj, "reason");
+		if (isCurrentProbe) {
+			probeAwaitingAck = null;
+			if (REASON_VAULT_LOCKED.equals(reason)) {
+				probeVault = (p != null ? p.vault() : probeVault) + 1; // exists but locked; keep probing
+			} else {
+				probing = false; // invalid_vault (end of range) or a systemic rejection: stop
+				if (!REASON_INVALID_VAULT.equals(reason)) {
+					BetterPrisons.LOGGER.info("Cosmic API: private_vault.read probe stopped (vault {}): {}",
+							p != null ? p.vault() : "?", reason);
+				}
+			}
+		}
 	}
 
 	/** An {@code action_result}: translate the saved vault page and store it (non-clobber). */
 	public static void onActionResult(JsonObject obj) {
 		String requestId = str(obj, "requestId");
 		Pending p = PENDING.remove(requestId);
-		if (p != null) {
-			IN_FLIGHT_OR_QUEUED.remove(key(p.profileKey(), p.vault()));
-		}
 		boolean accepted = !obj.has("accepted") || obj.get("accepted").getAsBoolean();
 		if (!accepted) {
 			BetterPrisons.LOGGER.info("Cosmic API: private_vault.read failed (vault {}): {}",
@@ -242,7 +282,7 @@ public final class PvApiReader {
 		Minecraft mc = Minecraft.getInstance();
 		RegistryAccess registries = mc.level != null ? mc.level.registryAccess() : null;
 		if (registries == null) {
-			return null; // can't encode items without a registry; try again on a later read
+			return null; // can't encode items without a registry; a later read will retry
 		}
 
 		List<JsonObject> itemObjs = new ArrayList<>();
@@ -319,10 +359,6 @@ public final class PvApiReader {
 			}
 		}
 		return System.currentTimeMillis();
-	}
-
-	private static String key(String profileKey, int vault) {
-		return profileKey + "#" + vault;
 	}
 
 	private static String str(JsonObject o, String key) {
