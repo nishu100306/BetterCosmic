@@ -10,6 +10,7 @@ import dev.nishu.bettercosmic.prisons.BetterPrisons;
 import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import dev.nishu.bettercosmic.prisons.hud.CooldownHud;
 import dev.nishu.bettercosmic.prisons.hud.EventsHud;
+import dev.nishu.bettercosmic.prisons.pvviewer.PvApiReader;
 import dev.nishu.bettercosmic.shared.server.Network;
 import dev.nishu.bettercosmic.shared.server.ServerContext;
 import net.minecraft.network.chat.Component;
@@ -180,11 +181,49 @@ public final class CosmicApi {
 				handleResolve(obj);
 				return;
 			}
+			if ("ack".equals(type) || "action_result".equals(type)) {
+				routeActionReply(type, obj);
+				return;
+			}
 			if ("event".equals(type)) {
 				handleEvent(obj);
 			}
 		} catch (Exception e) {
 			BetterPrisons.LOGGER.warn("Cosmic API: received a non-JSON / malformed message: {}", e.toString());
+		}
+	}
+
+	/**
+	 * Sends a request/reply {@code action} as the player and returns its generated {@code requestId} (or
+	 * {@code null} if there's no live session yet). The caller is responsible for having the backing
+	 * scope in {@link #allowedScopes}; a rejected {@code ack} carries the reason. The reply arrives as an
+	 * {@code ack} (immediately) and, for data actions, an {@code action_result} (async) — both correlated
+	 * by {@code requestId}.
+	 */
+	public static String sendAction(String actionType, JsonObject payload) {
+		if (sessionId == null) {
+			return null;
+		}
+		String requestId = "req_" + UUID.randomUUID();
+		JsonObject msg = new JsonObject();
+		msg.addProperty("type", "action");
+		msg.addProperty("sessionId", sessionId);
+		msg.addProperty("actionType", actionType);
+		msg.addProperty("requestId", requestId);
+		msg.add("payload", payload == null ? new JsonObject() : payload);
+		ClientPlayNetworking.send(new CosmicApiPayload(GSON.toJson(msg)));
+		return requestId;
+	}
+
+	/** Routes an {@code ack} / {@code action_result} to the feature that issued the action, by actionType. */
+	private static void routeActionReply(String type, JsonObject obj) {
+		String actionType = asString(obj, "actionType", "");
+		if ("private_vault.read".equals(actionType)) {
+			if ("ack".equals(type)) {
+				PvApiReader.onAck(obj);
+			} else {
+				PvApiReader.onActionResult(obj);
+			}
 		}
 	}
 

@@ -41,6 +41,7 @@ import dev.nishu.bettercosmic.prisons.misc.GangPointTooltip;
 import dev.nishu.bettercosmic.prisons.misc.PickaxeDropConfirmation;
 import dev.nishu.bettercosmic.prisons.misc.PrisonbreakTexturePack;
 import dev.nishu.bettercosmic.prisons.misc.EnergyCalculatorPanel;
+import dev.nishu.bettercosmic.prisons.pvviewer.PvApiReader;
 import dev.nishu.bettercosmic.prisons.pvviewer.PvCapture;
 import dev.nishu.bettercosmic.prisons.pvviewer.PvScreenHooks;
 import dev.nishu.bettercosmic.prisons.pvviewer.PvVaultStore;
@@ -127,6 +128,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		pvVaultStore.load();
 		PvCapture.register();
 		PvScreenHooks.register();
+		PvApiReader.register();
 
 		// Enchant tracking (Super Breaker, Powerball) — must exist before the HUDs that read it.
 		enchantTracker = new EnchantTracker();

@@ -94,6 +94,37 @@ public final class PvVaultStore {
 		save();
 	}
 
+	/**
+	 * Stores a snapshot read from the Cosmic API ({@code private_vault.read}), applying the non-clobber
+	 * policy: an API read is lower fidelity (no lore/enchant/custom data) and reflects the last <em>saved</em>
+	 * state, so it must never overwrite a full-fidelity live capture. It is written only when the vault is
+	 * absent, an empty placeholder ({@code capturedAt == 0}), or a previous API read — never over a live
+	 * snapshot. The favorite flag is carried over. Returns whether it was written.
+	 */
+	public boolean putFromApi(String profileKey, PvSnapshot snapshot) {
+		if (profileKey == null) {
+			return false;
+		}
+		TreeMap<Integer, PvSnapshot> map = byProfile.computeIfAbsent(profileKey, k -> new TreeMap<>());
+		PvSnapshot existing = map.get(snapshot.vault);
+		if (existing != null && existing.isLive()) {
+			return false; // keep the richer live capture
+		}
+		if (existing != null && existing.favorite) {
+			snapshot.favorite = true;
+		}
+		snapshot.source = PvSnapshot.SOURCE_API;
+		map.put(snapshot.vault, snapshot);
+		save();
+		return true;
+	}
+
+	/** Row count to render an API snapshot at: the existing snapshot's rows if known, else {@code defaultRows}. */
+	public int rowsFor(String profileKey, int vault, int defaultRows) {
+		PvSnapshot existing = get(profileKey, vault);
+		return existing != null && existing.rows > 0 ? existing.rows : defaultRows;
+	}
+
 	/** Flips the favorite (starred) flag on a vault and persists. No-op if the vault isn't cached. */
 	public void toggleFavorite(String profileKey, int vault) {
 		PvSnapshot snap = get(profileKey, vault);

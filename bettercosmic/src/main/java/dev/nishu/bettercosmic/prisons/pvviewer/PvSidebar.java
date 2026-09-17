@@ -503,6 +503,15 @@ public final class PvSidebar {
 		return left || right;
 	}
 
+	/**
+	 * Whether the mod currently has an auto-{@code /pv} open in flight (a sidebar click asked the server
+	 * to open a vault and that vault hasn't appeared yet). The PV API reader uses this to distinguish a
+	 * mod-driven open from a genuine player open, so it doesn't refresh on our own navigation.
+	 */
+	public static boolean isAutoOpening() {
+		return awaitingVault >= 0;
+	}
+
 	/** Runs {@code /pv <n>}, throttled to one open per {@value #OPEN_COOLDOWN_MS}ms. Returns whether it fired. */
 	private static boolean openVault(int vault) {
 		Minecraft mc = Minecraft.getInstance();

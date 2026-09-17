@@ -30,6 +30,19 @@ public final class PvSnapshot {
 	/** Whether the player has starred this vault (pins it first in the viewer and previews). */
 	public boolean favorite;
 
+	/** Live capture from an open vault window (full-fidelity ItemStack data). */
+	public static final String SOURCE_LIVE = "live";
+	/** Cosmic API {@code private_vault.read} (last saved state; plain items — no lore/enchant/custom data). */
+	public static final String SOURCE_API = "api";
+
+	/**
+	 * Where this snapshot came from: {@link #SOURCE_LIVE} (open-window scrape, full fidelity) or
+	 * {@link #SOURCE_API} (API read, plain items). A {@code null}/absent value means a legacy live
+	 * capture (all captures were live before the API reader existed). Placeholders leave this null and
+	 * are identified by {@code capturedAt == 0}. Drives the non-clobber policy in {@code PvVaultStore}.
+	 */
+	public String source;
+
 	/** No-arg constructor for Gson. */
 	public PvSnapshot() {}
 
@@ -38,6 +51,16 @@ public final class PvSnapshot {
 		this.capturedAt = capturedAt;
 		this.rows = rows;
 		this.items = items;
+	}
+
+	public PvSnapshot(int vault, long capturedAt, int rows, List<JsonElement> items, String source) {
+		this(vault, capturedAt, rows, items);
+		this.source = source;
+	}
+
+	/** True for a real live-window capture (including legacy captures with no {@code source} recorded). */
+	public boolean isLive() {
+		return capturedAt > 0 && !SOURCE_API.equals(source);
 	}
 
 	public int columns() {

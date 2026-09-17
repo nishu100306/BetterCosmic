@@ -129,7 +129,7 @@ public final class PvCapture {
 
 		int rows = slots / 9;
 		BetterPrisonsClient.pvVaultStore.put(PvKey.current(),
-				new PvSnapshot(vault, System.currentTimeMillis(), rows, items));
+				new PvSnapshot(vault, System.currentTimeMillis(), rows, items, PvSnapshot.SOURCE_LIVE));
 	}
 
 	/**
