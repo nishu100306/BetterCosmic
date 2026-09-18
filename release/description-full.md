@@ -7,7 +7,8 @@ menu, with no external libraries required.
 
 BetterCosmic detects which network you're connected to and shows only that server's features. The
 sections below cover the **Cosmic Prisons** toolset; jump to **Cosmic Sky** further down for that
-network's tools. The built-in updater and configuration menu are shared by both.
+network's tools. The configuration menu is shared by both, and updates are handled by Cosmic's official
+auto-updater.
 
 Everything is optional and independently toggleable. HUDs can be dragged, scaled, recolored, and
 faded; overlays and features each have their own settings; and nothing is forced on you.
@@ -80,6 +81,20 @@ own with a configurable color.
 - **Clue scroll sorting** shows a scroll's current step number large and centered on the item, in both
   containers and your hotbar, so a chest of scrolls can be sorted at a glance.
 
+## Player Vault viewer
+
+Preview your `/pv` vaults without opening them one by one. On any vault screen, cached previews of your
+other vaults appear in sidebars down each edge:
+
+- **Star** vaults to pin them to the front; **click** an unopened vault to jump to it, or drag an item
+  onto it to deposit.
+- The vault you're currently in stays fully interactive through its own preview.
+- Configurable **preview scale** (fit more vaults on screen), **background opacity** (transparent by
+  default), and a **show/hide empty vaults** toggle.
+
+Previews are cached locally as you open vaults and refreshed through Cosmic's official mod API where
+available; the vault you're viewing is always shown live.
+
 ## Peaceful mining
 
 For mining in crowded areas without accidentally targeting other players:
@@ -131,11 +146,11 @@ below is gated to Sky, so it stays out of the way on Prisons.
 All of it is optional and configured from the same in-game menu, and the HUDs use the same drag-and-drop
 editor, scaling, and recoloring as the Prisons HUDs.
 
-## Built-in updater
+## Auto-updates
 
-BetterCosmic checks for new versions and tells you in-game with a clickable toast. With auto-install
-enabled it downloads and verifies the update and installs it on your next restart — no manual
-re-download. Fully optional; toggle it in the config menu.
+BetterCosmic stays current through **Cosmic's official auto-updater**, controlled in-game with
+**`/cosmicupdater`**. It keeps you on the latest approved build, verified by Cosmic — no manual
+re-download.
 
 ## Configuration
 

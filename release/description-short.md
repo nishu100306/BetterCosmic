@@ -23,6 +23,7 @@ Draggable, scalable, recolorable overlays:
 ## Inventory & tooltips
 
 - **EasyView** — energy, notes, gang points, item levels, and more shown right on items
+- **Player Vault viewer** — preview your `/pv` vaults in sidebars, star favorites, deposit with a click
 - Enchant-book upgrade costs and local-time gang-point expiry
 - **Chest search** with filter rules, plus clue-scroll step sorting
 
@@ -30,7 +31,7 @@ Draggable, scalable, recolorable overlays:
 
 - **Peaceful mining** — ghost nearby players while you mine
 - DM sound alerts, pickaxe drop protection, shift-click auto-trade, and more
-- **Built-in updater** — get notified of new versions and auto-install them
+- **Auto-updates** via Cosmic's official updater (`/cosmicupdater`)
 
 ## Cosmic Sky
 
