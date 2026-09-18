@@ -53,33 +53,27 @@ public final class CosmicApi {
 	private static final String CLIENT_ID = "client_mtlzzg2kjvn813cva1";
 
 	/**
-	 * Scopes we ask the server to grant this connection. Provisional (nothing consumes them yet); each
-	 * hook below is paired with its backing read scope. See the coverage map in the compliance notes.
+	 * Scopes we ask the server to grant this connection. Trimmed to only what a feature actually consumes
+	 * (each backs a routed hook below, or the {@code private_vault.read} action) — unused scopes are not
+	 * requested, so the approval ask matches what the mod uses.
 	 */
 	private static final List<String> REQUESTED_SCOPES = List.of(
-			"events:read",
-			"player.effects:read",
-			"player.cooldowns:read",
-			"player.satchels:read",
-			"player.private_vaults:read",
-			"server.meteors:read",
-			"server.merchants:read",
-			"gang.pings:read",
-			"hooks.player.enchant_proc:read");
+			"player.cooldowns:read",          // player.cooldowns.changed -> CooldownHud
+			"player.private_vaults:read",     // private_vault.read action -> PV viewer
+			"server.meteors:read",            // server.meteor.landing.changed -> EventsHud
+			"server.merchants:read",          // server.merchant.spawned/despawned -> EventsHud
+			"hooks.player.enchant_proc:read"); // player.enchant_proc -> EnchantTracker
 
-	/** Scopes we cannot function without. Empty for the handshake-only phase — nothing is load-bearing yet. */
+	/** Scopes we cannot function without. Empty — every feature degrades gracefully (chat/scrape fallback). */
 	private static final List<String> REQUIRED_SCOPES = List.of();
 
-	/** Push hooks we ask to subscribe to. Provisional; not routed anywhere yet. */
+	/** Push hooks we subscribe to — each is routed into a feature in {@link #handleEvent}. */
 	private static final List<String> REQUESTED_HOOKS = List.of(
-			"server.event.schedule.changed",
 			"server.meteor.landing.changed",
 			"server.merchant.spawned",
 			"server.merchant.despawned",
-			"player.effects.changed",
 			"player.cooldowns.changed",
-			"player.enchant_proc",
-			"gang.ping.created");
+			"player.enchant_proc");
 
 	private static final Gson GSON = new Gson();
 	/** Pretty printer for the full-payload dev logging (multi-line, readable). */
