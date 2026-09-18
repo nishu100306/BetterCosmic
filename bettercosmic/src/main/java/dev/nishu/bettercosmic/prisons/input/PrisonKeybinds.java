@@ -24,7 +24,6 @@ public final class PrisonKeybinds {
 	public static KeyMapping gangPing;
 	public static KeyMapping gangPingBlock;
 	public static KeyMapping waypoints;
-	public static KeyMapping pvViewer;
 
 	private PrisonKeybinds() {}
 
@@ -36,7 +35,6 @@ public final class PrisonKeybinds {
 		gangPing = KeyBinds.register("key.betterprisons.gang_ping", GLFW.GLFW_KEY_G, category);
 		gangPingBlock = KeyBinds.register("key.betterprisons.gang_ping_block", GLFW.GLFW_KEY_UNKNOWN, category);
 		waypoints = KeyBinds.register("key.betterprisons.waypoints", GLFW.GLFW_KEY_UNKNOWN, category);
-		pvViewer = KeyBinds.register("key.betterprisons.pv_viewer", GLFW.GLFW_KEY_UNKNOWN, category);
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			if (!dev.nishu.bettercosmic.prisons.PrisonsGate.active()) {
@@ -45,7 +43,6 @@ public final class PrisonKeybinds {
 				pauseStats.consumeClick();
 				gangPing.consumeClick();
 				waypoints.consumeClick();
-				pvViewer.consumeClick();
 				gangPingBlock.consumeClick();
 				return;
 			}
@@ -66,11 +63,6 @@ public final class PrisonKeybinds {
 			}
 			while (waypoints.consumeClick()) {
 				client.setScreen(new WaypointsScreen());
-			}
-			while (pvViewer.consumeClick()) {
-				if (BetterPrisonsClient.config.pvViewerEnabled) {
-					client.setScreen(new dev.nishu.bettercosmic.prisons.screen.PvViewerScreen());
-				}
 			}
 			while (gangPingBlock.consumeClick()) {
 				if (BetterPrisonsClient.config.gangPingEnabled) {

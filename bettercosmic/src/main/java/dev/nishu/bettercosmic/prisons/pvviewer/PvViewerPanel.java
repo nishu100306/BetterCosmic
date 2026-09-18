@@ -22,8 +22,8 @@ public final class PvViewerPanel {
 		OptionGroup viewer = new OptionGroup("Vault viewer", List.<Option>of(
 				Options.toggle("Vault viewer", d.pvViewerEnabled,
 						() -> c.pvViewerEnabled, v -> { c.pvViewerEnabled = v; c.save(); })
-						.tooltip("Cache your player vaults as you open /pv, and browse them from a keybind "
-								+ "(set it in Controls). Read-only; contents update the next time you open each vault."),
+						.tooltip("Cache your player vaults as you open /pv and show them as read-only preview "
+								+ "sidebars on the /pv screens. Contents update the next time you open each vault."),
 				Options.toggle("Show empty vaults", d.pvViewerShowEmpty,
 						() -> c.pvViewerShowEmpty, v -> { c.pvViewerShowEmpty = v; c.save(); })
 						.tooltip("Show vaults with no items in the viewer and preview sidebars. When off, empty "
