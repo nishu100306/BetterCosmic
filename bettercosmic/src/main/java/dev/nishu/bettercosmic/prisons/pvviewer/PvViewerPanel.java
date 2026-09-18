@@ -31,7 +31,12 @@ public final class PvViewerPanel {
 				Options.intSlider("Preview background opacity", d.pvPreviewBgOpacity, 0, 255, 5,
 						() -> c.pvPreviewBgOpacity, v -> { c.pvPreviewBgOpacity = v; c.save(); })
 						.tooltip("How opaque the preview sidebar's background panel is. 0 is fully "
-								+ "transparent (default); the frame stays visible either way.")));
+								+ "transparent (default); the frame stays visible either way."),
+				Options.intSlider("Preview scale", d.pvCompactScalePercent, 50, 100, 5,
+						() -> c.pvCompactScalePercent, v -> { c.pvCompactScalePercent = v; c.save(); })
+						.tooltip("Shrinks the preview sidebars so more vaults fit on screen. 100% is off "
+								+ "(full size); lower values make each vault preview smaller. The vanilla "
+								+ "vault window is left untouched.")));
 
 		return ConfigPanel.of("prisons-pvviewer", "Vaults",
 				"Cached player-vault viewer", PanelIcon.EYE,

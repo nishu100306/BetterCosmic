@@ -46,11 +46,7 @@ import java.util.Map;
 public final class PvSidebar {
 
 	private static final int COLUMNS = 2;        // one column per side (left, right)
-	private static final int SLOT = PvSlot.CELL; // full-size vanilla slot cell
-	private static final int GRID_W = 9 * SLOT;
-	private static final int ENTRY_W = GRID_W;
 	private static final int PAD = 6;
-	private static final int PANEL_W = ENTRY_W + PAD * 2;
 	private static final int ENTRY_GAP = 10;
 	private static final int ENTRY_HEADER_H = 12;
 	private static final int TITLE_H = 15;
@@ -110,8 +106,30 @@ public final class PvSidebar {
 		return Math.max(1, snap.rows);
 	}
 
+	// ---- Scaled dimensions ----
+	// Compact mode (PvCompact) shrinks the preview slots by the same factor as the vanilla window, so more
+	// vaults fit. Layout and hit-testing both read these, and slots are drawn to match (see renderGrid),
+	// so draw positions and click targets stay aligned. At 100% scale these equal the old constants.
+
+	/** Preview slot cell size in pixels (a full vanilla cell, scaled by compact mode). */
+	private static int slot() {
+		return Math.max(1, Math.round(PvSlot.CELL * PvCompact.scale()));
+	}
+
+	private static int gridW() {
+		return 9 * slot();
+	}
+
+	private static int entryW() {
+		return gridW();
+	}
+
+	private static int panelW() {
+		return entryW() + PAD * 2;
+	}
+
 	private static int entryHeight(PvSnapshot snap) {
-		return ENTRY_HEADER_H + gridRows(snap) * SLOT;
+		return ENTRY_HEADER_H + gridRows(snap) * slot();
 	}
 
 	// ---- Layout (shared by render / click / scroll) ----
@@ -121,7 +139,7 @@ public final class PvSidebar {
 	}
 
 	private static int rightPanelX(Screen screen) {
-		return screen.width - MARGIN - PANEL_W;
+		return screen.width - MARGIN - panelW();
 	}
 
 	/** Screen x of a column's grid content: left side or right side. */
@@ -241,7 +259,7 @@ public final class PvSidebar {
 		for (Placed p : placed) {
 			int ex = contentX(screen, p.column());
 			int ey = vTop - scroll + p.relY();
-			if (mx >= ex && mx < ex + ENTRY_W && my >= ey && my < ey + p.entry().height()) {
+			if (mx >= ex && mx < ex + entryW() && my >= ey && my < ey + p.entry().height()) {
 				return p;
 			}
 		}
@@ -264,9 +282,9 @@ public final class PvSidebar {
 		int opacity = BetterPrisonsClient.config == null ? 0
 				: Math.max(0, Math.min(255, BetterPrisonsClient.config.pvPreviewBgOpacity));
 		int fill = (opacity << 24) | (Theme.surface & 0xFFFFFF);
-		RenderUtils.panel(g, panelX, MARGIN, PANEL_W, panelH, fill, Theme.line);
+		RenderUtils.panel(g, panelX, MARGIN, panelW(), panelH, fill, Theme.line);
 		RenderUtils.text(g, "Vaults", panelX + PAD, MARGIN + 4, Theme.muted);
-		RenderUtils.hLine(g, panelX + PAD, MARGIN + TITLE_H, ENTRY_W, Theme.line);
+		RenderUtils.hLine(g, panelX + PAD, MARGIN + TITLE_H, entryW(), Theme.line);
 	}
 
 	/** Draws one side's entries (clipped to its viewport) and returns the item under the cursor, or null. */
@@ -277,7 +295,7 @@ public final class PvSidebar {
 		int ex = panelX + PAD;
 		ItemStack hovered = null;
 
-		RenderUtils.pushScissor(g, panelX, vTop, PANEL_W, vH);
+		RenderUtils.pushScissor(g, panelX, vTop, panelW(), vH);
 		for (Placed p : placed) {
 			if (p.column() != column) {
 				continue;
@@ -289,7 +307,7 @@ public final class PvSidebar {
 			}
 			PvSnapshot snap = p.entry().snapshot();
 			boolean current = p.entry().vault() == currentVault;
-			boolean hover = RenderUtils.hit(mouseX, mouseY, ex, ey, ENTRY_W, eh)
+			boolean hover = RenderUtils.hit(mouseX, mouseY, ex, ey, entryW(), eh)
 					&& mouseY >= vTop && mouseY <= vTop + vH;
 			boolean placeholder = snap.capturedAt == 0;
 
@@ -297,7 +315,7 @@ public final class PvSidebar {
 			RenderUtils.text(g, "Vault " + p.entry().vault(), ex, ey + 1, headerColor);
 
 			// Star button (top-right of the header) — click to favorite.
-			int starX = ex + ENTRY_W - STAR_W;
+			int starX = ex + entryW() - STAR_W;
 			boolean starHover = RenderUtils.hit(mouseX, mouseY, starX, ey, STAR_W, ENTRY_HEADER_H)
 					&& mouseY >= vTop && mouseY <= vTop + vH;
 			RenderUtils.text(g, snap.favorite ? "★" : "☆", starX, ey + 1,
@@ -311,34 +329,47 @@ public final class PvSidebar {
 				hovered = h;
 			}
 			if (current || hover) {
-				RenderUtils.outline(g, ex - 1, gy - 1, ENTRY_W + 2, gridRows(snap) * SLOT + 2, Theme.accent);
+				RenderUtils.outline(g, ex - 1, gy - 1, entryW() + 2, gridRows(snap) * slot() + 2, Theme.accent);
 			}
 		}
 		RenderUtils.popScissor(g);
 		return hovered;
 	}
 
-	/** Draws a vault's full-size grid ({@code cap} slots); returns the stack under the cursor, or null. */
+	/**
+	 * Draws a vault's grid ({@code cap} slots); returns the stack under the cursor, or null. Each cell is
+	 * a full vanilla slot drawn under a per-cell pose scale so it fits the compact {@link #slot()} size —
+	 * the cell is positioned at the integer {@code slot()} grid (matching hit-testing) and scaled in
+	 * place, so the drawing and the click target stay aligned at any scale.
+	 */
 	private static ItemStack renderGrid(GuiGraphics g, int gx, int gy, List<ItemStack> stacks, int cap,
 										int mouseX, int mouseY) {
 		ItemStack hovered = null;
+		float cellScale = slot() / (float) PvSlot.CELL;
 		for (int i = 0; i < cap; i++) {
-			int x = gx + (i % 9) * SLOT;
-			int y = gy + (i / 9) * SLOT;
-			PvSlot.render(g, x, y);
+			int x = gx + (i % 9) * slot();
+			int y = gy + (i / 9) * slot();
 			ItemStack st = i < stacks.size() ? stacks.get(i) : ItemStack.EMPTY;
+
+			var pose = g.pose();
+			pose.pushMatrix();
+			pose.translate(x, y);
+			pose.scale(cellScale);
+			PvSlot.render(g, 0, 0);
 			if (!st.isEmpty()) {
-				int ix = x + PvSlot.ITEM_INSET;
-				int iy = y + PvSlot.ITEM_INSET;
+				int ix = PvSlot.ITEM_INSET;
+				int iy = PvSlot.ITEM_INSET;
 				g.renderItem(st, ix, iy);
 				g.renderItemDecorations(Minecraft.getInstance().font, st, ix, iy);
 				// EasyView overlays + chest-search highlight (ChestSearchTintProvider is an EasyView tint),
 				// drawn in the same order as the vanilla slot mixin: item → tints → overlays.
 				EasyView.renderSlotTints(g, ix, iy, st);
 				EasyView.renderSlotOverlays(g, ix, iy, st);
-				if (RenderUtils.hit(mouseX, mouseY, x, y, SLOT, SLOT)) {
-					hovered = st;
-				}
+			}
+			pose.popMatrix();
+
+			if (!st.isEmpty() && RenderUtils.hit(mouseX, mouseY, x, y, slot(), slot())) {
+				hovered = st;
 			}
 		}
 		return hovered;
@@ -431,11 +462,11 @@ public final class PvSidebar {
 			int ex = contentX(screen, p.column());
 			int ey = vTop - scroll + p.relY();
 			int eh = p.entry().height();
-			if (!(mx >= ex && mx < ex + ENTRY_W && my >= ey && my < ey + eh)) {
+			if (!(mx >= ex && mx < ex + entryW() && my >= ey && my < ey + eh)) {
 				continue;
 			}
 			// Star button (top-right of the header), left-click only.
-			if (button == 0 && mx >= ex + ENTRY_W - STAR_W && my < ey + ENTRY_HEADER_H) {
+			if (button == 0 && mx >= ex + entryW() - STAR_W && my < ey + ENTRY_HEADER_H) {
 				BetterPrisonsClient.pvVaultStore.toggleFavorite(key, p.entry().vault());
 				return true;
 			}
@@ -443,8 +474,8 @@ public final class PvSidebar {
 				// Interactive: forward a click on the matching slot of the live vault.
 				int gy = ey + ENTRY_HEADER_H;
 				if (my >= gy) {
-					int col = (int) ((mx - ex) / SLOT);
-					int row = (int) ((my - gy) / SLOT);
+					int col = (int) ((mx - ex) / slot());
+					int row = (int) ((my - gy) / slot());
 					int idx = row * 9 + col;
 					if (col >= 0 && col < 9 && idx >= 0 && idx < gridRows(p.entry().snapshot()) * 9) {
 						forwardClick(screen, idx, button);
@@ -483,12 +514,12 @@ public final class PvSidebar {
 		}
 		int vTop = viewportTop();
 		int vH = viewportHeight(screen);
-		boolean overLeft = mx >= leftPanelX() && mx <= leftPanelX() + PANEL_W;
-		boolean overRight = mx >= rightPanelX(screen) && mx <= rightPanelX(screen) + PANEL_W;
+		boolean overLeft = mx >= leftPanelX() && mx <= leftPanelX() + panelW();
+		boolean overRight = mx >= rightPanelX(screen) && mx <= rightPanelX(screen) + panelW();
 		if ((!overLeft && !overRight) || my < vTop || my > vTop + vH) {
 			return;
 		}
-		scroll -= (int) (verticalAmount * SLOT);
+		scroll -= (int) (verticalAmount * slot());
 		clampScroll(screen, contentHeight(place(entries(profileKey()))));
 	}
 
@@ -504,8 +535,8 @@ public final class PvSidebar {
 		if (my < MARGIN || my > screen.height - MARGIN) {
 			return false;
 		}
-		boolean left = mx >= leftPanelX() && mx <= leftPanelX() + PANEL_W;
-		boolean right = mx >= rightPanelX(screen) && mx <= rightPanelX(screen) + PANEL_W;
+		boolean left = mx >= leftPanelX() && mx <= leftPanelX() + panelW();
+		boolean right = mx >= rightPanelX(screen) && mx <= rightPanelX(screen) + panelW();
 		return left || right;
 	}
 

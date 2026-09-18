@@ -93,6 +93,8 @@ public class PrisonsConfig extends BetterCosmicConfig {
 	public boolean pvViewerEnabled = true;
 	public boolean pvViewerShowEmpty = true;
 	public int pvPreviewBgOpacity = 0;
+	/** Preview-sidebar scale for the PV viewer as a percent (100 = off). Shrinks previews so more fit. */
+	public int pvCompactScalePercent = 100;
 	public boolean clueScrollSortingEnabled = true;
 	public int clueScrollNumberColor = 0x79FF7A;
 	public boolean clueScrollNumberOutline = true;
