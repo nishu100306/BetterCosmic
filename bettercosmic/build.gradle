@@ -13,6 +13,8 @@ base {
 repositories {
 	// ModMenu, for the optional mod-list config-screen integration.
 	maven { url = "https://maven.terraformersmc.com/releases/" }
+	// Cosmic mod registry, for the official nested auto-updater library.
+	maven { url = "https://mods.cosmicprisons.com/maven" }
 }
 
 loom {
@@ -72,6 +74,11 @@ dependencies {
 	// bettercosmicshared's mixins and access-widener are applied at runtime.
 	implementation project(path: ":shared", configuration: "namedElements")
 	include project(":shared")
+
+	// Cosmic's official auto-updater, nested jar-in-jar (Fabric Loader dedupes copies across mods).
+	// This is the sanctioned replacement for any self-updating code: it keeps players on the latest
+	// approved registry build, verified by signature, and is player-controlled via /cosmicupdater.
+	include "com.cosmicprisons:cosmic-updater:${project.cosmic_updater_version}"
 }
 
 processResources {

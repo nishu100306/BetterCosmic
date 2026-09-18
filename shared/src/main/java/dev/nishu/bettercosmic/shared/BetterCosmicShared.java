@@ -7,7 +7,6 @@ import dev.nishu.bettercosmic.shared.dev.DevLogFilter;
 import dev.nishu.bettercosmic.shared.easyview.EasyView;
 import dev.nishu.bettercosmic.shared.notification.ToastRenderer;
 import dev.nishu.bettercosmic.shared.ui.ConfigUi;
-import dev.nishu.bettercosmic.shared.update.UpdateChecker;
 import dev.nishu.bettercosmic.shared.ui.GeneralPanel;
 import dev.nishu.bettercosmic.shared.ui.model.ConfigRegistry;
 import net.fabricmc.api.ClientModInitializer;
@@ -52,13 +51,12 @@ public class BetterCosmicShared implements ClientModInitializer {
 		// registered by each mod under its own Network.
 		ConfigRegistry.register(GeneralPanel.create());
 
-		// Toast system (HUD + over-screen render + button clicks). Idempotent — the mods may also
-		// call it; registering here keeps the shared updater's toast working on its own.
+		// Toast system (HUD + over-screen render + button clicks). Idempotent — the mods may also call it.
 		ToastRenderer.register();
 
-		// Auto-updater. Async manifest check; surfaces via a button toast, the General panel's Updates
-		// row, and the ModMenu badge. Opt-in self-apply. Fails soft.
-		UpdateChecker.init();
+		// Auto-updates are handled by Cosmic's official nested updater (com.cosmicprisons:cosmic-updater,
+		// bundled jar-in-jar and player-controlled via /cosmicupdater) — the sanctioned replacement for
+		// the old self-updater, which has been removed. Nothing to wire here.
 
 		LOGGER.info("BetterCosmic Shared library initialized (config dir: {}).",
 				SharedConfig.configDir());
