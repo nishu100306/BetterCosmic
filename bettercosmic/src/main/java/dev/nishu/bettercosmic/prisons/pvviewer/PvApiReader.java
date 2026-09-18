@@ -33,8 +33,10 @@ import java.util.Map;
  * Fills the {@link PvVaultStore} from the Cosmic API {@code private_vault.read} action, so the PV
  * viewer's cached previews of vaults the player isn't currently looking at can be refreshed — and, on
  * top of that, discovered: the API has no "list my vaults" call, so ownership is learned by <b>probing
- * vault numbers in order (1, 2, 3, …) until one comes back {@code invalid_vault}</b>, which marks the
- * end of the range.
+ * vault numbers in order (1, 2, 3, …) until one can't be read</b> — {@code vault_locked} (not unlocked)
+ * or {@code invalid_vault} (past the range). Owned vaults are contiguous from 1, so the first unreadable
+ * number marks the end; probing past a lock would grind through every purchasable slot and burn the
+ * rate budget.
  *
  * <p>What it never touches is the vault currently open in the real GUI: the API reflects the last
  * <em>saved</em> vault state (not an open window), and its items are plain — only {@code material},
@@ -58,9 +60,9 @@ public final class PvApiReader {
 
 	/** Scope that backs the action; without it the server rejects the read. */
 	private static final String SCOPE = "player.private_vaults:read";
-	/** Ack reason meaning the number is past the last vault — the probe's stop signal. */
+	/** Ack reason meaning the number is past the last vault — a normal end of the probe. */
 	private static final String REASON_INVALID_VAULT = "invalid_vault";
-	/** Ack reason meaning the vault exists but isn't unlocked — skip it, but keep probing higher. */
+	/** Ack reason meaning the vault isn't unlocked — also a normal end (owned vaults are contiguous). */
 	private static final String REASON_VAULT_LOCKED = "vault_locked";
 
 	/** Minimum gap between two reads, to stay within the per-player rate budget. */
@@ -236,19 +238,18 @@ public final class PvApiReader {
 			return; // keep PENDING; the action_result follows
 		}
 
-		// Rejected — no result will come.
+		// Rejected — no result will come. Any rejection ends the walk: owned vaults are contiguous from 1,
+		// so the first vault we can't read (vault_locked = not unlocked, invalid_vault = past the range)
+		// marks the end. Continuing past a lock would grind through every purchasable-but-locked slot,
+		// burning the per-player rate budget for nothing.
 		PENDING.remove(requestId);
 		String reason = str(obj, "reason");
 		if (isCurrentProbe) {
 			probeAwaitingAck = null;
-			if (REASON_VAULT_LOCKED.equals(reason)) {
-				probeVault = (p != null ? p.vault() : probeVault) + 1; // exists but locked; keep probing
-			} else {
-				probing = false; // invalid_vault (end of range) or a systemic rejection: stop
-				if (!REASON_INVALID_VAULT.equals(reason)) {
-					BetterPrisons.LOGGER.info("Cosmic API: private_vault.read probe stopped (vault {}): {}",
-							p != null ? p.vault() : "?", reason);
-				}
+			probing = false;
+			if (!REASON_INVALID_VAULT.equals(reason) && !REASON_VAULT_LOCKED.equals(reason)) {
+				BetterPrisons.LOGGER.info("Cosmic API: private_vault.read probe stopped (vault {}): {}",
+						p != null ? p.vault() : "?", reason);
 			}
 		}
 	}
