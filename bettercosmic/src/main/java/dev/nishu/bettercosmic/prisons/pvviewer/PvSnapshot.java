@@ -70,4 +70,17 @@ public final class PvSnapshot {
 	public int slotCount() {
 		return items == null ? 0 : items.size();
 	}
+
+	/** True when the vault holds no items — every slot is empty (also true for an unopened placeholder). */
+	public boolean isEmptyContents() {
+		if (items == null) {
+			return true;
+		}
+		for (JsonElement item : items) {
+			if (item != null && !item.isJsonNull()) {
+				return false;
+			}
+		}
+		return true;
+	}
 }

@@ -173,6 +173,15 @@ public final class PvVaultStore {
 
 	/** The captured vault numbers for a profile: favorites first, each group ascending. Empty if none. */
 	public List<Integer> vaults(String profileKey) {
+		return vaults(profileKey, true);
+	}
+
+	/**
+	 * The captured vault numbers for a profile: favorites first, each group ascending. When
+	 * {@code includeEmpty} is false, vaults with no items (including unopened placeholders) are dropped —
+	 * except starred ones, which the player asked to keep in view. Empty if none.
+	 */
+	public List<Integer> vaults(String profileKey, boolean includeEmpty) {
 		TreeMap<Integer, PvSnapshot> vaults = profileKey == null ? null : byProfile.get(profileKey);
 		if (vaults == null) {
 			return List.of();
@@ -180,7 +189,11 @@ public final class PvVaultStore {
 		List<Integer> favorites = new ArrayList<>();
 		List<Integer> rest = new ArrayList<>();
 		for (Map.Entry<Integer, PvSnapshot> e : vaults.entrySet()) {
-			(e.getValue().favorite ? favorites : rest).add(e.getKey());
+			PvSnapshot snap = e.getValue();
+			if (!includeEmpty && !snap.favorite && snap.isEmptyContents()) {
+				continue;
+			}
+			(snap.favorite ? favorites : rest).add(e.getKey());
 		}
 		favorites.addAll(rest);
 		return favorites;

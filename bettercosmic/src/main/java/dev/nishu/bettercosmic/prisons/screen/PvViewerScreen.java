@@ -59,7 +59,8 @@ public class PvViewerScreen extends Screen {
 	public PvViewerScreen() {
 		super(Component.literal("Vault Viewer"));
 		this.profileKey = dev.nishu.bettercosmic.prisons.pvviewer.PvKey.current();
-		this.vaultNumbers = BetterPrisonsClient.pvVaultStore.vaults(profileKey);
+		boolean showEmpty = BetterPrisonsClient.config == null || BetterPrisonsClient.config.pvViewerShowEmpty;
+		this.vaultNumbers = BetterPrisonsClient.pvVaultStore.vaults(profileKey, showEmpty);
 	}
 
 	@Override

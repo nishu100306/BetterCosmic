@@ -139,7 +139,8 @@ public final class PvSidebar {
 
 	private static List<Entry> entries(String key) {
 		List<Entry> out = new ArrayList<>();
-		for (int vault : BetterPrisonsClient.pvVaultStore.vaults(key)) {
+		boolean showEmpty = BetterPrisonsClient.config == null || BetterPrisonsClient.config.pvViewerShowEmpty;
+		for (int vault : BetterPrisonsClient.pvVaultStore.vaults(key, showEmpty)) {
 			PvSnapshot snap = BetterPrisonsClient.pvVaultStore.get(key, vault);
 			if (snap != null) {
 				out.add(new Entry(vault, snap, entryHeight(snap)));

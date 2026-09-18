@@ -23,7 +23,11 @@ public final class PvViewerPanel {
 				Options.toggle("Vault viewer", d.pvViewerEnabled,
 						() -> c.pvViewerEnabled, v -> { c.pvViewerEnabled = v; c.save(); })
 						.tooltip("Cache your player vaults as you open /pv, and browse them from a keybind "
-								+ "(set it in Controls). Read-only; contents update the next time you open each vault.")));
+								+ "(set it in Controls). Read-only; contents update the next time you open each vault."),
+				Options.toggle("Show empty vaults", d.pvViewerShowEmpty,
+						() -> c.pvViewerShowEmpty, v -> { c.pvViewerShowEmpty = v; c.save(); })
+						.tooltip("Show vaults with no items in the viewer and preview sidebars. When off, empty "
+								+ "vaults are hidden (starred vaults always stay visible).")));
 
 		return ConfigPanel.of("prisons-pvviewer", "Vaults",
 				"Cached player-vault viewer", PanelIcon.EYE,
