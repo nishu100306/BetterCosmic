@@ -199,8 +199,8 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		// Floating world-space text renderer (used by developer tooling).
 		FloatingTextRenderer.init();
 
-		// Cosmic API: send the required presence handshake on join and record the granted scopes/hooks.
-		// Handshake-only for now — no push hooks are routed into features yet.
+		// Cosmic API: send the required presence handshake on join, record the granted scopes/hooks, and
+		// route live traffic into features (cooldown/enchant/meteor/merchant hooks + the PV read action).
 		CosmicApi.register();
 
 		// Track the current world for per-world custom waypoints; clear stale event waypoints on join.

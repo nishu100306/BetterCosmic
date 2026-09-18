@@ -272,7 +272,7 @@ public final class PvApiReader {
 			}
 		} else {
 			probing = false; // invalid_vault (hard end) or a systemic rejection (e.g. scope/rate)
-			if (!REASON_INVALID_VAULT.equals(reason)) {
+			if (!REASON_INVALID_VAULT.equals(reason) && CosmicApi.verboseLogging()) {
 				BetterPrisons.LOGGER.info("Cosmic API: private_vault.read probe stopped (vault {}): {}",
 						p != null ? p.vault() : "?", reason);
 			}
@@ -285,8 +285,10 @@ public final class PvApiReader {
 		Pending p = PENDING.remove(requestId);
 		boolean accepted = !obj.has("accepted") || obj.get("accepted").getAsBoolean();
 		if (!accepted) {
-			BetterPrisons.LOGGER.info("Cosmic API: private_vault.read failed (vault {}): {}",
-					p != null ? p.vault() : "?", str(obj, "reason"));
+			if (CosmicApi.verboseLogging()) {
+				BetterPrisons.LOGGER.info("Cosmic API: private_vault.read failed (vault {}): {}",
+						p != null ? p.vault() : "?", str(obj, "reason"));
+			}
 			return;
 		}
 		if (!obj.has("payload") || !obj.get("payload").isJsonObject()) {

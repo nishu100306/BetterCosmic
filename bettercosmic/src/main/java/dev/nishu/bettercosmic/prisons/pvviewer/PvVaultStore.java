@@ -26,9 +26,10 @@ import java.util.TreeMap;
 /**
  * On-disk cache of captured player vaults, persisted to
  * {@code config/bettercosmic/betterprisons/vaults.json}. Keyed by {@link PvKey} ({@code
- * <planet>/<username>} — each planet has its own vault storage, and alt accounts don't collide) then
- * by vault number. The viewer reads snapshots from here; {@link PvCapture} writes them as vaults are
- * opened in-game. Follows the same atomic-write pattern as {@code WaypointManager}.
+ * <planet>/<uuid>} — each planet has its own vault storage, and alt accounts don't collide; the account
+ * UUID keeps an entry across username changes) then by vault number. The viewer reads snapshots from
+ * here; {@link PvCapture} writes them as vaults are opened in-game. Follows the same atomic-write
+ * pattern as {@code WaypointManager}.
  */
 public final class PvVaultStore {
 
@@ -78,7 +79,7 @@ public final class PvVaultStore {
 	}
 
 	// ---- Access ----
-	// profileKey is a PvKey ("<planet>/<username>"); a null key (no player) reads as empty / no-ops.
+	// profileKey is a PvKey ("<planet>/<uuid>"); a null key (no player) reads as empty / no-ops.
 
 	/** Stores (replacing) a snapshot under the given profile key and persists to disk. */
 	public void put(String profileKey, PvSnapshot snapshot) {

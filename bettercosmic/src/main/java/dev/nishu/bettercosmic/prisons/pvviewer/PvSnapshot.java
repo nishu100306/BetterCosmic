@@ -6,7 +6,7 @@ import java.util.List;
 
 /**
  * A cached snapshot of a single player vault, as captured the last time the player had it open. Stored
- * in {@code vaults.json} keyed by player UUID and vault number.
+ * in {@code vaults.json} keyed by {@link PvKey} ({@code <planet>/<uuid>}) then vault number.
  *
  * <p>{@link #items} is a flat, row-major list of length {@code rows * 9} (vaults are always 9 columns
  * wide); each entry is a {@link PvItemCodec}-encoded stack, with {@code JsonNull} for an empty slot.

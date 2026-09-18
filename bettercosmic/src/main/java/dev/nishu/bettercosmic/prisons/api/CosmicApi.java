@@ -11,6 +11,7 @@ import dev.nishu.bettercosmic.prisons.client.BetterPrisonsClient;
 import dev.nishu.bettercosmic.prisons.hud.CooldownHud;
 import dev.nishu.bettercosmic.prisons.hud.EventsHud;
 import dev.nishu.bettercosmic.prisons.pvviewer.PvApiReader;
+import dev.nishu.bettercosmic.shared.config.SharedConfig;
 import dev.nishu.bettercosmic.shared.server.Network;
 import dev.nishu.bettercosmic.shared.server.ServerContext;
 import net.minecraft.network.chat.Component;
@@ -32,15 +33,17 @@ import java.util.UUID;
  * <p>The registry <b>requires</b> every approved mod to send a {@code client_hello} on join (even one
  * asking for no scopes) — mods that don't aren't approved. On join this sends the hello with the app's
  * public {@code clientId} and the scopes/hooks it wants, then stores the effective access the server
- * grants back in the {@code resolve} reply. <b>This is intentionally handshake-only:</b> it requests
- * scopes/hooks and records what's granted so the flow can be tested end-to-end, but it does <em>not</em>
- * yet route any push hooks or action results into features — that comes later, feature by feature.
+ * grants back in the {@code resolve} reply.
  *
- * <p><b>Before this can talk to the live server</b> the app must be registered on the Cosmic developer
- * dashboard and its public client id pasted into {@link #CLIENT_ID}. Until then {@link #sendHello()}
- * no-ops (logged once). During approval the dashboard issues test credentials and the reply carries
- * {@code testingMode:true}. Requested scopes/hooks below are provisional — a superset we expect to grow
- * into — and can be trimmed to match approval.
+ * <p>Beyond the handshake this also routes live traffic into features: push hooks (see
+ * {@link #handleEvent} — cooldowns, enchant procs, meteor landings, merchant spawn/despawn) and the
+ * request/reply {@code private_vault.read} action ({@link #sendAction} / {@link #routeActionReply},
+ * consumed by the PV viewer). The requested scopes/hooks below are trimmed to exactly what those
+ * features consume — each entry is annotated with its consumer.
+ *
+ * <p>During approval the dashboard issues test credentials and the {@code resolve} reply carries
+ * {@code testingMode:true}. {@link #CLIENT_ID} holds the app's public client id from the Cosmic
+ * developer dashboard; {@link #sendHello()} no-ops if the feature is disabled or no client id is set.
  */
 public final class CosmicApi {
 
@@ -49,7 +52,7 @@ public final class CosmicApi {
 	/** The registry mod id (matches {@code fabric.mod.json} / the {@code cosmicapi:bettercosmic} channel). */
 	private static final String MOD_ID = BetterPrisons.FABRIC_MOD_ID;
 
-	/** BetterCosmic's public client id from the Cosmic developer dashboard. Paste it here to go live. */
+	/** BetterCosmic's public client id, issued by the Cosmic developer dashboard. */
 	private static final String CLIENT_ID = "client_mtlzzg2kjvn813cva1";
 
 	/**
@@ -112,6 +115,21 @@ public final class CosmicApi {
 		allowedHooks = Set.of();
 	}
 
+	/**
+	 * Whether verbose API logging is enabled. Off for normal players, so a shipped build's log stays
+	 * quiet (only the concise once-per-join resolve line and genuine warnings survive). Turn it on to
+	 * dump every inbound/outbound payload and the routine diagnostics: live with {@code /bcdev} (shared
+	 * developer mode), or automatically in a dev environment. Reused by {@link PvApiReader}.
+	 */
+	public static boolean verboseLogging() {
+		try {
+			return SharedConfig.get().developerMode
+					|| FabricLoader.getInstance().isDevelopmentEnvironment();
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
 	private static void sendHello() {
 		if (BetterPrisonsClient.config == null || !BetterPrisonsClient.config.cosmicApiEnabled) {
 			return;
@@ -119,7 +137,7 @@ public final class CosmicApi {
 		if (CLIENT_ID.startsWith("REPLACE")) {
 			if (!warnedMissingClientId) {
 				warnedMissingClientId = true;
-				BetterPrisons.LOGGER.info(
+				BetterPrisons.LOGGER.warn(
 						"Cosmic API: no client id set; skipping handshake. Register the app on the Cosmic "
 						+ "dashboard and set CosmicApi.CLIENT_ID to enable it.");
 			}
@@ -135,9 +153,11 @@ public final class CosmicApi {
 		boolean onPrisons = ServerContext.detected() == Network.PRISONS
 				|| ServerContext.override() == Network.PRISONS;
 		if (!canSend && !onPrisons) {
-			BetterPrisons.LOGGER.info(
-					"Cosmic API: not sending client_hello (not on Cosmic Prisons; detected={}, canSend=false).",
-					ServerContext.detected());
+			if (verboseLogging()) {
+				BetterPrisons.LOGGER.info(
+						"Cosmic API: not sending client_hello (not on Cosmic Prisons; detected={}, canSend=false).",
+						ServerContext.detected());
+			}
 			return;
 		}
 
@@ -155,14 +175,17 @@ public final class CosmicApi {
 		hello.add("requestedHooks", GSON.toJsonTree(REQUESTED_HOOKS));
 
 		ClientPlayNetworking.send(new CosmicApiPayload(GSON.toJson(hello)));
-		BetterPrisons.LOGGER.info("Cosmic API -> sent client_hello:\n{}", GSON_PRETTY.toJson(hello));
+		if (verboseLogging()) {
+			BetterPrisons.LOGGER.info("Cosmic API -> sent client_hello:\n{}", GSON_PRETTY.toJson(hello));
+		}
 	}
 
 	/**
 	 * Handles an inbound channel message. <b>Every</b> received payload is logged in full first (pretty
-	 * JSON when parseable, else the raw string) so the API's real message shapes can be observed during
-	 * this testing phase. Only the {@code resolve} handshake reply is then acted on (stored + summarised);
-	 * any other message (push hooks, action results) is logged but not yet routed into features.
+	 * JSON when parseable, else the raw string) so the API's real message shapes can be observed. It is
+	 * then dispatched by {@code type}: a {@code resolve} handshake reply is stored + summarised; an
+	 * {@code ack}/{@code action_result} is correlated back to the action that issued it; an {@code event}
+	 * push hook is routed to its consuming feature. Unrecognised messages are left logged-only.
 	 */
 	private static void handleMessage(String json) {
 		logFullPayload(json);
@@ -320,8 +343,10 @@ public final class CosmicApi {
 		}
 		long merchantId = asLong(d, "merchantId", 0L);
 		if (merchantId == 0L) {
-			BetterPrisons.LOGGER.info("Cosmic API: merchant.despawned without a merchantId; data:\n{}",
-					GSON_PRETTY.toJson(d));
+			if (verboseLogging()) {
+				BetterPrisons.LOGGER.info("Cosmic API: merchant.despawned without a merchantId; data:\n{}",
+						GSON_PRETTY.toJson(d));
+			}
 			return;
 		}
 		hud.onMerchantDespawnedHook(merchantId);
@@ -387,8 +412,15 @@ public final class CosmicApi {
 		hud.onCooldownsChanged(list);
 	}
 
-	/** Logs the complete inbound payload — pretty-printed if it's valid JSON, otherwise the raw text. */
+	/**
+	 * Dumps the complete inbound payload (pretty-printed when valid JSON, else verbatim). Verbose-only,
+	 * so a shipped build doesn't log every hook/cooldown/action packet — flip on with {@code /bcdev} to
+	 * observe raw message shapes during testing.
+	 */
 	private static void logFullPayload(String json) {
+		if (!verboseLogging()) {
+			return;
+		}
 		String body;
 		try {
 			body = GSON_PRETTY.toJson(JsonParser.parseString(json));
@@ -415,11 +447,20 @@ public final class CosmicApi {
 		String reason = obj.has("reason") && obj.get("reason").isJsonPrimitive()
 				? obj.get("reason").getAsString() : "";
 
-		BetterPrisons.LOGGER.info(
-				"Cosmic API resolve: allowed={} testing={} server={} scopes={} hooks={} deniedScopes={} "
-				+ "deniedHooks={}{}",
-				allowed, testingMode, serverScope, allowedScopes, allowedHooks, deniedScopes, deniedHooks,
-				reason.isEmpty() ? "" : " reason=" + reason);
+		if (!allowed) {
+			// A denied handshake is worth a warning even in a quiet build — the API features won't work.
+			BetterPrisons.LOGGER.warn("Cosmic API resolve denied{}.", reason.isEmpty() ? "" : " (" + reason + ")");
+			return;
+		}
+		// One concise line per join in normal builds; the full granted/denied sets only under /bcdev.
+		if (verboseLogging()) {
+			BetterPrisons.LOGGER.info(
+					"Cosmic API resolve: testing={} server={} scopes={} hooks={} deniedScopes={} deniedHooks={}",
+					testingMode, serverScope, allowedScopes, allowedHooks, deniedScopes, deniedHooks);
+		} else {
+			BetterPrisons.LOGGER.info("Cosmic API connected (testing={}, {} scopes, {} hooks).",
+					testingMode, allowedScopes.size(), allowedHooks.size());
+		}
 	}
 
 	private static Set<String> toSet(JsonObject obj, String key) {
