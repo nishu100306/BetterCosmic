@@ -27,7 +27,11 @@ public final class PvViewerPanel {
 				Options.toggle("Show empty vaults", d.pvViewerShowEmpty,
 						() -> c.pvViewerShowEmpty, v -> { c.pvViewerShowEmpty = v; c.save(); })
 						.tooltip("Show vaults with no items in the viewer and preview sidebars. When off, empty "
-								+ "vaults are hidden (starred vaults always stay visible).")));
+								+ "vaults are hidden (starred vaults always stay visible)."),
+				Options.intSlider("Preview background opacity", d.pvPreviewBgOpacity, 0, 255, 5,
+						() -> c.pvPreviewBgOpacity, v -> { c.pvPreviewBgOpacity = v; c.save(); })
+						.tooltip("How opaque the preview sidebar's background panel is. 0 is fully "
+								+ "transparent (default); the frame stays visible either way.")));
 
 		return ConfigPanel.of("prisons-pvviewer", "Vaults",
 				"Cached player-vault viewer", PanelIcon.EYE,

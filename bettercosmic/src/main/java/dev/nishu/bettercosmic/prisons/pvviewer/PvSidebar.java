@@ -259,7 +259,12 @@ public final class PvSidebar {
 	}
 
 	private static void drawPanelFrame(GuiGraphics g, int panelX, int panelH) {
-		RenderUtils.panel(g, panelX, MARGIN, PANEL_W, panelH, Theme.surface, Theme.line);
+		// Panel background alpha is player-configurable (transparent by default); the border stays put so
+		// the preview keeps its frame even with a see-through fill.
+		int opacity = BetterPrisonsClient.config == null ? 0
+				: Math.max(0, Math.min(255, BetterPrisonsClient.config.pvPreviewBgOpacity));
+		int fill = (opacity << 24) | (Theme.surface & 0xFFFFFF);
+		RenderUtils.panel(g, panelX, MARGIN, PANEL_W, panelH, fill, Theme.line);
 		RenderUtils.text(g, "Vaults", panelX + PAD, MARGIN + 4, Theme.muted);
 		RenderUtils.hLine(g, panelX + PAD, MARGIN + TITLE_H, ENTRY_W, Theme.line);
 	}
