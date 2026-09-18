@@ -78,7 +78,11 @@ dependencies {
 	// Cosmic's official auto-updater, nested jar-in-jar (Fabric Loader dedupes copies across mods).
 	// This is the sanctioned replacement for any self-updating code: it keeps players on the latest
 	// approved registry build, verified by signature, and is player-controlled via /cosmicupdater.
+	// `include` nests it in the shipped jar; `modLocalRuntime` also loads it in dev runs (runClient),
+	// since Loom does not add jar-in-jar `include` deps to the dev mod set — without it the updater's
+	// config and /cosmicupdater commands never appear in the IDE runs.
 	include "com.cosmicprisons:cosmic-updater:${project.cosmic_updater_version}"
+	modLocalRuntime "com.cosmicprisons:cosmic-updater:${project.cosmic_updater_version}"
 }
 
 processResources {
