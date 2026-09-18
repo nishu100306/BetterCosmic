@@ -33,10 +33,11 @@ import java.util.Map;
  * Fills the {@link PvVaultStore} from the Cosmic API {@code private_vault.read} action, so the PV
  * viewer's cached previews of vaults the player isn't currently looking at can be refreshed — and, on
  * top of that, discovered: the API has no "list my vaults" call, so ownership is learned by <b>probing
- * vault numbers in order (1, 2, 3, …) until one can't be read</b> — {@code vault_locked} (not unlocked)
- * or {@code invalid_vault} (past the range). Owned vaults are contiguous from 1, so the first unreadable
- * number marks the end; probing past a lock would grind through every purchasable slot and burn the
- * rate budget.
+ * vault numbers in order (1, 2, 3, …)</b>. Locked vaults ({@code vault_locked}) can sit <em>between</em>
+ * owned ones (observed: 13 locked, 14 owned), and the server never actually returns {@code invalid_vault}
+ * to mark the end — it just keeps saying {@code vault_locked} past the last owned vault. So the walk
+ * treats a single lock as a gap and continues, and stops only after {@value #MAX_CONSECUTIVE_LOCKS}
+ * locks in a row (the real end-of-owned signal, which also bounds a 0-owned account).
  *
  * <p>What it never touches is the vault currently open in the real GUI: the API reflects the last
  * <em>saved</em> vault state (not an open window), and its items are plain — only {@code material},
@@ -60,9 +61,9 @@ public final class PvApiReader {
 
 	/** Scope that backs the action; without it the server rejects the read. */
 	private static final String SCOPE = "player.private_vaults:read";
-	/** Ack reason meaning the number is past the last vault — a normal end of the probe. */
+	/** Ack reason meaning the number is past the last vault — a hard end of the probe. */
 	private static final String REASON_INVALID_VAULT = "invalid_vault";
-	/** Ack reason meaning the vault isn't unlocked — also a normal end (owned vaults are contiguous). */
+	/** Ack reason meaning the vault isn't unlocked. Locks can be interspersed among owned vaults. */
 	private static final String REASON_VAULT_LOCKED = "vault_locked";
 
 	/** Minimum gap between two reads, to stay within the per-player rate budget. */
@@ -71,7 +72,16 @@ public final class PvApiReader {
 	private static final long ACK_TIMEOUT_MS = 8000;
 	/** Don't re-read a vault whose API snapshot is younger than this. */
 	private static final long API_REFRESH_TTL_MS = 5 * 60 * 1000L;
-	/** Safety cap on how far a probe will walk, in case {@code invalid_vault} never comes. */
+	/**
+	 * Stop the walk after this many locked vaults in a row. Locked vaults appear both interspersed among
+	 * owned ones (observed: vault 13 locked between owned 12 and 14) and as the tail past the last owned
+	 * vault — and the server never returns {@code invalid_vault} in practice, it just keeps saying
+	 * {@code vault_locked}. So a run of locks is the real "end of owned vaults" signal; a single lock is
+	 * just a gap and the walk continues. This also bounds an all-locked account (0 owned) to this many
+	 * reads instead of grinding to {@link #MAX_PROBE_VAULT}.
+	 */
+	private static final int MAX_CONSECUTIVE_LOCKS = 3;
+	/** Hard safety cap on how far a probe will walk, in case neither stop condition fires. */
 	private static final int MAX_PROBE_VAULT = 200;
 	/** Fallback row count when we don't yet know a vault's real size. */
 	private static final int DEFAULT_ROWS = 6;
@@ -85,6 +95,7 @@ public final class PvApiReader {
 	private static boolean probing = false;
 	private static String probeProfile = null;
 	private static int probeVault = 1;
+	private static int consecutiveLocks = 0; // run of vault_locked acks; a known/owned vault resets it
 	private static String probeAwaitingAck = null; // requestId we're waiting on; null when free to send
 	private static long probeAckSentAt = 0;
 
@@ -158,12 +169,14 @@ public final class PvApiReader {
 		probing = true;
 		probeProfile = profileKey;
 		probeVault = 1;
+		consecutiveLocks = 0;
 	}
 
 	private static void resetProbe() {
 		probing = false;
 		probeProfile = null;
 		probeVault = 1;
+		consecutiveLocks = 0;
 		probeAwaitingAck = null;
 	}
 
@@ -180,9 +193,11 @@ public final class PvApiReader {
 			return; // wait for the in-flight ack before advancing, so the stop stays clean
 		}
 		// Step over numbers we don't need to hit the network for: the live-open vault, and any vault whose
-		// data is already fresh. This keeps a re-probe cheap while still walking to the end of the range.
+		// data is already fresh. Both mean a known/owned vault, so they break any run of locks — otherwise
+		// a fresh owned vault sitting between two locked ones wouldn't reset the consecutive-lock count.
 		while (probing && probeVault <= MAX_PROBE_VAULT
 				&& (probeVault == openVault || !worthRefreshing(probeProfile, probeVault))) {
+			consecutiveLocks = 0;
 			probeVault++;
 		}
 		if (probeVault > MAX_PROBE_VAULT) {
@@ -233,21 +248,31 @@ public final class PvApiReader {
 		if (accepted) {
 			if (isCurrentProbe) {
 				probeAwaitingAck = null;
+				consecutiveLocks = 0; // an owned vault breaks the lock run
 				probeVault = (p != null ? p.vault() : probeVault) + 1;
 			}
 			return; // keep PENDING; the action_result follows
 		}
 
-		// Rejected — no result will come. Any rejection ends the walk: owned vaults are contiguous from 1,
-		// so the first vault we can't read (vault_locked = not unlocked, invalid_vault = past the range)
-		// marks the end. Continuing past a lock would grind through every purchasable-but-locked slot,
-		// burning the per-player rate budget for nothing.
+		// Rejected — no result will come.
 		PENDING.remove(requestId);
 		String reason = str(obj, "reason");
-		if (isCurrentProbe) {
-			probeAwaitingAck = null;
-			probing = false;
-			if (!REASON_INVALID_VAULT.equals(reason) && !REASON_VAULT_LOCKED.equals(reason)) {
+		if (!isCurrentProbe) {
+			return;
+		}
+		probeAwaitingAck = null;
+		if (REASON_VAULT_LOCKED.equals(reason)) {
+			// A single locked vault is just a gap (e.g. 13 between owned 12 and 14) — keep walking. Only a
+			// run of locks means we're past the owned range; the server never sends invalid_vault to say so.
+			consecutiveLocks++;
+			if (consecutiveLocks >= MAX_CONSECUTIVE_LOCKS) {
+				probing = false;
+			} else {
+				probeVault = (p != null ? p.vault() : probeVault) + 1;
+			}
+		} else {
+			probing = false; // invalid_vault (hard end) or a systemic rejection (e.g. scope/rate)
+			if (!REASON_INVALID_VAULT.equals(reason)) {
 				BetterPrisons.LOGGER.info("Cosmic API: private_vault.read probe stopped (vault {}): {}",
 						p != null ? p.vault() : "?", reason);
 			}
