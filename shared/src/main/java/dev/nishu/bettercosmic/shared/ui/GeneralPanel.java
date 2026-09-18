@@ -7,12 +7,11 @@ import dev.nishu.bettercosmic.shared.ui.model.Option;
 import dev.nishu.bettercosmic.shared.ui.model.OptionGroup;
 import dev.nishu.bettercosmic.shared.ui.model.Options;
 import dev.nishu.bettercosmic.shared.ui.model.PanelIcon;
-import dev.nishu.bettercosmic.shared.update.UpdateChecker;
 
 import java.util.List;
 
 /**
- * The shared <b>General</b> config panel — access, number formatting, updates, theme, and links —
+ * The shared <b>General</b> config panel — access, number formatting, theme, and links —
  * bound to {@link SharedConfig}. Lives in {@code :shared} so both mods expose the same panel; each
  * mod registers it via {@link #create()}. Theme color options save and reload {@link Theme} so edits
  * repaint the UI immediately.
@@ -41,19 +40,6 @@ public final class GeneralPanel {
 				.tooltip("1,234,567 instead of 1.2M.")
 		));
 
-		OptionGroup updates = new OptionGroup("Updates", List.of(
-			Options.toggle("Check for updates", d.autoUpdateCheck,
-				() -> c.autoUpdateCheck,
-				v -> { c.autoUpdateCheck = v; c.save(); })
-				.tooltip("Check GitHub for a newer BetterCosmic on launch. No jar is downloaded."),
-			Options.toggle("Auto-install updates", d.autoUpdateApply,
-				() -> c.autoUpdateApply,
-				v -> { c.autoUpdateApply = v; c.save(); })
-				.tooltip("Download + verify a found update and install it for the next launch."),
-			Options.label(UpdateChecker::statusLine),
-			Options.link("Latest release", UpdateChecker.RELEASES_URL)
-		));
-
 		OptionGroup theme = new OptionGroup("Theme", List.of(
 			themeColor("Accent · Prisons", d.themeAccentPrisons, () -> c.themeAccentPrisons, v -> c.themeAccentPrisons = v),
 			themeColor("Accent · Sky", d.themeAccentSky, () -> c.themeAccentSky, v -> c.themeAccentSky = v),
@@ -71,7 +57,7 @@ public final class GeneralPanel {
 		));
 
 		return ConfigPanel.of("general", "General", "Access, formatting & theme",
-			PanelIcon.GEAR, List.of(access, general, updates, theme, links));
+			PanelIcon.GEAR, List.of(access, general, theme, links));
 	}
 
 	private static Option themeColor(String label, int def,

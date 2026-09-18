@@ -16,6 +16,8 @@ import org.joml.Matrix3x2fStack;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -31,6 +33,26 @@ public class CooldownHud extends BaseHud {
 			Pattern.compile("There are \\d+ player\\(s\\) to a \\d+ block radius of you");
 	private static final Pattern PULSE_PATTERN =
 			Pattern.compile("Meteorite pulse found \\d+ meteorites? within \\d+ blocks");
+
+	/**
+	 * Maps the server's {@code player.cooldowns.changed} keys to the HUD's display names. The Cosmic
+	 * API is authoritative for these; the chat/command feeds below skip them while the hook is live.
+	 * Only <b>Combat</b> (a PvP tag, not reported by the hook) stays chat/command-fed.
+	 */
+	private static final Map<String, String> HOOK_KEY_TO_NAME = Map.ofEntries(
+			Map.entry("jetpack", "Jet"),
+			Map.entry("perk_feed", "Feed"),
+			Map.entry("perk_home_tp", "Home"),
+			Map.entry("perk_fix", "Fix"),
+			Map.entry("perk_tpa", "tpa"),
+			Map.entry("perk_tpahere", "tpahere"),
+			Map.entry("perk_adangle", "Adangle"),
+			Map.entry("perk_dangle", "Dangle"),
+			Map.entry("perk_near", "Near"),
+			Map.entry("pulse", "Pulse"));
+
+	/** Display names owned by the cooldowns hook while it is live (derived from {@link #HOOK_KEY_TO_NAME}). */
+	private static final Set<String> HOOK_OWNED_NAMES = Set.copyOf(HOOK_KEY_TO_NAME.values());
 
 	public List<CommandDef> definitions = new ArrayList<>();
 	public List<ActiveCooldown> activeCooldowns = new ArrayList<>();
@@ -150,12 +172,16 @@ public class CooldownHud extends BaseHud {
 	/** Called for each received chat message (via {@code ClientReceiveMessageEvents.GAME}). */
 	public void onChatReceived(String message) {
 		if (message.equals("§c§l(!) §c/jet cancelled.")) {
-			activeCooldowns.removeIf(cd -> cd.name.equals("Jet"));
+			if (!cooldownsHookActive()) { // when live, the hook's snapshot clears Jet authoritatively
+				activeCooldowns.removeIf(cd -> cd.name.equals("Jet"));
+			}
 			return;
 		}
 		if (message.startsWith("§cYou must wait §e") && message.contains("§cbefore armor dangling again")
 				|| message.equals("§cYou already have items dangling!")) {
-			activeCooldowns.removeIf(cd -> cd.name.equals("Adangle"));
+			if (!cooldownsHookActive()) { // Adangle is hook-owned when live
+				activeCooldowns.removeIf(cd -> cd.name.equals("Adangle"));
+			}
 			return;
 		}
 		if (cfg().nearEnabled && NEAR_PATTERN.matcher(message.replaceAll("§.", "")).find()) {
@@ -224,12 +250,93 @@ public class CooldownHud extends BaseHud {
 		}
 	}
 
+	/** True when the Cosmic API has granted the {@code player.cooldowns.changed} hook this session. */
+	private static boolean cooldownsHookActive() {
+		return dev.nishu.bettercosmic.prisons.api.CosmicApi.allowedHooks.contains("player.cooldowns.changed");
+	}
+
+	/** One active cooldown as reported by the {@code player.cooldowns.changed} hook snapshot. */
+	public record ServerCooldown(String key, long remainingMillis) {}
+
+	/**
+	 * Reconciles the HUD from a {@code player.cooldowns.changed} snapshot — the hook's authoritative
+	 * full list of the player's active cooldowns. Replaces every hook-sourced entry from {@code
+	 * snapshot}; locally-fed entries the hook doesn't report (Combat, Pulse, Dangle) are left alone.
+	 * Timers use {@code remainingMillis} measured from receipt (immune to client/server clock skew).
+	 * Client-thread only (invoked from the API receiver, which hops to the client thread).
+	 */
+	public void onCooldownsChanged(List<ServerCooldown> snapshot) {
+		long now = System.currentTimeMillis();
+		activeCooldowns.removeIf(cd -> cd.source == ActiveCooldown.Source.HOOK);
+		if (snapshot == null) {
+			return;
+		}
+		for (ServerCooldown sc : snapshot) {
+			if (sc.remainingMillis() <= 0) {
+				continue;
+			}
+			String name = HOOK_KEY_TO_NAME.getOrDefault(sc.key(), humanizeKey(sc.key()));
+			if (!isHookCooldownEnabled(name)) {
+				continue; // respect the per-cooldown toggle
+			}
+			ActiveCooldown cd = new ActiveCooldown(name, (int) Math.ceil(sc.remainingMillis() / 1000.0),
+					now, iconForName(name), colorForName(name));
+			cd.source = ActiveCooldown.Source.HOOK;
+			cd.expiresAt = now + sc.remainingMillis();
+			activeCooldowns.add(cd);
+		}
+	}
+
+	/** Enabled check for a hook-fed cooldown; Near/Pulse have their own toggles, the rest use the command toggles. */
+	private boolean isHookCooldownEnabled(String name) {
+		return switch (name) {
+			case "Near" -> cfg().nearEnabled;
+			case "Pulse" -> cfg().pulseEnabled;
+			default -> isCommandEnabled(name);
+		};
+	}
+
+	/** Display colour for a hook-fed cooldown; Near/Pulse have their own colours, the rest use the command colours. */
+	private int colorForName(String name) {
+		return switch (name) {
+			case "Near" -> cfg().nearColor;
+			case "Pulse" -> cfg().pulseColor;
+			default -> getCommandColor(name);
+		};
+	}
+
+	/** The configured icon for a display name (from the command definitions), with a few built-in fallbacks. */
+	private String iconForName(String name) {
+		for (CommandDef def : definitions) {
+			if (name.equals(def.displayName) && def.icon != null && !def.icon.isEmpty()) {
+				return def.icon;
+			}
+		}
+		return switch (name) {
+			case "Near" -> "minecraft:compass";
+			case "Pulse" -> "minecraft:redstone_torch";
+			default -> null;
+		};
+	}
+
+	/** Turns an unmapped server key (e.g. {@code perk_something}) into a readable label. */
+	private static String humanizeKey(String key) {
+		String s = key.startsWith("perk_") ? key.substring("perk_".length()) : key;
+		s = s.replace('_', ' ').trim();
+		return s.isEmpty() ? key : Character.toUpperCase(s.charAt(0)) + s.substring(1);
+	}
+
 	public void addCooldown(String name, int durationSeconds) {
 		addCooldown(name, durationSeconds, null, 0xFFFFFF);
 	}
 
 	public void addCooldown(String name, int durationSeconds, String icon, int color) {
 		if (hasActive(name)) {
+			return;
+		}
+		// While the cooldowns hook is live it owns these names — ignore the chat/command-derived version
+		// so we don't double-count or fight the server's authoritative timer.
+		if (cooldownsHookActive() && HOOK_OWNED_NAMES.contains(name)) {
 			return;
 		}
 		activeCooldowns.add(new ActiveCooldown(name, durationSeconds, System.currentTimeMillis(), icon, color));
@@ -402,11 +509,17 @@ public class CooldownHud extends BaseHud {
 
 	/** A currently-ticking cooldown. */
 	public static class ActiveCooldown {
+		/** Where this cooldown came from: inferred locally from chat/commands, or the Cosmic API hook. */
+		public enum Source { LOCAL, HOOK }
+
 		public String name;
 		public int duration;
 		public long startTime;
 		public String icon;
 		public int color;
+		public Source source = Source.LOCAL;
+		/** Absolute expiry (epoch ms) when hook-sourced; {@code 0} means use {@code startTime + duration}. */
+		public long expiresAt = 0;
 
 		public ActiveCooldown(String name, int duration, long startTime, String icon, int color) {
 			this.name = name;
@@ -417,12 +530,16 @@ public class CooldownHud extends BaseHud {
 		}
 
 		public int getRemainingSeconds() {
-			long elapsed = System.currentTimeMillis() - startTime;
+			long now = System.currentTimeMillis();
+			if (expiresAt > 0) {
+				return Math.max(0, (int) Math.ceil((expiresAt - now) / 1000.0));
+			}
+			long elapsed = now - startTime;
 			return Math.max(0, duration - (int) (elapsed / 1000));
 		}
 
 		public boolean isExpired(long now) {
-			return now > startTime + (duration * 1000L);
+			return expiresAt > 0 ? now >= expiresAt : now > startTime + (duration * 1000L);
 		}
 	}
 

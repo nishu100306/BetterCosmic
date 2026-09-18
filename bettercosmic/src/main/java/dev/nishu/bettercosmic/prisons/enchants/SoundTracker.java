@@ -1,19 +1,14 @@
 package dev.nishu.bettercosmic.prisons.enchants;
 
 /**
- * Per-tick flags for enchant sound detection, set by {@link EnchantSoundListener} and cleared at the
- * end of each client tick:
- * <ul>
- *   <li><b>wither shoot</b> — Powerball's tell (read by {@link PowerballEnchant}).</li>
- *   <li><b>ender dragon growl</b> — Super Breaker's tell (read by {@link SuperBreakerDetector},
- *       combined with a nearby flame/spell particle).</li>
- * </ul>
+ * Per-tick flag for Powerball's wither-shoot sound tell, set by {@link EnchantSoundListener} and
+ * cleared at the end of each client tick. (Super Breaker no longer uses sound detection — it is driven
+ * by the Cosmic API {@code player.enchant_proc} hook — so only the wither-shoot flag remains here.)
  * Ported from BetterPrisons' {@code devtools/SoundTracker}.
  */
 public final class SoundTracker {
 
 	private static boolean witherShootSoundHeardThisTick = false;
-	private static boolean dragonSoundHeardThisTick = false;
 
 	private SoundTracker() {}
 
@@ -25,16 +20,7 @@ public final class SoundTracker {
 		return witherShootSoundHeardThisTick;
 	}
 
-	public static void markDragonSoundHeard() {
-		dragonSoundHeardThisTick = true;
-	}
-
-	public static boolean wasDragonSoundHeard() {
-		return dragonSoundHeardThisTick;
-	}
-
 	public static void clearTickCache() {
 		witherShootSoundHeardThisTick = false;
-		dragonSoundHeardThisTick = false;
 	}
 }

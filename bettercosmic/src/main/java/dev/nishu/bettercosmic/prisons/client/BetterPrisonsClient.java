@@ -3,6 +3,7 @@ package dev.nishu.bettercosmic.prisons.client;
 import dev.nishu.bettercosmic.prisons.BetterPrisons;
 import dev.nishu.bettercosmic.prisons.PrisonWorlds;
 import dev.nishu.bettercosmic.prisons.PrisonsGate;
+import dev.nishu.bettercosmic.prisons.api.CosmicApi;
 import dev.nishu.bettercosmic.prisons.chestsearch.ClueScrollProvider;
 import dev.nishu.bettercosmic.prisons.chestsearch.PrisonSearchTypes;
 import dev.nishu.bettercosmic.prisons.chestsearch.SearchPanel;
@@ -23,7 +24,6 @@ import dev.nishu.bettercosmic.prisons.feature.PrisonsPeacefulMiningPolicy;
 import dev.nishu.bettercosmic.prisons.enchants.EnchantSoundListener;
 import dev.nishu.bettercosmic.prisons.enchants.EnchantTracker;
 import dev.nishu.bettercosmic.prisons.enchants.SoundTracker;
-import dev.nishu.bettercosmic.prisons.enchants.SuperBreakerDetector;
 import dev.nishu.bettercosmic.prisons.hud.CooldownHud;
 import dev.nishu.bettercosmic.prisons.hud.CooldownHudPanel;
 import dev.nishu.bettercosmic.prisons.hud.EnchantHud;
@@ -41,6 +41,11 @@ import dev.nishu.bettercosmic.prisons.misc.GangPointTooltip;
 import dev.nishu.bettercosmic.prisons.misc.PickaxeDropConfirmation;
 import dev.nishu.bettercosmic.prisons.misc.PrisonbreakTexturePack;
 import dev.nishu.bettercosmic.prisons.misc.EnergyCalculatorPanel;
+import dev.nishu.bettercosmic.prisons.pvviewer.PvApiReader;
+import dev.nishu.bettercosmic.prisons.pvviewer.PvCapture;
+import dev.nishu.bettercosmic.prisons.pvviewer.PvScreenHooks;
+import dev.nishu.bettercosmic.prisons.pvviewer.PvVaultStore;
+import dev.nishu.bettercosmic.prisons.pvviewer.PvViewerPanel;
 import dev.nishu.bettercosmic.prisons.misc.QolPanel;
 import dev.nishu.bettercosmic.prisons.misc.TooltipsPanel;
 import dev.nishu.bettercosmic.prisons.notification.MessageNotifications;
@@ -95,6 +100,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 	public static SuperBreakerAura superBreakerAura;
 	public static EnchantTracker enchantTracker;
 	public static WaypointManager waypointManager;
+	public static PvVaultStore pvVaultStore;
 	public static GangPingManager gangPingManager;
 	public static PickaxeDropConfirmation pickaxeDropConfirmation;
 	private static final EventChatParser eventChatParser = new EventChatParser();
@@ -115,6 +121,14 @@ public class BetterPrisonsClient implements ClientModInitializer {
 
 		// Gang ping tracking.
 		gangPingManager = new GangPingManager();
+
+		// Player-vault viewer: load the cached vaults, snapshot /pv windows as they open, and wire the
+		// preview sidebar's input (the sidebar itself is drawn by PvSidebarRenderMixin).
+		pvVaultStore = new PvVaultStore();
+		pvVaultStore.load();
+		PvCapture.register();
+		PvScreenHooks.register();
+		PvApiReader.register();
 
 		// Enchant tracking (Super Breaker, Powerball) — must exist before the HUDs that read it.
 		enchantTracker = new EnchantTracker();
@@ -142,7 +156,6 @@ public class BetterPrisonsClient implements ClientModInitializer {
 			if (!overlay && PrisonsGate.active()) {
 				String text = message.getString();
 				cooldownHud.onChatReceived(text);
-				enchantTracker.onChatMessage(text);
 				eventChatParser.handle(eventsHud, text);
 				GangPingChatParser.handle(text);
 				MessageNotifications.handle(text);
@@ -185,6 +198,10 @@ public class BetterPrisonsClient implements ClientModInitializer {
 
 		// Floating world-space text renderer (used by developer tooling).
 		FloatingTextRenderer.init();
+
+		// Cosmic API: send the required presence handshake on join, record the granted scopes/hooks, and
+		// route live traffic into features (cooldown/enchant/meteor/merchant hooks + the PV read action).
+		CosmicApi.register();
 
 		// Track the current world for per-world custom waypoints; clear stale event waypoints on join.
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -246,8 +263,10 @@ public class BetterPrisonsClient implements ClientModInitializer {
 	}
 
 	/**
-	 * Ticks the enchant tracker each client tick (then clears the per-tick sound flag) and registers
-	 * the sound listener that detects Powerball's wither-shoot tell.
+	 * Ticks the enchant tracker each client tick and registers the sound listener that detects
+	 * Powerball's wither-shoot tell. Super Breaker activation comes from the Cosmic API
+	 * {@code player.enchant_proc} hook (routed by {@link dev.nishu.bettercosmic.prisons.api.CosmicApi}
+	 * into {@link EnchantTracker#onEnchantProc}); Powerball still uses local sound detection.
 	 */
 	private void registerEnchantSystem() {
 		final boolean[] soundListenerRegistered = {false};
@@ -261,9 +280,6 @@ public class BetterPrisonsClient implements ClientModInitializer {
 				return;
 			}
 			enchantTracker.tick(client);
-			// Super Breaker activation: correlate this tick's nearest flame/spell particle with the
-			// dragon-growl sound. Runs after the enchant tick and before the sound flags are cleared.
-			SuperBreakerDetector.evaluate();
 			SoundTracker.clearTickCache();
 		});
 	}
@@ -359,6 +375,7 @@ public class BetterPrisonsClient implements ClientModInitializer {
 		ConfigRegistry.register(GangPingsPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(EasyViewPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(SearchPanel.create(), Network.PRISONS);
+		ConfigRegistry.register(PvViewerPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(TooltipsPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(PeacefulMiningPanel.create(), Network.PRISONS);
 		ConfigRegistry.register(QolPanel.create(), Network.PRISONS);

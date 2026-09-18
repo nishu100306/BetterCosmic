@@ -47,22 +47,8 @@ public class SharedConfig extends BetterCosmicConfig {
 	/** Format large numbers with commas (1,234,567) instead of compact suffixes (1.2M). */
 	public boolean useCommaFormatting = false;
 
-	// ---- Auto-updater (phase 1: detect + notify) ----
-
-	/**
-	 * Check GitHub for a newer BetterCosmic build on launch and surface it (toast + config row +
-	 * ModMenu badge). On by default; a static-JSON read, no jar is downloaded. See
-	 * {@link dev.nishu.bettercosmic.shared.update.UpdateChecker}.
-	 */
-	public boolean autoUpdateCheck = true;
-
-	/**
-	 * Automatically download, verify, and install updates. On by default. When on, a found update is
-	 * downloaded + SHA-256-verified and dropped into {@code mods/} under its versioned name; Fabric
-	 * loads it on the next launch and the old jar is retired then. See
-	 * {@link dev.nishu.bettercosmic.shared.update.UpdateApplier}.
-	 */
-	public boolean autoUpdateApply = true;
+	// Auto-updates are handled by Cosmic's official nested updater (player-controlled via
+	// /cosmicupdater and config/cosmic-updater.json), so there are no updater settings here.
 
 	/**
 	 * The config profile (network) last viewed in the config screen, as a {@link

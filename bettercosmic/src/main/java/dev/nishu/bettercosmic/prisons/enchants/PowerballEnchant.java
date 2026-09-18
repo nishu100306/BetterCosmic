@@ -13,10 +13,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemLore;
 
 /**
- * Powerball enchant tracking. Activation is detected by the wither-shoot sound (see
+ * Powerball enchant tracking. Detected client-side by the wither-shoot sound (see
  * {@link EnchantSoundListener}/{@link SoundTracker}) fired within 2s of a right-click while holding a
  * Powerball pickaxe; the duration comes from the enchant level in the pickaxe lore. When the cooldown
- * elapses it fires the "Powerball Ready" alert. Ported from BetterPrisons (Yarn → Mojang).
+ * elapses it fires the "Powerball Ready" alert.
+ *
+ * <p><b>Not API-driven:</b> unlike Super Breaker, Powerball keeps this local detection because the
+ * Cosmic API {@code player.enchant_proc} hook isn't reliable for it yet, so {@link #onProc} is a no-op.
+ * Ported from BetterPrisons (Yarn → Mojang).
  */
 public class PowerballEnchant extends BaseEnchant {
 
@@ -49,6 +53,11 @@ public class PowerballEnchant extends BaseEnchant {
 				onWitherSoundDetected(heldItem);
 			}
 		}
+	}
+
+	/** Powerball stays on local sound detection for now, so ignore the API proc hook. */
+	@Override
+	public void onProc(Component displayText, int level) {
 	}
 
 	private void firePowerballReadyAlert(Minecraft client) {
@@ -122,10 +131,5 @@ public class PowerballEnchant extends BaseEnchant {
 			// ignore parse errors
 		}
 		return 0;
-	}
-
-	@Override
-	public void onChatMessage(String message) {
-		// Powerball is detected via sound, not chat.
 	}
 }

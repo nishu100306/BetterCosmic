@@ -90,6 +90,11 @@ public class PrisonsConfig extends BetterCosmicConfig {
 	public boolean boldXpEnergyTitles = false;
 	public boolean useItemWhileMiningEnabled = true;
 	public boolean chestSearchEnabled = true;
+	public boolean pvViewerEnabled = true;
+	public boolean pvViewerShowEmpty = true;
+	public int pvPreviewBgOpacity = 0;
+	/** Preview-sidebar scale for the PV viewer as a percent (100 = off). Shrinks previews so more fit. */
+	public int pvCompactScalePercent = 75;
 	public boolean clueScrollSortingEnabled = true;
 	public int clueScrollNumberColor = 0x79FF7A;
 	public boolean clueScrollNumberOutline = true;
@@ -398,4 +403,10 @@ public class PrisonsConfig extends BetterCosmicConfig {
 	public boolean powerballAlertTitleEnabled = true;
 	public String powerballAlertTitleText = "Powerball Ready!";
 	public int powerballAlertTitleColor = 0xFFAA00;
+
+	// ---- Cosmic API (official mod-registry integration) ----
+	/** Master switch for the Cosmic API presence handshake. See {@code prisons.api.CosmicApi}. */
+	public boolean cosmicApiEnabled = true;
+	/** Stable per-install id sent in the handshake; generated once on first send, then persisted. */
+	public String cosmicApiInstallId = "";
 }
