@@ -43,7 +43,8 @@ import java.util.UUID;
  *
  * <p>During approval the dashboard issues test credentials and the {@code resolve} reply carries
  * {@code testingMode:true}. {@link #CLIENT_ID} holds the app's public client id from the Cosmic
- * developer dashboard; {@link #sendHello()} no-ops if the feature is disabled or no client id is set.
+ * developer dashboard. The handshake is mandatory for an approved mod, so it is always sent on join —
+ * there is no switch to disable it; {@link #sendHello()} only no-ops before the config has loaded.
  */
 public final class CosmicApi {
 
@@ -131,7 +132,10 @@ public final class CosmicApi {
 	}
 
 	private static void sendHello() {
-		if (BetterPrisonsClient.config == null || !BetterPrisonsClient.config.cosmicApiEnabled) {
+		// The presence handshake is mandatory and cannot be disabled — the registry requires every
+		// approved mod to send client_hello on join. We only bail if the config isn't loaded yet
+		// (installId() needs it), never on a user preference.
+		if (BetterPrisonsClient.config == null) {
 			return;
 		}
 		if (CLIENT_ID.startsWith("REPLACE")) {

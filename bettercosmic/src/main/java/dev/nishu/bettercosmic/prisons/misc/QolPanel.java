@@ -13,7 +13,7 @@ import java.util.List;
 
 /**
  * Config panel for the quality-of-life render/interaction tweaks: first-person held-item scaling,
- * interactions (use-item-while-mining, auto-trade), pickaxe drop protection, the Blink-trinket
+ * interactions (auto-trade), pickaxe drop protection, the Blink-trinket
  * destination overlay, and extras (bold XP/Energy popups, the PrisonBreak texture pack). The extras
  * and auto-trade moved here from the removed "Misc" panel. Bound to {@link PrisonsConfig} via the
  * shared {@code Options} lambdas.
@@ -37,9 +37,6 @@ public final class QolPanel {
 						() -> c.heldItemOtherScale, v -> { c.heldItemOtherScale = v; c.save(); })));
 
 		OptionGroup interactions = new OptionGroup("Interactions", List.<Option>of(
-				Options.toggle("Use items while mining", d.useItemWhileMiningEnabled,
-						() -> c.useItemWhileMiningEnabled, v -> { c.useItemWhileMiningEnabled = v; c.save(); })
-						.tooltip("Allow right-click item use while actively breaking a block."),
 				Options.toggle("Auto-trade", d.autoTradeEnabled,
 						() -> c.autoTradeEnabled, v -> { c.autoTradeEnabled = v; c.save(); })
 						.tooltip("Shift-right-click a player to send /trade <name>.")));

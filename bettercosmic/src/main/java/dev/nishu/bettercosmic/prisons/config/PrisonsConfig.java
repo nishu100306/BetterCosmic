@@ -88,7 +88,6 @@ public class PrisonsConfig extends BetterCosmicConfig {
 	// ---- Misc features ----
 	public boolean autoTradeEnabled = true;
 	public boolean boldXpEnergyTitles = false;
-	public boolean useItemWhileMiningEnabled = true;
 	public boolean chestSearchEnabled = true;
 	public boolean pvViewerEnabled = true;
 	public boolean pvViewerShowEmpty = true;
@@ -405,8 +404,8 @@ public class PrisonsConfig extends BetterCosmicConfig {
 	public int powerballAlertTitleColor = 0xFFAA00;
 
 	// ---- Cosmic API (official mod-registry integration) ----
-	/** Master switch for the Cosmic API presence handshake. See {@code prisons.api.CosmicApi}. */
-	public boolean cosmicApiEnabled = true;
+	// The presence handshake is mandatory for an approved mod, so there is deliberately no switch to
+	// disable it (the registry requires every approved mod to send client_hello on join).
 	/** Stable per-install id sent in the handshake; generated once on first send, then persisted. */
 	public String cosmicApiInstallId = "";
 }

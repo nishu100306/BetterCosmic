@@ -9,8 +9,7 @@
 		"ItemDropMixin",
 		"LocalPlayerHurtMixin",
 		"PvSidebarRenderMixin",
-		"TitleBoldMixin",
-		"UseItemWhileMiningMixin"
+		"TitleBoldMixin"
 	],
 	"mixins": [],
 	"injectors": {
